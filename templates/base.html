@@ -83,6 +83,9 @@
     {% if request.endpoint == 'admin' %}
       <script src="{{ url_for('static', filename='js/admin-bulk-members.js', v=asset_version) }}"></script>
     {% endif %}
+    {% if request.endpoint == 'admin' %}
+      <script src="{{ url_for('static', filename='js/admin-bulk-members.js', v=asset_version) }}"></script>
+    {% endif %}
     {% block scripts %}{% endblock %}
   </body>
 </html>
