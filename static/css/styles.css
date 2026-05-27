@@ -1161,6 +1161,10 @@ body.is-loaded .loading-screen {
   box-shadow: 0 0 0 6px rgba(6, 14, 26, 0.72), 0 0 30px rgba(240, 208, 139, 0.3);
 }
 
+.tree-node.is-line-anchor img {
+  box-shadow: 0 0 0 6px rgba(6, 14, 26, 0.72), 0 0 34px rgba(240, 208, 139, 0.28);
+}
+
 .family-tree,
 .family-tree ul {
   position: relative;
@@ -1194,6 +1198,10 @@ body.is-loaded .loading-screen {
   transform: translateX(-50%);
 }
 
+.family-tree ul.is-single-child::before {
+  display: none;
+}
+
 .tree-branch {
   position: relative;
   display: grid;
@@ -1222,11 +1230,12 @@ body.is-loaded .loading-screen {
 .tree-branch::before {
   position: absolute;
   top: -1.3rem;
-  left: 50%;
+  left: var(--branch-line-x, 50%);
   width: 1px;
   height: 1.3rem;
   content: "";
   background: linear-gradient(180deg, rgba(240, 208, 139, 0.58), rgba(240, 208, 139, 0.12));
+  transform: translateX(-50%);
 }
 
 .family-tree > .tree-branch::before {
@@ -1816,6 +1825,19 @@ body.is-loaded .loading-screen {
   gap: 0.85rem;
 }
 
+.tree-bulk-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  margin-top: 0.9rem;
+}
+
+.tree-bulk-actions span {
+  color: rgba(232, 224, 211, 0.68);
+  font-family: var(--font-serif);
+}
+
 .tree-editor-row {
   display: grid;
   grid-template-columns: minmax(220px, 0.45fr) minmax(0, 1.55fr);
@@ -1882,6 +1904,12 @@ body.is-loaded .loading-screen {
 .tree-children-field p {
   margin: 0 0 0.65rem;
   color: rgba(232, 224, 211, 0.64);
+  font-family: var(--font-serif);
+}
+
+.tree-children-note {
+  grid-column: 1 / -1;
+  color: rgba(232, 224, 211, 0.7);
   font-family: var(--font-serif);
 }
 

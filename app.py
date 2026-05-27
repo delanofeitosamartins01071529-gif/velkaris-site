@@ -456,18 +456,26 @@ def family_unit_key(member: dict[str, Any], by_id: dict[str, dict[str, Any]]) ->
 
 def build_family_links(members: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     member_ids = {member["id"] for member in members}
+    by_id = {member["id"]: member for member in members}
     child_ids_by_parent = {member["id"]: [] for member in members}
     for child in members:
         for parent_id in child.get("parent_ids", []):
             if parent_id in member_ids and child["id"] != parent_id:
                 child_ids_by_parent.setdefault(parent_id, []).append(child["id"])
-    return {
-        member["id"]: {
+    links = {}
+    for member in members:
+        partner_id = member.get("partner_id", "")
+        family_people = [member]
+        if partner_id in by_id and partner_id != member["id"]:
+            family_people.append(by_id[partner_id])
+        editor_id = sort_members(family_people)[0]["id"]
+        links[member["id"]] = {
             "partner_id": member.get("partner_id", ""),
             "child_ids": child_ids_by_parent.get(member["id"], []),
+            "editor_id": editor_id,
+            "editor_name": by_id.get(editor_id, member).get("name", member.get("name", "")),
         }
-        for member in members
-    }
+    return links
 
 
 def build_family_tree(members: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -486,7 +494,7 @@ def build_family_tree(members: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 units[key].append(by_id[person_id])
             unit_by_person[person_id] = key
 
-    children_by_unit: dict[tuple[str, ...], list[tuple[str, ...]]] = {}
+    children_by_unit: dict[tuple[str, ...], dict[tuple[str, ...], str]] = {}
     root_units: set[tuple[str, ...]] = set(units)
 
     for member in tree_members:
@@ -497,9 +505,8 @@ def build_family_tree(members: list[dict[str, Any]]) -> list[dict[str, Any]]:
         child_unit = unit_by_person.get(member["id"])
         if not parent_unit or not child_unit or parent_unit == child_unit:
             continue
-        children_by_unit.setdefault(parent_unit, [])
-        if child_unit not in children_by_unit[parent_unit]:
-            children_by_unit[parent_unit].append(child_unit)
+        children_by_unit.setdefault(parent_unit, {})
+        children_by_unit[parent_unit].setdefault(child_unit, member["id"])
         root_units.discard(child_unit)
 
     def unit_sort_key(key: tuple[str, ...]) -> tuple[int, int, str]:
@@ -507,16 +514,33 @@ def build_family_tree(members: list[dict[str, Any]]) -> list[dict[str, Any]]:
         first = people[0] if people else {"sort_order": 999, "name": ""}
         return (as_int(first.get("sort_order"), 999), generation_rank(first), str(first.get("name", "")).lower())
 
-    def branch(key: tuple[str, ...], seen: set[tuple[str, ...]]) -> dict[str, Any]:
+    def line_position(people: list[dict[str, Any]], link_member_id: str | None) -> str:
+        if not link_member_id or len(people) < 2:
+            return "50%"
+        for index, person in enumerate(people):
+            if person["id"] == link_member_id:
+                return "25%" if index == 0 else "75%"
+        return "50%"
+
+    def branch(key: tuple[str, ...], seen: set[tuple[str, ...]], link_member_id: str | None = None) -> dict[str, Any]:
         people = sort_members(units.get(key, []))
         if key in seen:
-            return {"member": people[0] if people else {}, "members": people, "children": []}
+            return {
+                "member": people[0] if people else {},
+                "members": people,
+                "children": [],
+                "link_member_id": link_member_id,
+                "line_position": line_position(people, link_member_id),
+            }
         next_seen = seen | {key}
-        child_keys = sorted(children_by_unit.get(key, []), key=unit_sort_key)
+        child_links = children_by_unit.get(key, {})
+        child_keys = sorted(child_links, key=unit_sort_key)
         return {
             "member": people[0] if people else {},
             "members": people,
-            "children": [branch(child_key, next_seen) for child_key in child_keys],
+            "children": [branch(child_key, next_seen, child_links.get(child_key)) for child_key in child_keys],
+            "link_member_id": link_member_id,
+            "line_position": line_position(people, link_member_id),
         }
 
     roots = sorted(root_units or set(units), key=unit_sort_key)
@@ -759,26 +783,30 @@ def member_from_form(existing: dict[str, Any] | None, index: int) -> dict[str, A
     return member
 
 
-def update_member_tree_fields(member: dict[str, Any], index: int) -> dict[str, Any]:
+def update_member_tree_fields_from_sources(member: dict[str, Any], index: int, form, files, prefix: str = "") -> dict[str, Any]:
     updated = dict(member)
-    updated["generation"] = request.form.get("generation", updated.get("generation", GENERATION_OPTIONS[0])).strip() or GENERATION_OPTIONS[0]
-    updated["status"] = normalize_status(request.form.get("status", updated.get("status", "Vivo")))
-    updated["death_cause"] = request.form.get("death_cause", "").strip() if updated["status"] == "Morto" else ""
-    updated["sort_order"] = as_int(request.form.get("sort_order"), index + 1)
-    updated["partner_id"] = request.form.get("partner_id", updated.get("partner_id", "")).strip()
+    updated["generation"] = form.get(f"{prefix}generation", updated.get("generation", GENERATION_OPTIONS[0])).strip() or GENERATION_OPTIONS[0]
+    updated["status"] = normalize_status(form.get(f"{prefix}status", updated.get("status", "Vivo")))
+    updated["death_cause"] = form.get(f"{prefix}death_cause", "").strip() if updated["status"] == "Morto" else ""
+    updated["sort_order"] = as_int(form.get(f"{prefix}sort_order"), index + 1)
+    updated["partner_id"] = form.get(f"{prefix}partner_id", updated.get("partner_id", "")).strip()
     if updated["partner_id"] == updated["id"]:
         updated["partner_id"] = ""
-    updated["in_tree"] = "in_tree" in request.form
-    updated["featured"] = "featured" in request.form
+    updated["in_tree"] = f"{prefix}in_tree" in form
+    updated["featured"] = f"{prefix}featured" in form
     updated["parent_ids"] = [
         parent_id
-        for parent_id in (request.form.get("parent_1"), request.form.get("parent_2"))
+        for parent_id in (form.get(f"{prefix}parent_1"), form.get(f"{prefix}parent_2"))
         if parent_id and parent_id != updated["id"]
     ]
-    image_path = save_upload(request.files.get("portrait"), "member")
+    image_path = save_upload(files.get(f"{prefix}portrait"), "member")
     if image_path:
         updated["image"] = image_path
     return updated
+
+
+def update_member_tree_fields(member: dict[str, Any], index: int) -> dict[str, Any]:
+    return update_member_tree_fields_from_sources(member, index, request.form, request.files)
 
 
 def sync_partner_links(members: list[dict[str, Any]], member_id: str, partner_id: str) -> None:
@@ -864,11 +892,46 @@ def update_member_tree(member_id: str):
         if member["id"] == member_id:
             members[index] = update_member_tree_fields(member, index)
             sync_partner_links(members, member_id, members[index].get("partner_id", ""))
-            sync_family_children(members, member_id, members[index].get("partner_id", ""), request.form.getlist("child_ids"))
+            if "children_editor" in request.form:
+                sync_family_children(members, member_id, members[index].get("partner_id", ""), request.form.getlist("child_ids"))
             write_json(MEMBERS_FILE, sort_members(members))
             flash(f"Árvore atualizada para {member['name']}.", "success")
             return redirect(url_for("admin", _anchor="arvore"))
     abort(404)
+
+
+@app.post("/admin/tree/bulk")
+@admin_required
+def bulk_update_tree():
+    validate_csrf()
+    members = load_members()
+    member_ids = [member_id for member_id in request.form.getlist("member_ids") if member_id]
+    index_by_id = {member["id"]: index for index, member in enumerate(members)}
+
+    for member_id in member_ids:
+        if member_id not in index_by_id:
+            continue
+        index = index_by_id[member_id]
+        prefix = f"{member_id}__"
+        members[index] = update_member_tree_fields_from_sources(members[index], index, request.form, request.files, prefix)
+
+    for member_id in member_ids:
+        if member_id in index_by_id:
+            member = members[index_by_id[member_id]]
+            sync_partner_links(members, member_id, member.get("partner_id", ""))
+
+    for member_id in member_ids:
+        if member_id not in index_by_id:
+            continue
+        prefix = f"{member_id}__"
+        if f"{prefix}children_editor" not in request.form:
+            continue
+        member = members[index_by_id[member_id]]
+        sync_family_children(members, member_id, member.get("partner_id", ""), request.form.getlist(f"{prefix}child_ids"))
+
+    write_json(MEMBERS_FILE, sort_members(members))
+    flash("Toda a árvore genealógica foi salva de uma vez.", "success")
+    return {"redirect": url_for("admin", _anchor="arvore")}
 
 
 @app.post("/admin/members/reorder")

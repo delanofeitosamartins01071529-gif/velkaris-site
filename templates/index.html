@@ -152,19 +152,19 @@
       </div>
       <div class="genealogy" data-tree>
         {% macro render_branch(branch) %}
-          <li class="tree-branch">
+          <li class="tree-branch" style="--branch-line-x: {{ branch.line_position }};">
             <div class="tree-couple {% if branch.members|length > 1 %}has-partner{% endif %}">
               {% for tree_member in branch.members %}
-                <button class="tree-node is-open status-{{ tree_member.status|lower }}" type="button" data-tree-toggle>
+                <button class="tree-node is-open status-{{ tree_member.status|lower }} {% if branch.link_member_id == tree_member.id %}is-line-anchor{% endif %}" type="button" data-tree-toggle>
                   <img src="{{ media_url(tree_member.image) }}" alt="">
                   <strong>{{ tree_member.name }}</strong>
                   <span>{{ tree_member.title }}</span>
-              <small>{{ branch.member.generation }} · {{ branch.member.status }}</small>
+                                <small>{{ tree_member.generation }} - {{ tree_member.status }}</small>
                 </button>
               {% endfor %}
             </div>
             {% if branch.children %}
-              <ul>
+              <ul class="{% if branch.children|length == 1 %}is-single-child{% endif %}">
                 {% for child in branch.children %}
                   {{ render_branch(child) }}
                 {% endfor %}

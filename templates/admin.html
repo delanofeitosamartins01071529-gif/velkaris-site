@@ -302,6 +302,11 @@
         <p class="section-kicker">Árvore genealógica</p>
         <h2>Montagem visual da linhagem</h2>
         <p class="admin-help">Novo fluxo: escolha um par/conjuge, marque os filhos desse nucleo e salve. O sistema atualiza os ascendentes dos filhos automaticamente.</p>
+        <div class="tree-bulk-actions">
+          <input type="hidden" id="tree-bulk-csrf" value="{{ csrf_token() }}">
+          <button class="primary-cta" type="button" data-tree-bulk-save>Salvar toda a arvore</button>
+          <span data-tree-bulk-status></span>
+        </div>
         <p class="admin-help">Aqui é o lugar principal para montar a árvore: envie a imagem usada no nó, marque quem aparece, escolha status, geração, ordem e até dois ascendentes para cada familiar. Quem fica sem ascendente vira raiz/fundador.</p>
       </div>
       <div class="tree-editor-list">
@@ -314,7 +319,7 @@
                 <span>{{ member.title }}</span>
               </div>
             </div>
-            <form class="admin-form tree-editor-form" method="post" action="{{ url_for('update_member_tree', member_id=member.id) }}" enctype="multipart/form-data">
+            <form class="admin-form tree-editor-form" method="post" action="{{ url_for('update_member_tree', member_id=member.id) }}" enctype="multipart/form-data" data-tree-editor-form data-member-id="{{ member.id }}">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <label>
               Imagem na árvore com corte automático
@@ -371,7 +376,9 @@
                   {% endfor %}
                 </select>
               </label>
+              {% if family_links[member.id].editor_id == member.id %}
               <fieldset class="tree-children-field">
+                <input type="hidden" name="children_editor" value="1">
                 <legend>Filhos deste nucleo</legend>
                 <p>Marque os filhos do familiar ou do casal selecionado. Ao salvar, os ascendentes dos filhos serao vinculados automaticamente.</p>
                 <div class="tree-child-options">
@@ -384,6 +391,11 @@
                   {% endfor %}
                 </div>
               </fieldset>
+              {% else %}
+              <div class="tree-children-field tree-children-note">
+                Filhos deste casal sao editados no nucleo de {{ family_links[member.id].editor_name }}.
+              </div>
+              {% endif %}
               <div class="admin-checks tree-checks">
                 <label><input type="checkbox" name="in_tree" {% if member.in_tree %}checked{% endif %}> Mostrar na árvore</label>
                 <label><input type="checkbox" name="featured" {% if member.featured %}checked{% endif %}> Destacar no topo</label>

@@ -202,6 +202,53 @@ document.querySelectorAll("[data-preview-input]").forEach((input) => {
   });
 });
 
+const bulkTreeButton = document.querySelector("[data-tree-bulk-save]");
+bulkTreeButton?.addEventListener("click", async () => {
+  const forms = Array.from(document.querySelectorAll("[data-tree-editor-form]"));
+  const status = document.querySelector("[data-tree-bulk-status]");
+  const csrf = document.querySelector("#tree-bulk-csrf")?.value;
+  if (!forms.length || !csrf) return;
+
+  const payload = new FormData();
+  payload.append("csrf_token", csrf);
+
+  forms.forEach((form) => {
+    const memberId = form.dataset.memberId;
+    if (!memberId) return;
+    payload.append("member_ids", memberId);
+    form.querySelectorAll("input, select, textarea").forEach((field) => {
+      if (!field.name || field.name === "csrf_token") return;
+      const key = `${memberId}__${field.name}`;
+      if (field.type === "file") {
+        if (field.files?.[0]) payload.append(key, field.files[0]);
+        return;
+      }
+      if (field.type === "checkbox") {
+        if (field.checked) payload.append(key, field.value || "on");
+        return;
+      }
+      payload.append(key, field.value);
+    });
+  });
+
+  bulkTreeButton.disabled = true;
+  if (status) status.textContent = "Salvando toda a arvore...";
+  try {
+    const response = await fetch("/admin/tree/bulk", {
+      method: "POST",
+      body: payload,
+      credentials: "same-origin",
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) throw new Error("Falha ao salvar");
+    const result = await response.json();
+    window.location.href = result.redirect || "/admin#arvore";
+  } catch (error) {
+    bulkTreeButton.disabled = false;
+    if (status) status.textContent = "Nao foi possivel salvar tudo. Tente novamente.";
+  }
+});
+
 document.querySelectorAll("[data-territory-target]").forEach((marker) => {
   marker.addEventListener("click", () => {
     const target = marker.dataset.territoryTarget;
