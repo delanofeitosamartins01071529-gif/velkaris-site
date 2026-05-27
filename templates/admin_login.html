@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Acesso do Arquivo | Casa Velkaris{% endblock %}
+
+{% block content %}
+  <section class="admin-shell login-shell">
+    <div class="admin-card reveal is-visible">
+      <img class="admin-crest" src="{{ media_url(site_house.crest_image) }}" alt="">
+      <p class="section-kicker">Arquivo Interno</p>
+      <h1>Acesso administrativo</h1>
+      <div class="login-note">
+        <p>Apenas administradores autorizados podem entrar nos Arquivos da Casa.</p>
+      </div>
+      <form method="post" class="admin-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>
+          Usuário
+          <input type="text" name="username" autocomplete="username" required>
+        </label>
+        <label>
+          Senha
+          <input type="password" name="password" autocomplete="current-password" required>
+        </label>
+        <button class="primary-cta full" type="submit">Entrar nos Arquivos</button>
+      </form>
+    </div>
+  </section>
+{% endblock %}

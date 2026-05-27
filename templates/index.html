@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="hero" id="inicio" data-hero>
+    <img class="hero-art" src="{{ media_url(house.hero_image) }}" alt="Castelo ancestral da Casa {{ house.name }} envolto em névoa e luz azul">
+    <div class="hero-vignette"></div>
+    <div class="hero-banner" aria-hidden="true"></div>
+
+    <div class="hero-content">
+      <div class="hero-crest-wrap" data-parallax="0.08">
+        <img class="hero-crest" src="{{ media_url(house.crest_image) }}" alt="Brasão da Casa {{ house.name }}">
+      </div>
+      <p class="eyebrow">Casa</p>
+      <h1>{{ house.name }}</h1>
+      <p class="house-motto">{{ house.motto }}</p>
+      <p class="hero-copy">{{ house.subtitle }}</p>
+      <div class="hero-actions">
+        <a class="primary-cta" href="#linhagem">Conheça a Linhagem</a>
+        <a class="ghost-cta" href="#arquivos">Abrir Arquivos</a>
+      </div>
+    </div>
+
+    <aside class="ancestral-rail" aria-label="Ancestrais da Casa">
+      <div class="section-kicker">Ancestrais da Casa</div>
+      <div class="ancestral-cards">
+        {% for member in featured_members %}
+          <article class="mini-card" role="button" tabindex="0" data-member-open="{{ member.id }}">
+            <img src="{{ media_url(member.image) }}" alt="Retrato de {{ member.name }}">
+            <div>
+              <strong>{{ member.name }}</strong>
+              <span>{{ member.title }}</span>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    </aside>
+  </section>
+
+  <section class="codex-grid" aria-label="Arquivo principal">
+    <aside class="side-rail" aria-hidden="true">
+      <span>♔</span>
+      <span>♜</span>
+      <span>⚔</span>
+      <span>✦</span>
+      <span>◆</span>
+    </aside>
+
+    <section class="panel about-panel reveal" id="familia" data-reveal>
+      <div class="panel-heading">
+        <p class="section-kicker">Sobre a Casa</p>
+        <h2>{{ house.about_heading }}</h2>
+      </div>
+      {% for paragraph in house.about %}
+        <p>{{ paragraph.text }}</p>
+      {% endfor %}
+      <div class="symbol-grid">
+        {% for symbol in house.symbols %}
+          <article class="symbol-card">
+            <span aria-hidden="true">✥</span>
+            <h3>{{ symbol.name }}</h3>
+            <p>{{ symbol.meaning }}</p>
+          </article>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="panel members-panel reveal" id="linhagem" data-reveal>
+      <div class="panel-heading row-heading">
+        <div>
+          <p class="section-kicker">Membros da Família</p>
+          <h2>{{ house.members_heading }}</h2>
+        </div>
+        <div class="filter-bar" aria-label="Filtrar por geração">
+          <button type="button" class="is-active" data-filter="all">Todos</button>
+          {% for generation in generation_options %}
+            <button type="button" data-filter="{{ generation }}">{{ generation.split(" ")[0] }}</button>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="member-grid">
+        {% for member in members %}
+          <article class="member-card" role="button" tabindex="0" data-member-card data-member-open="{{ member.id }}" data-generation="{{ member.generation }}">
+            <div class="portrait-frame">
+              <img src="{{ media_url(member.image) }}" alt="Retrato de {{ member.name }}">
+              <span class="generation-badge">{{ member.generation }}</span>
+            </div>
+            <div class="member-body">
+              <h3>{{ member.name }}</h3>
+              {% if member.epithet %}
+                <p class="member-epithet">{{ member.epithet }}</p>
+              {% endif %}
+              <p class="member-title">{{ member.title }}</p>
+              <p>{{ member.description }}</p>
+              <span class="member-more">Ver registro completo</span>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+      {% for member in members %}
+        <dialog class="member-modal" data-member-modal="{{ member.id }}">
+          <div class="member-modal-shell">
+            <button class="modal-close" type="button" data-member-close aria-label="Fechar registro">×</button>
+            <div class="member-modal-portrait">
+              <img src="{{ media_url(member.image) }}" alt="Retrato de {{ member.name }}">
+            </div>
+            <div class="member-modal-content">
+              <p class="section-kicker">{{ member.generation }}</p>
+              <h3>{{ member.name }}</h3>
+              {% if member.epithet %}
+                <p class="modal-epithet">{{ member.epithet }}</p>
+              {% endif %}
+              <p class="modal-title">{{ member.title }}</p>
+              {% if member.quote %}
+                <blockquote>{{ member.quote }}</blockquote>
+              {% endif %}
+              <dl class="member-facts">
+                <div><dt>Status</dt><dd>{{ member.status }}</dd></div>
+                {% if member.status == "Morto" and member.death_cause %}<div><dt>Causa da morte</dt><dd>{{ member.death_cause }}</dd></div>{% endif %}
+                <div><dt>Ramo</dt><dd>{{ member.branch }}</dd></div>
+                {% if member.territory %}<div><dt>Domínio</dt><dd>{{ member.territory }}</dd></div>{% endif %}
+                {% if member.birth_year %}<div><dt>Nascimento</dt><dd>{{ member.birth_year }}</dd></div>{% endif %}
+                {% if member.spouse %}<div><dt>Aliança</dt><dd>{{ member.spouse }}</dd></div>{% endif %}
+              </dl>
+              <p>{{ member.biography }}</p>
+              {% if member.traits %}
+                <div class="member-traits">
+                  <span>Traços e feitos</span>
+                  <p>{{ member.traits }}</p>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </dialog>
+      {% endfor %}
+    </section>
+
+    <section class="panel tree-panel reveal" data-reveal>
+      <div class="panel-heading row-heading">
+        <div>
+          <p class="section-kicker">Árvore Genealógica</p>
+          <h2>{{ house.tree_heading }}</h2>
+        </div>
+        <div class="tree-controls">
+          <button type="button" data-tree-expand>Expandir</button>
+          <button type="button" data-tree-collapse>Selar</button>
+        </div>
+      </div>
+      <div class="genealogy" data-tree>
+        {% macro render_branch(branch) %}
+          <li class="tree-branch">
+            <button class="tree-node is-open status-{{ branch.member.status|lower }}" type="button" data-tree-toggle>
+              <img src="{{ media_url(branch.member.image) }}" alt="">
+              <strong>{{ branch.member.name }}</strong>
+              <span>{{ branch.member.title }}</span>
+              <small>{{ branch.member.generation }} · {{ branch.member.status }}</small>
+            </button>
+            {% if branch.children %}
+              <ul>
+                {% for child in branch.children %}
+                  {{ render_branch(child) }}
+                {% endfor %}
+              </ul>
+            {% endif %}
+          </li>
+        {% endmacro %}
+
+        {% if family_tree %}
+          <ul class="family-tree">
+            {% for branch in family_tree %}
+              {{ render_branch(branch) }}
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="empty-state">A árvore ainda não possui familiares ativos.</p>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="panel territories-panel reveal" id="territorios" data-reveal>
+      <div class="panel-heading row-heading">
+        <div>
+          <p class="section-kicker">Territórios</p>
+          <h2>{{ house.territories_heading }}</h2>
+        </div>
+        <a class="text-link" href="#galeria">Ver mapa</a>
+      </div>
+      <div class="territory-layout">
+        <img src="{{ media_url(house.territory_map) }}" alt="Mapa fictício dos territórios {{ house.name }}">
+        <div class="territory-list">
+          {% for territory in house.territories %}
+            <article>
+              <span>{{ territory.type }}</span>
+              <h3>{{ territory.name }}</h3>
+              <p>{{ territory.description }}</p>
+            </article>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+
+    <section class="panel archives-panel reveal" id="arquivos" data-reveal>
+      <div class="panel-heading">
+        <p class="section-kicker">Arquivos da Casa</p>
+        <h2>{{ house.archives_heading }}</h2>
+      </div>
+      <div class="archive-list">
+        {% for archive in house.archives %}
+          <article class="archive-item">
+            <time>{{ archive.date }}</time>
+            <div>
+              <h3>{{ archive.title }}</h3>
+              <p>{{ archive.summary }}</p>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="panel gallery-panel reveal" id="galeria" data-reveal>
+      <div class="panel-heading">
+        <p class="section-kicker">Galeria</p>
+        <h2>{{ house.gallery_heading }}</h2>
+      </div>
+      <div class="gallery-grid">
+        {% for item in house.gallery %}
+          <figure>
+            <img src="{{ media_url(item.image) }}" alt="{{ item.title }}">
+            <figcaption>{{ item.title }}</figcaption>
+          </figure>
+        {% endfor %}
+      </div>
+    </section>
+  </section>
+{% endblock %}

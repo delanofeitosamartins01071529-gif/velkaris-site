@@ -1,0 +1,108 @@
+{
+  "name": "Velkaris",
+  "motto": "Honra. Lealdade. Poder.",
+  "subtitle": "De sangue antigo e vontade inabalável, a Casa Velkaris carrega o peso da história e o dever de manter acesa a chama do legado.",
+  "about_heading": "Juramentos escritos em ouro antigo",
+  "members_heading": "Retratos da linhagem",
+  "tree_heading": "Linhagem Velkaris",
+  "territories_heading": "Domínios juramentados",
+  "archives_heading": "Registros recentes",
+  "gallery_heading": "Pinturas e banners",
+  "crest_image": "assets/Velkaris.png",
+  "hero_image": "assets/hero-castle.png",
+  "territory_map": "assets/territory-map.png",
+  "about": [
+    {
+      "id": "about-7f61039860",
+      "text": "A Casa Velkaris nasceu entre montanhas negras, mares frios e juramentos feitos sob luas azuis. Sua nobreza não se mede apenas por coroas, mas por memória, disciplina e proteção aos seus."
+    },
+    {
+      "id": "about-e304ecffaa",
+      "text": "Cada geração preserva os arquivos da família como um grimório vivo: vitórias, perdas, alianças, mapas e retratos permanecem guardados em ouro envelhecido e tinta escura."
+    },
+    {
+      "id": "about-3968ca58dd",
+      "text": "A filosofia da Casa é simples e severa: governar com sabedoria, proteger com força e jamais permitir que o sangue antigo se curve ao esquecimento."
+    }
+  ],
+  "symbols": [
+    {
+      "id": "symbols-40fc0dbea5",
+      "name": "Dragão Azul",
+      "meaning": "Vigilância, soberania e poder herdado."
+    },
+    {
+      "id": "symbols-a2ffecffca",
+      "name": "Coroa Partida",
+      "meaning": "O preço da liderança antes da glória."
+    },
+    {
+      "id": "symbols-39f1e6df81",
+      "name": "Rosa de Prata",
+      "meaning": "Elegância, luto e promessa."
+    }
+  ],
+  "territories": [
+    {
+      "id": "territories-889f7642f4",
+      "name": "Auralis Sombria",
+      "type": "Capital",
+      "description": "Castelo principal erguido sobre penhascos, onde os arquivos da Casa repousam."
+    },
+    {
+      "id": "territories-dd8e2c0c33",
+      "name": "Fortaleza Noxmere",
+      "type": "Bastião",
+      "description": "Guarda a passagem norte e os estandartes de guerra da linhagem."
+    },
+    {
+      "id": "territories-a81f5c6395",
+      "name": "Vale de Ebonluz",
+      "type": "Domínio",
+      "description": "Terras de névoa azul, vinhedos frios e capelas antigas."
+    },
+    {
+      "id": "territories-22b36f323c",
+      "name": "Porto Argentum",
+      "type": "Aliança marítima",
+      "description": "Rota diplomática protegida por juramentos comerciais e navios escuros."
+    }
+  ],
+  "archives": [
+    {
+      "id": "archives-c9f461114b",
+      "date": "12/05",
+      "title": "A expansão das fronteiras ao norte",
+      "summary": "Novos mapas apontam fortalezas antigas sob neve e pedra azul."
+    },
+    {
+      "id": "archives-4fb25f5831",
+      "date": "08/05",
+      "title": "Retorno de uma missão diplomática",
+      "summary": "Os selos do Porto Argentum foram renovados diante do conselho."
+    },
+    {
+      "id": "archives-0544b8d021",
+      "date": "01/05",
+      "title": "Festival da Lua Azul",
+      "summary": "Tradição, memória e união marcaram o salão principal."
+    }
+  ],
+  "gallery": [
+    {
+      "id": "gallery-6ceb3a8ba8",
+      "title": "O Castelo sob a tempestade",
+      "image": "assets/gallery-castle.png"
+    },
+    {
+      "id": "gallery-7c54613c4a",
+      "title": "Mapa das terras juramentadas",
+      "image": "assets/territory-map.png"
+    },
+    {
+      "id": "gallery-23aa296dec",
+      "title": "Bastião da fronteira norte",
+      "image": "assets/gallery-fortress.png"
+    }
+  ]
+}
