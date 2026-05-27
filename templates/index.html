@@ -7,11 +7,15 @@
     <div class="hero-banner" aria-hidden="true"></div>
 
     <div class="hero-content">
-      <div class="hero-crest-wrap" data-parallax="0.08">
-        <img class="hero-crest" src="{{ media_url(house.crest_image) }}" alt="Brasão da Casa {{ house.name }}">
+      <div class="hero-identity">
+        <div class="hero-title-block">
+          <p class="eyebrow">Casa</p>
+          <h1>{{ house.name }}</h1>
+        </div>
+        <div class="hero-crest-wrap" data-parallax="0.08">
+          <img class="hero-crest" src="{{ media_url(house.crest_image) }}" alt="Brasão da Casa {{ house.name }}">
+        </div>
       </div>
-      <p class="eyebrow">Casa</p>
-      <h1>{{ house.name }}</h1>
       <p class="house-motto">{{ house.motto }}</p>
       <p class="hero-copy">{{ house.subtitle }}</p>
       <div class="hero-actions">
@@ -91,7 +95,7 @@
               {% endif %}
               <p class="member-title">{{ member.title }}</p>
               <p>{{ member.description }}</p>
-              <span class="member-more">Ver registro completo</span>
+              <a class="member-more" href="{{ url_for('member_detail', slug=member.slug) }}" data-stop-modal>Ver registro completo</a>
             </div>
           </article>
         {% endfor %}
@@ -185,16 +189,67 @@
         <a class="text-link" href="#galeria">Ver mapa</a>
       </div>
       <div class="territory-layout">
-        <img src="{{ media_url(house.territory_map) }}" alt="Mapa fictício dos territórios {{ house.name }}">
+        <div class="territory-map-wrap">
+          <img src="{{ media_url(house.territory_map) }}" alt="Mapa fictício dos territórios {{ house.name }}">
+          {% for territory in house.territories %}
+            <button
+              class="map-marker"
+              type="button"
+              style="--x: {{ territory.coord_x or 50 }}%; --y: {{ territory.coord_y or 50 }}%;"
+              data-territory-target="{{ territory.id }}"
+              aria-label="{{ territory.name }}"
+            >
+              <span></span>
+            </button>
+          {% endfor %}
+        </div>
         <div class="territory-list">
           {% for territory in house.territories %}
-            <article>
-              <span>{{ territory.type }}</span>
+            <article data-territory-card="{{ territory.id }}">
+              <span>{{ territory.type }} · {{ territory.status or "Domínio ativo" }}</span>
               <h3>{{ territory.name }}</h3>
               <p>{{ territory.description }}</p>
+              {% if territory.lore %}
+                <small>{{ territory.lore }}</small>
+              {% endif %}
             </article>
           {% endfor %}
         </div>
+      </div>
+    </section>
+
+    <section class="panel eras-panel reveal" id="eras" data-reveal>
+      <div class="panel-heading">
+        <p class="section-kicker">Sistema de eras</p>
+        <h2>{{ house.eras_heading }}</h2>
+      </div>
+      <div class="era-grid">
+        {% for era in house.eras %}
+          <article class="era-card">
+            <span>{{ era.period }}</span>
+            <h3>{{ era.name }}</h3>
+            <p>{{ era.description }}</p>
+          </article>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="panel timeline-panel reveal" id="cronicas" data-reveal>
+      <div class="panel-heading">
+        <p class="section-kicker">Arquivo histórico</p>
+        <h2>{{ house.timeline_heading }}</h2>
+      </div>
+      <div class="timeline-list">
+        {% for event in house.timeline %}
+          <article class="timeline-item">
+            <time>{{ event.date }}</time>
+            <div>
+              <span>{{ event.era }}</span>
+              <h3>{{ event.title }}</h3>
+              <p>{{ event.summary }}</p>
+            </div>
+          </article>
+        {% endfor %}
       </div>
     </section>
 

@@ -121,6 +121,10 @@ document.querySelectorAll("[data-member-open]").forEach((card) => {
   });
 });
 
+document.querySelectorAll("[data-stop-modal]").forEach((link) => {
+  link.addEventListener("click", (event) => event.stopPropagation());
+});
+
 document.querySelectorAll("[data-member-close]").forEach((button) => {
   button.addEventListener("click", () => closeMemberModal(button.closest("dialog")));
 });
@@ -197,6 +201,52 @@ document.querySelectorAll("[data-preview-input]").forEach((input) => {
     img.src = URL.createObjectURL(file);
   });
 });
+
+document.querySelectorAll("[data-territory-target]").forEach((marker) => {
+  marker.addEventListener("click", () => {
+    const target = marker.dataset.territoryTarget;
+    document.querySelectorAll("[data-territory-target]").forEach((item) => item.classList.toggle("is-active", item === marker));
+    document.querySelectorAll("[data-territory-card]").forEach((card) => {
+      const active = card.dataset.territoryCard === target;
+      card.classList.toggle("is-active", active);
+      if (active) card.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    });
+  });
+});
+
+const reorderList = document.querySelector("[data-reorder-list]");
+const reorderValue = document.querySelector("[data-reorder-value]");
+const syncReorderValue = () => {
+  if (!reorderList || !reorderValue) return;
+  reorderValue.value = [...reorderList.querySelectorAll("[data-member-id]")].map((item) => item.dataset.memberId).join(",");
+};
+if (reorderList) {
+  let draggedItem;
+  reorderList.addEventListener("dragstart", (event) => {
+    draggedItem = event.target.closest("[data-member-id]");
+    draggedItem?.classList.add("is-dragging");
+    event.dataTransfer.effectAllowed = "move";
+  });
+  reorderList.addEventListener("dragend", () => {
+    draggedItem?.classList.remove("is-dragging");
+    draggedItem = null;
+    syncReorderValue();
+  });
+  reorderList.addEventListener("dragover", (event) => {
+    event.preventDefault();
+    const afterElement = [...reorderList.querySelectorAll("[data-member-id]:not(.is-dragging)")].find((item) => {
+      const box = item.getBoundingClientRect();
+      return event.clientY <= box.top + box.height / 2;
+    });
+    if (!draggedItem) return;
+    if (afterElement) {
+      reorderList.insertBefore(draggedItem, afterElement);
+    } else {
+      reorderList.appendChild(draggedItem);
+    }
+    syncReorderValue();
+  });
+}
 
 let audioContext;
 let masterGain;

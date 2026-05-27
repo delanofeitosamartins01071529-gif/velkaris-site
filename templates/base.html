@@ -3,11 +3,13 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Site oficial da Casa Velkaris, uma linhagem nobre medieval de fantasia sombria.">
-    <meta property="og:title" content="Casa Velkaris">
-    <meta property="og:description" content="Honra, lealdade e poder em uma experiência dark fantasy premium.">
-    <meta property="og:type" content="website">
-    <meta property="og:image" content="{{ media_url(site_house.hero_image) }}">
+    <meta name="description" content="{% block meta_description %}Site oficial da Casa Velkaris, uma linhagem nobre medieval de fantasia sombria.{% endblock %}">
+    <meta property="og:title" content="{% block og_title %}Casa Velkaris{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}Honra, lealdade e poder em uma experiência dark fantasy premium.{% endblock %}">
+    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+    <meta property="og:image" content="{% block og_image %}{{ media_url(site_house.hero_image) }}{% endblock %}">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="canonical" href="{{ request.url }}">
     <title>{% block title %}Casa Velkaris{% endblock %}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,7 +18,9 @@
   </head>
   <body>
     <div class="loading-screen" data-loader>
-      <img src="{{ media_url(site_house.crest_image) }}" alt="" class="loading-crest">
+      <div class="loading-sigil">
+        <img src="{{ media_url(site_house.crest_image) }}" alt="" class="loading-crest">
+      </div>
       <p>Casa Velkaris</p>
     </div>
 
@@ -37,6 +41,7 @@
         <a href="{{ url_for('index') }}#familia">A Família</a>
         <a href="{{ url_for('index') }}#linhagem">Linhagem</a>
         <a href="{{ url_for('index') }}#territorios">Territórios</a>
+        <a href="{{ url_for('index') }}#cronicas">Crônicas</a>
         <a href="{{ url_for('index') }}#arquivos">Arquivos</a>
         <a href="{{ url_for('index') }}#galeria">Galeria</a>
       </nav>
@@ -47,7 +52,7 @@
         {% if admin_logged_in %}
           <a class="vault-link admin-access-link" href="{{ url_for('admin') }}">Painel Admin</a>
         {% else %}
-          <a class="vault-link admin-access-link" href="{{ url_for('admin_login') }}">Login Admin</a>
+          <a class="vault-link admin-access-link" href="{{ url_for('admin_login_alias') }}">Login Admin</a>
         {% endif %}
       </div>
     </header>
@@ -71,7 +76,7 @@
         <img src="{{ media_url(site_house.crest_image) }}" alt="">
       </div>
       <p>© Casa {{ site_house.name }}. Todos os direitos reservados.</p>
-      <a href="{{ url_for('admin_login') }}">Login Administrativo</a>
+      <a href="{{ url_for('admin_login_alias') }}">Login Administrativo</a>
     </footer>
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>

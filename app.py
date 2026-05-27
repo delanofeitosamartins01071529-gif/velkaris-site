@@ -2,9 +2,16 @@ from __future__ import annotations
 
 import hmac
 import json
+import mimetypes
 import os
+import re
+import time
+import unicodedata
+import urllib.error
+import urllib.request
 import uuid
 from functools import wraps
+from io import BytesIO
 from pathlib import Path
 from typing import Any
 
@@ -22,6 +29,13 @@ from flask import (
 )
 from werkzeug.utils import secure_filename
 
+try:
+    from PIL import Image, ImageOps, UnidentifiedImageError
+except ImportError:  # Pillow is listed in requirements; this keeps local fallback graceful.
+    Image = None
+    ImageOps = None
+    UnidentifiedImageError = OSError
+
 
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
@@ -31,8 +45,13 @@ DATA_DIR = Path(os.environ.get("VELKARIS_DATA_DIR", STORAGE_DIR / "data" if "VEL
 UPLOAD_DIR = Path(os.environ.get("VELKARIS_UPLOAD_DIR", STORAGE_DIR / "uploads" if "VELKARIS_STORAGE_DIR" in os.environ else STATIC_DIR / "uploads")).resolve()
 MEMBERS_FILE = DATA_DIR / "members.json"
 HOUSE_FILE = DATA_DIR / "house.json"
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
+SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+SUPABASE_BUCKET = os.environ.get("SUPABASE_STORAGE_BUCKET", "velkaris-media")
+SUPABASE_ENABLED = bool(SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY)
 
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
+MEMBER_PORTRAIT_SIZE = (960, 1200)
 GENERATION_OPTIONS = ["1ª Geração", "2ª Geração", "3ª Geração", "4ª Geração"]
 STATUS_OPTIONS = ["Vivo", "Morto", "Desaparecido"]
 PLACEHOLDERS = [
@@ -51,6 +70,8 @@ HOUSE_DEFAULTS = {
     "tree_heading": "Linhagem Velkaris",
     "territories_heading": "Domínios juramentados",
     "archives_heading": "Registros recentes",
+    "timeline_heading": "Crônicas do sangue antigo",
+    "eras_heading": "Eras da Casa",
     "gallery_heading": "Pinturas e banners",
     "crest_image": "assets/Velkaris.png",
     "hero_image": "assets/hero-castle.png",
@@ -60,8 +81,10 @@ HOUSE_DEFAULTS = {
 COLLECTION_FIELDS = {
     "about": ("text",),
     "symbols": ("name", "meaning"),
-    "territories": ("name", "type", "description"),
+    "territories": ("name", "type", "description", "lore", "coord_x", "coord_y", "status"),
     "archives": ("date", "title", "summary"),
+    "timeline": ("date", "era", "title", "summary"),
+    "eras": ("name", "period", "description"),
     "gallery": ("title",),
 }
 
@@ -72,9 +95,15 @@ app.secret_key = os.environ.get("SECRET_KEY", "velkaris-dev-secret-change-me")
 
 ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "velkaris-ascende")
+LOGIN_ATTEMPTS: dict[str, list[float]] = {}
+MAX_LOGIN_ATTEMPTS = 6
+LOGIN_WINDOW_SECONDS = 15 * 60
 
 
 def read_json(path: Path, fallback: Any) -> Any:
+    supabase_payload = supabase_read_json(path)
+    if supabase_payload is not None:
+        return supabase_payload
     if not path.exists():
         bundled_path = BUNDLED_DATA_DIR / path.name
         if path.parent != BUNDLED_DATA_DIR and bundled_path.exists():
@@ -86,6 +115,8 @@ def read_json(path: Path, fallback: Any) -> Any:
 
 
 def write_json(path: Path, payload: Any) -> None:
+    if supabase_write_json(path, payload):
+        return
     path.parent.mkdir(parents=True, exist_ok=True)
     temp_path = path.with_suffix(".tmp")
     with temp_path.open("w", encoding="utf-8") as handle:
@@ -96,6 +127,71 @@ def write_json(path: Path, payload: Any) -> None:
 
 def item_id(prefix: str) -> str:
     return f"{prefix}-{uuid.uuid4().hex[:10]}"
+
+
+def slugify(value: str) -> str:
+    normalized = unicodedata.normalize("NFKD", value or "")
+    ascii_value = normalized.encode("ascii", "ignore").decode("ascii")
+    slug = re.sub(r"[^a-z0-9]+", "-", ascii_value.lower()).strip("-")
+    return slug or uuid.uuid4().hex[:8]
+
+
+def supabase_headers(extra: dict[str, str] | None = None) -> dict[str, str]:
+    headers = {
+        "apikey": SUPABASE_SERVICE_ROLE_KEY,
+        "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
+    }
+    headers.update(extra or {})
+    return headers
+
+
+def supabase_document_key(path: Path) -> str | None:
+    if path.name == "house.json":
+        return "house"
+    if path.name == "members.json":
+        return "members"
+    if path.name == "publish.json":
+        return "publish"
+    return None
+
+
+def supabase_read_json(path: Path) -> Any | None:
+    key = supabase_document_key(path)
+    if not SUPABASE_ENABLED or not key:
+        return None
+    url = f"{SUPABASE_URL}/rest/v1/velkaris_documents?key=eq.{key}&select=payload&limit=1"
+    request_obj = urllib.request.Request(url, headers=supabase_headers({"Accept": "application/json"}))
+    try:
+        with urllib.request.urlopen(request_obj, timeout=8) as response:
+            rows = json.loads(response.read().decode("utf-8"))
+    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError):
+        return None
+    if not rows:
+        return None
+    return rows[0].get("payload")
+
+
+def supabase_write_json(path: Path, payload: Any) -> bool:
+    key = supabase_document_key(path)
+    if not SUPABASE_ENABLED or not key:
+        return False
+    body = json.dumps({"key": key, "payload": payload}).encode("utf-8")
+    request_obj = urllib.request.Request(
+        f"{SUPABASE_URL}/rest/v1/velkaris_documents",
+        data=body,
+        method="POST",
+        headers=supabase_headers(
+            {
+                "Content-Type": "application/json",
+                "Prefer": "resolution=merge-duplicates,return=minimal",
+            }
+        ),
+    )
+    try:
+        with urllib.request.urlopen(request_obj, timeout=8):
+            return True
+    except urllib.error.URLError:
+        return False
 
 
 def as_bool(value: Any) -> bool:
@@ -149,6 +245,7 @@ def normalize_member(member: dict[str, Any], index: int) -> dict[str, Any]:
     normalized = dict(member)
     normalized.setdefault("id", item_id("member"))
     normalized.setdefault("name", f"Retrato {index + 1}")
+    normalized["slug"] = str(normalized.get("slug") or slugify(normalized.get("name", "")))
     normalized.setdefault("title", "Retrato reservado")
     normalized.setdefault("generation", GENERATION_OPTIONS[min(index // 2, len(GENERATION_OPTIONS) - 1)])
     normalized.setdefault("description", "Registro aguardando confirmação dos arquivos da Casa.")
@@ -218,6 +315,56 @@ def allowed_file(filename: str) -> bool:
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
+def process_upload(file_storage, extension: str, prefix: str) -> tuple[bytes, str, str]:
+    file_storage.stream.seek(0)
+    raw_body = file_storage.stream.read()
+    fallback_type = file_storage.mimetype or mimetypes.guess_type(f"upload.{extension}")[0] or "application/octet-stream"
+
+    if prefix != "member" or Image is None or ImageOps is None:
+        return raw_body, extension, fallback_type
+
+    try:
+        image = Image.open(BytesIO(raw_body))
+        image = ImageOps.exif_transpose(image)
+        resampling = getattr(Image, "Resampling", None)
+        resample = resampling.LANCZOS if resampling else getattr(Image, "LANCZOS", 1)
+        image = ImageOps.fit(
+            image,
+            MEMBER_PORTRAIT_SIZE,
+            method=resample,
+            centering=(0.5, 0.36),
+        )
+        if image.mode == "RGBA":
+            background = Image.new("RGB", image.size, (7, 8, 12))
+            background.paste(image, mask=image.getchannel("A"))
+            image = background
+        elif image.mode != "RGB":
+            image = image.convert("RGB")
+
+        output = BytesIO()
+        image.save(output, format="WEBP", quality=88, method=6)
+        return output.getvalue(), "webp", "image/webp"
+    except (UnidentifiedImageError, OSError, ValueError):
+        return raw_body, extension, fallback_type
+
+
+def save_supabase_upload(body: bytes, filename: str, content_type: str) -> str | None:
+    if not SUPABASE_ENABLED:
+        return None
+    object_path = f"uploads/{filename}"
+    request_obj = urllib.request.Request(
+        f"{SUPABASE_URL}/storage/v1/object/{SUPABASE_BUCKET}/{object_path}",
+        data=body,
+        method="POST",
+        headers=supabase_headers({"Content-Type": content_type, "x-upsert": "false"}),
+    )
+    try:
+        with urllib.request.urlopen(request_obj, timeout=18):
+            return f"{SUPABASE_URL}/storage/v1/object/public/{SUPABASE_BUCKET}/{object_path}"
+    except urllib.error.URLError:
+        return None
+
+
 def save_upload(file_storage, prefix: str) -> str | None:
     if not file_storage or not file_storage.filename:
         return None
@@ -227,15 +374,21 @@ def save_upload(file_storage, prefix: str) -> str | None:
 
     original = secure_filename(file_storage.filename)
     extension = original.rsplit(".", 1)[1].lower()
+    body, extension, content_type = process_upload(file_storage, extension, prefix)
     filename = f"{prefix}-{uuid.uuid4().hex[:12]}.{extension}"
+    supabase_url = save_supabase_upload(body, filename, content_type)
+    if supabase_url:
+        return supabase_url
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     destination = UPLOAD_DIR / filename
-    file_storage.save(destination)
+    destination.write_bytes(body)
     return f"uploads/{filename}"
 
 
 def media_url(path: str) -> str:
     asset_path = str(path or "")
+    if asset_path.startswith(("http://", "https://")):
+        return asset_path
     if asset_path.startswith("uploads/"):
         return url_for("uploaded_file", filename=asset_path.removeprefix("uploads/"))
     return url_for("static", filename=asset_path)
@@ -245,7 +398,7 @@ def admin_required(view):
     @wraps(view)
     def wrapped(*args, **kwargs):
         if not session.get("is_admin"):
-            return redirect(url_for("admin_login", next=request.full_path))
+            return redirect(url_for("admin_login_alias", next=request.full_path))
         return view(*args, **kwargs)
 
     return wrapped
@@ -264,6 +417,22 @@ def validate_csrf() -> None:
     stored = session.get("csrf_token", "")
     if not posted or not stored or not hmac.compare_digest(posted, stored):
         abort(400, description="Token de segurança inválido.")
+
+
+def login_key() -> str:
+    forwarded = request.headers.get("X-Forwarded-For", "")
+    return (forwarded.split(",", 1)[0].strip() or request.remote_addr or "local")[:80]
+
+
+def login_blocked(key: str) -> bool:
+    now = time.time()
+    attempts = [stamp for stamp in LOGIN_ATTEMPTS.get(key, []) if now - stamp < LOGIN_WINDOW_SECONDS]
+    LOGIN_ATTEMPTS[key] = attempts
+    return len(attempts) >= MAX_LOGIN_ATTEMPTS
+
+
+def record_failed_login(key: str) -> None:
+    LOGIN_ATTEMPTS.setdefault(key, []).append(time.time())
 
 
 def build_family_tree(members: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -312,8 +481,9 @@ def index():
     members = load_members()
     house = load_house()
     featured_members = [member for member in members if member.get("featured")]
-    if not featured_members:
-        featured_members = members[:5]
+    if len(featured_members) < 5:
+        featured_ids = {member["id"] for member in featured_members}
+        featured_members.extend([member for member in members if member["id"] not in featured_ids][: 5 - len(featured_members)])
     return render_template(
         "index.html",
         members=members,
@@ -321,6 +491,30 @@ def index():
         featured_members=featured_members[:5],
         family_tree=build_family_tree(members),
         generation_options=GENERATION_OPTIONS,
+    )
+
+
+@app.get("/linhagem/<slug>")
+def member_detail(slug: str):
+    members = load_members()
+    member = next((item for item in members if item.get("slug") == slug or item.get("id") == slug), None)
+    if not member:
+        abort(404)
+    parent_ids = set(member.get("parent_ids", []))
+    parents = [item for item in members if item.get("id") in parent_ids]
+    children = [item for item in members if member.get("id") in item.get("parent_ids", [])]
+    siblings = [
+        item
+        for item in members
+        if item.get("id") != member.get("id") and parent_ids.intersection(item.get("parent_ids", []))
+    ][:4]
+    return render_template(
+        "member_detail.html",
+        house=load_house(),
+        member=member,
+        parents=parents,
+        children=children,
+        siblings=siblings,
     )
 
 
@@ -333,14 +527,25 @@ def members_api():
 def admin_login():
     if request.method == "POST":
         validate_csrf()
+        key = login_key()
+        if login_blocked(key):
+            flash("Muitas tentativas. Aguarde alguns minutos antes de tentar novamente.", "error")
+            return render_template("admin_login.html"), 429
         username_ok = hmac.compare_digest(request.form.get("username", ""), ADMIN_USERNAME)
         password_ok = hmac.compare_digest(request.form.get("password", ""), ADMIN_PASSWORD)
         if username_ok and password_ok:
+            LOGIN_ATTEMPTS.pop(key, None)
             session["is_admin"] = True
             flash("Acesso concedido ao arquivo interno.", "success")
             return redirect(request.args.get("next") or url_for("admin"))
+        record_failed_login(key)
         flash("Credenciais inválidas.", "error")
     return render_template("admin_login.html")
+
+
+@app.route("/velkaris-admin", methods=["GET", "POST"])
+def admin_login_alias():
+    return admin_login()
 
 
 @app.post("/admin/logout")
@@ -379,6 +584,8 @@ def update_house_identity():
         "tree_heading",
         "territories_heading",
         "archives_heading",
+        "timeline_heading",
+        "eras_heading",
         "gallery_heading",
     ):
         house[field] = request.form.get(field, "").strip()
@@ -453,6 +660,7 @@ def member_from_form(existing: dict[str, Any] | None, index: int) -> dict[str, A
     member = dict(existing or {})
     member["id"] = member.get("id") or item_id("member")
     member["name"] = request.form.get("name", "").strip() or "Novo Velkaris"
+    member["slug"] = request.form.get("slug", "").strip() or slugify(member["name"])
     member["title"] = request.form.get("title", "").strip() or "Retrato reservado"
     member["generation"] = request.form.get("generation", GENERATION_OPTIONS[0]).strip() or GENERATION_OPTIONS[0]
     member["description"] = request.form.get("description", "").strip() or "Registro aguardando confirmação dos arquivos da Casa."
@@ -537,6 +745,22 @@ def update_member_tree(member_id: str):
     abort(404)
 
 
+@app.post("/admin/members/reorder")
+@admin_required
+def reorder_members():
+    validate_csrf()
+    order_ids = [item for item in request.form.get("member_order", "").split(",") if item]
+    order_map = {member_id: index + 1 for index, member_id in enumerate(order_ids)}
+    members = []
+    for member in load_members():
+        if member["id"] in order_map:
+            member["sort_order"] = order_map[member["id"]]
+        members.append(member)
+    write_json(MEMBERS_FILE, sort_members(members))
+    flash("Ordem visual dos familiares publicada.", "success")
+    return redirect(url_for("admin", _anchor="ordenacao"))
+
+
 @app.post("/admin/members/<member_id>/delete")
 @admin_required
 def delete_member(member_id: str):
@@ -552,9 +776,31 @@ def delete_member(member_id: str):
     return redirect(url_for("admin", _anchor="membros"))
 
 
+@app.post("/admin/publish")
+@admin_required
+def publish_site():
+    validate_csrf()
+    manifest = {
+        "published_at": int(time.time()),
+        "house": load_house().get("name", "Velkaris"),
+        "members": len(load_members()),
+    }
+    write_json(DATA_DIR / "publish.json", manifest)
+    flash("Alterações publicadas no site público.", "success")
+    return redirect(url_for("admin", _anchor="conteudo"))
+
+
 @app.get("/healthz")
 def healthz():
     return {"status": "ok", "house": load_house().get("name", "Velkaris")}
+
+
+@app.after_request
+def add_security_headers(response):
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    return response
 
 
 if __name__ == "__main__":

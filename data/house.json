@@ -7,6 +7,8 @@
   "tree_heading": "Linhagem Velkaris",
   "territories_heading": "Domínios juramentados",
   "archives_heading": "Registros recentes",
+  "timeline_heading": "Crônicas do sangue antigo",
+  "eras_heading": "Eras da Casa",
   "gallery_heading": "Pinturas e banners",
   "crest_image": "assets/Velkaris.png",
   "hero_image": "assets/hero-castle.png",
@@ -47,25 +49,41 @@
       "id": "territories-889f7642f4",
       "name": "Auralis Sombria",
       "type": "Capital",
-      "description": "Castelo principal erguido sobre penhascos, onde os arquivos da Casa repousam."
+      "description": "Castelo principal erguido sobre penhascos, onde os arquivos da Casa repousam.",
+      "lore": "O trono azul, a torre dos escribas e a sala dos pactos ficam sob vigília constante.",
+      "coord_x": "42",
+      "coord_y": "38",
+      "status": "Capital juramentada"
     },
     {
       "id": "territories-dd8e2c0c33",
       "name": "Fortaleza Noxmere",
       "type": "Bastião",
-      "description": "Guarda a passagem norte e os estandartes de guerra da linhagem."
+      "description": "Guarda a passagem norte e os estandartes de guerra da linhagem.",
+      "lore": "Suas muralhas foram acesas durante a Era das Cinzas e nunca caíram diante de cerco.",
+      "coord_x": "62",
+      "coord_y": "24",
+      "status": "Fronteira militar"
     },
     {
       "id": "territories-a81f5c6395",
       "name": "Vale de Ebonluz",
       "type": "Domínio",
-      "description": "Terras de névoa azul, vinhedos frios e capelas antigas."
+      "description": "Terras de névoa azul, vinhedos frios e capelas antigas.",
+      "lore": "O vale guarda funerais, coroações menores e jardins onde alianças são seladas.",
+      "coord_x": "30",
+      "coord_y": "62",
+      "status": "Domínio interno"
     },
     {
       "id": "territories-22b36f323c",
       "name": "Porto Argentum",
       "type": "Aliança marítima",
-      "description": "Rota diplomática protegida por juramentos comerciais e navios escuros."
+      "description": "Rota diplomática protegida por juramentos comerciais e navios escuros.",
+      "lore": "Pelos cais de prata chegam tratados, reféns nobres e notícias de cortes distantes.",
+      "coord_x": "72",
+      "coord_y": "70",
+      "status": "Rota diplomática"
     }
   ],
   "archives": [
@@ -86,6 +104,56 @@
       "date": "01/05",
       "title": "Festival da Lua Azul",
       "summary": "Tradição, memória e união marcaram o salão principal."
+    }
+  ],
+  "timeline": [
+    {
+      "id": "timeline-fundacao",
+      "date": "Ano 0",
+      "era": "Era da Coroa Azul",
+      "title": "Fundação da Casa Velkaris",
+      "summary": "O primeiro juramento foi escrito sob lua azul, entre espada, coroa e dragão."
+    },
+    {
+      "id": "timeline-cinzas",
+      "date": "Ano 184",
+      "era": "Era das Cinzas",
+      "title": "Guerra dos Sete Estandartes",
+      "summary": "Fortaleza Noxmere segurou a fronteira norte enquanto a linhagem preservava seus arquivos."
+    },
+    {
+      "id": "timeline-argentum",
+      "date": "Ano 311",
+      "era": "Era do Juramento Velkaris",
+      "title": "Pacto do Porto Argentum",
+      "summary": "Casamentos políticos e tratados marítimos consolidaram a influência da Casa."
+    },
+    {
+      "id": "timeline-atual",
+      "date": "Ano 742",
+      "era": "Era do Juramento Velkaris",
+      "title": "Reabertura dos Arquivos Internos",
+      "summary": "Retratos, linhagem e territórios passam a ser reorganizados pelos administradores da Casa."
+    }
+  ],
+  "eras": [
+    {
+      "id": "eras-coroa-azul",
+      "name": "Era da Coroa Azul",
+      "period": "Fundação - Ano 183",
+      "description": "Tempo de juramentos originais, brasões forjados e primeiras fortalezas."
+    },
+    {
+      "id": "eras-cinzas",
+      "name": "Era das Cinzas",
+      "period": "Ano 184 - Ano 310",
+      "description": "Século de guerras frias, lutos aristocráticos e expansão militar."
+    },
+    {
+      "id": "eras-juramento",
+      "name": "Era do Juramento Velkaris",
+      "period": "Ano 311 - presente",
+      "description": "Período de diplomacia, registros restaurados e poder antigo preservado."
     }
   ],
   "gallery": [

@@ -12,6 +12,10 @@
       </div>
       <div class="admin-head-actions">
         <a class="ghost-cta" href="{{ url_for('index') }}">Ver site</a>
+        <form method="post" action="{{ url_for('publish_site') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="primary-cta" type="submit">Publicar alterações</button>
+        </form>
         <form method="post" action="{{ url_for('admin_logout') }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button class="ghost-cta" type="submit">Sair</button>
@@ -21,11 +25,15 @@
 
     <nav class="admin-tabs" aria-label="Seções do admin">
       <a href="#conteudo">Conteúdo</a>
+      <a href="#preview">Prévia</a>
       <a href="#sobre">Sobre</a>
       <a href="#membros">Familiares</a>
+      <a href="#ordenacao">Ordenação</a>
       <a href="#arvore">Árvore</a>
       <a href="#symbols">Símbolos</a>
       <a href="#territories">Territórios</a>
+      <a href="#timeline">Crônicas</a>
+      <a href="#eras-admin">Eras</a>
       <a href="#archives">Arquivos</a>
       <a href="#gallery">Galeria</a>
     </nav>
@@ -70,6 +78,14 @@
           <input type="text" name="archives_heading" value="{{ house.archives_heading }}">
         </label>
         <label>
+          Título das crônicas
+          <input type="text" name="timeline_heading" value="{{ house.timeline_heading }}">
+        </label>
+        <label>
+          Título das eras
+          <input type="text" name="eras_heading" value="{{ house.eras_heading }}">
+        </label>
+        <label>
           Título da galeria
           <input type="text" name="gallery_heading" value="{{ house.gallery_heading }}">
         </label>
@@ -101,6 +117,17 @@
         </div>
         <button class="primary-cta" type="submit">Salvar conteúdo principal</button>
       </form>
+    </section>
+
+    <section class="admin-card reveal is-visible" id="preview">
+      <div class="admin-section-title">
+        <p class="section-kicker">Prévia ao vivo</p>
+        <h2>Site público dentro do painel</h2>
+        <p class="admin-help">Use esta janela para conferir composição, brasão, cards, mapa e crônicas sem sair do admin.</p>
+      </div>
+      <div class="admin-live-preview">
+        <iframe src="{{ url_for('index') }}" title="Prévia pública da Casa {{ house.name }}"></iframe>
+      </div>
     </section>
 
     <section class="admin-card reveal is-visible" id="sobre">
@@ -146,6 +173,10 @@
         <label>
           Nome
           <input type="text" name="name" placeholder="Nome do familiar" required>
+        </label>
+        <label>
+          URL do registro
+          <input type="text" name="slug" placeholder="gerada automaticamente se ficar vazia">
         </label>
         <label>
           Título
@@ -214,7 +245,7 @@
           </select>
         </label>
         <label>
-          Retrato
+          Retrato com corte automático
           <input type="file" name="portrait" accept=".png,.jpg,.jpeg,.webp" data-preview-input>
         </label>
         <div class="admin-checks">
@@ -241,6 +272,31 @@
       </form>
     </section>
 
+    <section class="admin-card reveal is-visible" id="ordenacao">
+      <div class="admin-section-title">
+        <p class="section-kicker">Drag-and-drop</p>
+        <h2>Ordem visual dos familiares</h2>
+        <p class="admin-help">Arraste os registros para mudar a ordem dos cards públicos, ancestrais e árvore. Depois salve a ordem.</p>
+      </div>
+      <form class="admin-form" method="post" action="{{ url_for('reorder_members') }}" data-reorder-form>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="member_order" value="{{ members|map(attribute='id')|join(',') }}" data-reorder-value>
+        <div class="reorder-list" data-reorder-list>
+          {% for member in members %}
+            <article class="reorder-item" draggable="true" data-member-id="{{ member.id }}">
+              <img src="{{ media_url(member.image) }}" alt="">
+              <div>
+                <strong>{{ member.name }}</strong>
+                <span>{{ member.generation }} · {{ member.title }}</span>
+              </div>
+              <small>Arrastar</small>
+            </article>
+          {% endfor %}
+        </div>
+        <button class="primary-cta" type="submit">Salvar ordem dos familiares</button>
+      </form>
+    </section>
+
     <section class="admin-card reveal is-visible" id="arvore">
       <div class="admin-section-title">
         <p class="section-kicker">Árvore genealógica</p>
@@ -260,7 +316,7 @@
             <form class="admin-form tree-editor-form" method="post" action="{{ url_for('update_member_tree', member_id=member.id) }}" enctype="multipart/form-data">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <label>
-                Imagem na árvore
+              Imagem na árvore com corte automático
                 <input type="file" name="portrait" accept=".png,.jpg,.jpeg,.webp" data-preview-input>
               </label>
               <label>
@@ -329,6 +385,10 @@
               <input type="text" name="name" value="{{ member.name }}">
             </label>
             <label>
+              URL do registro
+              <input type="text" name="slug" value="{{ member.slug }}">
+            </label>
+            <label>
               Título
               <input type="text" name="title" value="{{ member.title }}">
             </label>
@@ -395,7 +455,7 @@
               </select>
             </label>
             <label>
-              Novo retrato
+              Novo retrato com corte automático
               <input type="file" name="portrait" accept=".png,.jpg,.jpeg,.webp" data-preview-input>
             </label>
             <div class="admin-checks">
@@ -471,7 +531,11 @@
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <label>Nome <input type="text" name="name" value="{{ territory.name }}"></label>
               <label>Tipo <input type="text" name="type" value="{{ territory.type }}"></label>
+              <label>Status <input type="text" name="status" value="{{ territory.status }}"></label>
+              <label>Posição X (%) <input type="number" name="coord_x" value="{{ territory.coord_x }}" min="0" max="100"></label>
+              <label>Posição Y (%) <input type="number" name="coord_y" value="{{ territory.coord_y }}" min="0" max="100"></label>
               <label>Descrição <textarea name="description" rows="3">{{ territory.description }}</textarea></label>
+              <label>Lore do mapa <textarea name="lore" rows="3">{{ territory.lore }}</textarea></label>
               <button class="primary-cta" type="submit">Salvar território</button>
             </form>
             <form method="post" action="{{ url_for('delete_collection_item', collection='territories', entry_id=territory.id) }}" class="delete-form inline-delete">
@@ -485,8 +549,76 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <label>Nome <input type="text" name="name"></label>
         <label>Tipo <input type="text" name="type"></label>
+        <label>Status <input type="text" name="status"></label>
+        <label>Posição X (%) <input type="number" name="coord_x" value="50" min="0" max="100"></label>
+        <label>Posição Y (%) <input type="number" name="coord_y" value="50" min="0" max="100"></label>
         <label class="span-2">Descrição <textarea name="description" rows="3"></textarea></label>
+        <label class="span-2">Lore do mapa <textarea name="lore" rows="3"></textarea></label>
         <button class="primary-cta" type="submit">Adicionar território</button>
+      </form>
+    </section>
+
+    <section class="admin-card reveal is-visible" id="timeline">
+      <div class="admin-section-title">
+        <p class="section-kicker">Crônicas</p>
+        <h2>Linha do tempo histórica</h2>
+      </div>
+      <div class="admin-list two-col">
+        {% for event in house.timeline %}
+          <article class="admin-list-card">
+            <form class="admin-form" method="post" action="{{ url_for('update_collection_item', collection='timeline', entry_id=event.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <label>Data <input type="text" name="date" value="{{ event.date }}"></label>
+              <label>Era <input type="text" name="era" value="{{ event.era }}"></label>
+              <label>Título <input type="text" name="title" value="{{ event.title }}"></label>
+              <label>Resumo <textarea name="summary" rows="3">{{ event.summary }}</textarea></label>
+              <button class="primary-cta" type="submit">Salvar crônica</button>
+            </form>
+            <form method="post" action="{{ url_for('delete_collection_item', collection='timeline', entry_id=event.id) }}" class="delete-form inline-delete">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit">Excluir</button>
+            </form>
+          </article>
+        {% endfor %}
+      </div>
+      <form class="admin-form admin-form-grid admin-add-form" method="post" action="{{ url_for('create_collection_item', collection='timeline') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>Data <input type="text" name="date" placeholder="Ano 742"></label>
+        <label>Era <input type="text" name="era" placeholder="Era do Juramento Velkaris"></label>
+        <label>Título <input type="text" name="title"></label>
+        <label class="span-2">Resumo <textarea name="summary" rows="3"></textarea></label>
+        <button class="primary-cta" type="submit">Adicionar crônica</button>
+      </form>
+    </section>
+
+    <section class="admin-card reveal is-visible" id="eras-admin">
+      <div class="admin-section-title">
+        <p class="section-kicker">Eras</p>
+        <h2>Sistema de eras da Casa</h2>
+      </div>
+      <div class="admin-list two-col">
+        {% for era in house.eras %}
+          <article class="admin-list-card">
+            <form class="admin-form" method="post" action="{{ url_for('update_collection_item', collection='eras', entry_id=era.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <label>Nome <input type="text" name="name" value="{{ era.name }}"></label>
+              <label>Período <input type="text" name="period" value="{{ era.period }}"></label>
+              <label>Descrição <textarea name="description" rows="3">{{ era.description }}</textarea></label>
+              <button class="primary-cta" type="submit">Salvar era</button>
+            </form>
+            <form method="post" action="{{ url_for('delete_collection_item', collection='eras', entry_id=era.id) }}" class="delete-form inline-delete">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit">Excluir</button>
+            </form>
+          </article>
+        {% endfor %}
+      </div>
+      <form class="admin-form admin-form-grid admin-add-form" method="post" action="{{ url_for('create_collection_item', collection='eras') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>Nome <input type="text" name="name" placeholder="Era da Coroa Azul"></label>
+        <label>Período <input type="text" name="period" placeholder="Ano 0 - Ano 183"></label>
+        <label class="span-2">Descrição <textarea name="description" rows="3"></textarea></label>
+        <button class="primary-cta" type="submit">Adicionar era</button>
       </form>
     </section>
 

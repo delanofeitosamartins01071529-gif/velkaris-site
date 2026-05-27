@@ -22,3 +22,9 @@ services:
         sync: false
       - key: VELKARIS_STORAGE_DIR
         value: /var/data
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_STORAGE_BUCKET
+        value: velkaris-media

@@ -1,13 +1,15 @@
 # Casa Velkaris
 
-Website premium dark fantasy para a Casa Velkaris, com Flask, HTML, CSS e JavaScript puro. O projeto inclui hero cinematográfica, brasão animado, cards de linhagem, árvore genealógica, territórios, arquivos, galeria, música ambiente opcional e painel admin para upload dos retratos.
+Website premium dark fantasy para a Casa Velkaris, com interface cinematográfica, brasão oficial, linhagem editável, árvore genealógica, territórios, crônicas históricas, eras e painel administrativo.
 
 ## Stack
 
 - Python 3.14+
-- Flask
-- HTML5, CSS3 e JavaScript
-- Assets locais gerados por script, sem dependência de CDNs de imagem
+- Flask + Gunicorn
+- HTML5, CSS3 moderno e JavaScript puro
+- Pillow para corte automático de retratos
+- Supabase opcional para dados e uploads em produção
+- Render blueprint pronto em `render.yaml`
 
 ## Como rodar
 
@@ -20,72 +22,74 @@ python app.py
 
 Acesse `http://127.0.0.1:5000`.
 
-## Deploy
-
-O projeto está pronto para deploy em serviços Python como Render, Railway, Fly.io ou Heroku-like.
-
-Arquivos de produção incluídos:
-
-- `.python-version`: fixa Python 3.14.
-- `Procfile`: inicia o app com `gunicorn app:app`.
-- `render.yaml`: blueprint para Render com healthcheck em `/healthz`.
-
-No Render, conecte o repositório GitHub e use o `render.yaml`. O blueprint usa um disco persistente em `/var/data` para manter textos editados e uploads do painel admin entre deploys/restarts. Discos persistentes exigem serviço pago no Render; para rodar totalmente grátis com persistência, o próximo passo é migrar dados/uploads para Supabase.
-
-Variáveis importantes em produção:
-
-```bash
-SECRET_KEY=gerada automaticamente no render.yaml
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=defina uma senha forte no painel da hospedagem
-VELKARIS_STORAGE_DIR=/var/data
-```
-
-Os assets finais já estão em `static/assets`. Rode `python scripts/generate_assets.py` apenas se quiser recriar o castelo, mapa, galeria e placeholders.
-
-Para recarregamento automático durante desenvolvimento:
-
-```powershell
-$env:FLASK_DEBUG="1"
-python app.py
-```
-
 ## Admin
 
-O painel fica em `/admin`.
+O acesso administrativo fica em `/velkaris-admin`.
 
 Credenciais locais padrão:
 
 - Usuário: `admin`
 - Senha: `velkaris-ascende`
 
-Antes de publicar, configure variáveis de ambiente:
+Configure uma senha forte em produção:
 
 ```bash
-set ADMIN_USERNAME=seu_usuario
-set ADMIN_PASSWORD=sua_senha_forte
-set SECRET_KEY=uma_chave_secreta_longa
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=sua_senha_forte
+SECRET_KEY=uma_chave_longa_e_secreta
 ```
 
-No PowerShell:
+O painel permite editar:
 
-```powershell
-$env:ADMIN_USERNAME="seu_usuario"
-$env:ADMIN_PASSWORD="sua_senha_forte"
-$env:SECRET_KEY="uma_chave_secreta_longa"
+- Textos principais, slogan, títulos de seções, brasão, hero e mapa.
+- Familiares com nome, slug, títulos, status, causa da morte, geração, relações, biografia, feitos e imagem.
+- Retratos com corte automático para o formato dos cards e da árvore.
+- Ordenação drag-and-drop dos familiares.
+- Árvore genealógica com inclusão, exclusão, ascendentes e exibição na árvore.
+- Territórios com coordenadas no mapa, status e lore.
+- Galeria, arquivos, crônicas históricas e eras.
+- Prévia ao vivo e botão “Publicar alterações”.
+
+## Site público
+
+Recursos principais:
+
+- Hero cinematográfico com brasão oficial sem sobrepor o nome da família.
+- Ancestrais em cards compactos e clicáveis.
+- Cards de familiares com modal detalhado.
+- Página individual por familiar, por exemplo `/linhagem/kayzer-velkaris`.
+- Mapa interativo de territórios.
+- Linha do tempo histórica.
+- Sistema de eras.
+- SEO básico e metadados para compartilhamento.
+
+## Supabase
+
+O app lê e grava em arquivos locais por padrão. Em produção, basta configurar:
+
+```bash
+SUPABASE_URL=https://seu-projeto.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=sua_service_role_key
+SUPABASE_STORAGE_BUCKET=velkaris-media
 ```
 
-O administrador pode editar:
+Depois aplique a migration em `supabase/migrations/0001_velkaris_core.sql` e rode:
 
-- Nome da Casa, slogan, textos principais e títulos de seções.
-- Brasão, imagem do hero e mapa dos territórios.
-- Parágrafos da história, símbolos, territórios, arquivos/notícias e galeria.
-- Familiares com retrato, título, geração, descrição, ordem e destaque.
-- Familiares com campos detalhados: status, ramo, território, nascimento/era, aliança, epíteto, frase, traços e biografia.
-- Árvore genealógica em uma seção própria, escolhendo ascendentes, geração, ordem e se cada familiar aparece ou não na árvore.
-- Upload de imagem do familiar direto pela seção da árvore genealógica.
-- Status do familiar com opções `Vivo`, `Morto` e `Desaparecido`; ao escolher `Morto`, o admin pode registrar a causa da morte.
-- No site público, o visitante pode clicar em um card familiar para abrir o registro completo daquele membro.
+```bash
+python scripts/seed_supabase.py
+```
+
+Mais detalhes estão em `SUPABASE_SETUP.md`.
+
+## Deploy
+
+O projeto está preparado para Render:
+
+- `Procfile`: inicia `gunicorn app:app`.
+- `render.yaml`: define serviço web, disco persistente opcional e healthcheck em `/healthz`.
+- Variáveis sensíveis ficam fora do código.
+
+Também pode ser adaptado para Railway ou Fly.io usando o mesmo comando de start.
 
 ## Estrutura
 
@@ -96,23 +100,21 @@ O administrador pode editar:
 │   ├── house.json
 │   └── members.json
 ├── scripts/
-│   └── generate_assets.py
+│   └── seed_supabase.py
 ├── static/
 │   ├── assets/
 │   ├── css/
 │   ├── js/
 │   └── uploads/
+├── supabase/
+│   └── migrations/
 └── templates/
 ```
 
-## Personalização
+## Produção
 
-- Use `/admin` para alterar história, símbolos, territórios, arquivos, galeria, familiares e árvore genealógica.
-- Os uploads são salvos em `static/uploads`.
-- Rode `python scripts/generate_assets.py` para recriar os assets locais.
-
-## Observações de produção
-
-- Troque as credenciais padrão.
-- Use HTTPS e um servidor WSGI como Gunicorn, Waitress ou uWSGI.
-- Configure backup para o diretório persistente definido em `VELKARIS_STORAGE_DIR`.
+- Troque a senha padrão.
+- Use HTTPS.
+- Configure Supabase para persistência real de conteúdo e uploads.
+- Configure domínio próprio no provedor de deploy.
+- Mantenha `SUPABASE_SERVICE_ROLE_KEY` apenas no backend.

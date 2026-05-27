@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}{{ member.name }} | Linhagem {{ house.name }}{% endblock %}
+{% block meta_description %}Registro completo de {{ member.name }}, {{ member.title }}, na linhagem da Casa {{ house.name }}.{% endblock %}
+{% block og_title %}{{ member.name }} | Casa {{ house.name }}{% endblock %}
+{% block og_description %}{{ member.description }}{% endblock %}
+{% block og_type %}profile{% endblock %}
+{% block og_image %}{{ media_url(member.image) }}{% endblock %}
+
+{% block content %}
+  <section class="member-page-hero">
+    <img src="{{ media_url(member.image) }}" alt="Retrato de {{ member.name }}">
+    <div class="member-page-vignette"></div>
+    <div class="member-page-copy">
+      <p class="section-kicker">{{ member.generation }} · {{ member.status }}</p>
+      <h1>{{ member.name }}</h1>
+      {% if member.epithet %}<p class="member-page-epithet">{{ member.epithet }}</p>{% endif %}
+      <p class="member-page-title">{{ member.title }}</p>
+      {% if member.quote %}<blockquote>{{ member.quote }}</blockquote>{% endif %}
+      <div class="hero-actions">
+        <a class="primary-cta" href="{{ url_for('index') }}#linhagem">Voltar à linhagem</a>
+        <a class="ghost-cta" href="{{ url_for('index') }}#cronicas">Ver crônicas</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="member-page-grid">
+    <article class="panel member-record-panel">
+      <div class="panel-heading">
+        <p class="section-kicker">Registro completo</p>
+        <h2>Arquivo de {{ member.name }}</h2>
+      </div>
+      <dl class="member-facts">
+        <div><dt>Status</dt><dd>{{ member.status }}</dd></div>
+        {% if member.status == "Morto" and member.death_cause %}<div><dt>Causa da morte</dt><dd>{{ member.death_cause }}</dd></div>{% endif %}
+        <div><dt>Ramo</dt><dd>{{ member.branch }}</dd></div>
+        {% if member.territory %}<div><dt>Domínio</dt><dd>{{ member.territory }}</dd></div>{% endif %}
+        {% if member.birth_year %}<div><dt>Nascimento</dt><dd>{{ member.birth_year }}</dd></div>{% endif %}
+        {% if member.spouse %}<div><dt>Aliança</dt><dd>{{ member.spouse }}</dd></div>{% endif %}
+      </dl>
+      <p>{{ member.biography }}</p>
+      {% if member.traits %}
+        <div class="member-traits">
+          <span>Traços e feitos</span>
+          <p>{{ member.traits }}</p>
+        </div>
+      {% endif %}
+    </article>
+
+    <aside class="panel member-relations-panel">
+      <div class="panel-heading">
+        <p class="section-kicker">Relações</p>
+        <h2>Vínculos da linhagem</h2>
+      </div>
+      <div class="relation-block">
+        <h3>Ascendentes</h3>
+        {% for relation in parents %}
+          <a href="{{ url_for('member_detail', slug=relation.slug) }}">{{ relation.name }} <span>{{ relation.title }}</span></a>
+        {% else %}
+          <p>Raiz registrada da Casa.</p>
+        {% endfor %}
+      </div>
+      <div class="relation-block">
+        <h3>Descendentes</h3>
+        {% for relation in children %}
+          <a href="{{ url_for('member_detail', slug=relation.slug) }}">{{ relation.name }} <span>{{ relation.title }}</span></a>
+        {% else %}
+          <p>Nenhum descendente vinculado.</p>
+        {% endfor %}
+      </div>
+      {% if siblings %}
+        <div class="relation-block">
+          <h3>Ramos próximos</h3>
+          {% for relation in siblings %}
+            <a href="{{ url_for('member_detail', slug=relation.slug) }}">{{ relation.name }} <span>{{ relation.title }}</span></a>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </aside>
+  </section>
+{% endblock %}
