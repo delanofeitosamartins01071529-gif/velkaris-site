@@ -1200,6 +1200,25 @@ body.is-loaded .loading-screen {
   justify-items: center;
 }
 
+.tree-couple {
+  position: relative;
+  display: inline-flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0.7rem;
+}
+
+.tree-couple.has-partner::before {
+  position: absolute;
+  top: 2.55rem;
+  left: 4.6rem;
+  right: 4.6rem;
+  height: 1px;
+  content: "";
+  background: linear-gradient(90deg, transparent, rgba(240, 208, 139, 0.74), transparent);
+  box-shadow: 0 0 14px rgba(185, 148, 85, 0.22);
+}
+
 .tree-branch::before {
   position: absolute;
   top: -1.3rem;
@@ -1841,6 +1860,60 @@ body.is-loaded .loading-screen {
 
 .tree-editor-form button {
   min-height: 44px;
+}
+
+.tree-children-field {
+  grid-column: 1 / -1;
+  min-width: 0;
+  margin: 0;
+  padding: 0.85rem;
+  border: 1px solid rgba(185, 148, 85, 0.2);
+  background: rgba(2, 5, 9, 0.4);
+}
+
+.tree-children-field legend {
+  padding: 0 0.4rem;
+  color: var(--bright-gold);
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.tree-children-field p {
+  margin: 0 0 0.65rem;
+  color: rgba(232, 224, 211, 0.64);
+  font-family: var(--font-serif);
+}
+
+.tree-child-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.5rem;
+}
+
+.tree-child-option {
+  display: grid;
+  grid-template-columns: auto 38px 1fr;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.5rem;
+  border: 1px solid rgba(185, 148, 85, 0.18);
+  background: rgba(6, 12, 22, 0.5);
+}
+
+.tree-child-option img {
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(240, 208, 139, 0.34);
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.tree-child-option span {
+  overflow: hidden;
+  color: rgba(232, 224, 211, 0.82);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .tree-checks {

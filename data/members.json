@@ -15,11 +15,13 @@
     "territory": "",
     "birth_year": "",
     "spouse": "",
+    "partner_id": "",
     "epithet": "",
     "quote": "",
     "biography": "Registro nobre aguardando imagem oficial e título definitivo.",
     "traits": "",
-    "death_cause": ""
+    "death_cause": "",
+    "slug": "retrato-ii"
   },
   {
     "id": "velkaris-03",
@@ -38,12 +40,14 @@
     "branch": "Ramo principal",
     "territory": "",
     "birth_year": "",
-    "spouse": "",
+    "spouse": "Retrato IV",
+    "partner_id": "velkaris-04",
     "epithet": "",
     "quote": "",
     "biography": "Figura preservada nos corredores antigos até a confirmação pública.",
     "traits": "",
-    "death_cause": ""
+    "death_cause": "",
+    "slug": "retrato-iii"
   },
   {
     "id": "velkaris-04",
@@ -62,12 +66,14 @@
     "branch": "Ramo principal",
     "territory": "",
     "birth_year": "",
-    "spouse": "",
+    "spouse": "Retrato III",
+    "partner_id": "velkaris-03",
     "epithet": "",
     "quote": "",
     "biography": "Membro associado aos votos de honra, lealdade e soberania.",
     "traits": "",
-    "death_cause": ""
+    "death_cause": "",
+    "slug": "retrato-iv"
   },
   {
     "id": "velkaris-05",
@@ -87,12 +93,14 @@
     "branch": "Ramo principal",
     "territory": "",
     "birth_year": "",
-    "spouse": "",
+    "spouse": "Retrato VI",
+    "partner_id": "velkaris-06",
     "epithet": "",
     "quote": "",
     "biography": "Lugar reservado para um retrato oficial dos arquivos familiares.",
     "traits": "",
-    "death_cause": ""
+    "death_cause": "",
+    "slug": "retrato-v"
   },
   {
     "id": "velkaris-06",
@@ -112,12 +120,14 @@
     "branch": "Ramo principal",
     "territory": "",
     "birth_year": "",
-    "spouse": "",
+    "spouse": "Retrato V",
+    "partner_id": "velkaris-05",
     "epithet": "",
     "quote": "",
     "biography": "Registro incompleto, mantido sob vigília dos escribas da Casa.",
     "traits": "",
-    "death_cause": ""
+    "death_cause": "",
+    "slug": "retrato-vi"
   },
   {
     "id": "velkaris-07",
@@ -138,11 +148,13 @@
     "territory": "",
     "birth_year": "",
     "spouse": "",
+    "partner_id": "",
     "epithet": "",
     "quote": "",
     "biography": "Nome ainda oculto nos volumes privados da linhagem.",
     "traits": "",
-    "death_cause": ""
+    "death_cause": "",
+    "slug": "retrato-vii"
   },
   {
     "id": "velkaris-08",
@@ -163,10 +175,12 @@
     "territory": "",
     "birth_year": "",
     "spouse": "",
+    "partner_id": "",
     "epithet": "",
     "quote": "",
     "biography": "Aguardando a pintura oficial para ocupar seu lugar na galeria.",
     "traits": "",
-    "death_cause": ""
+    "death_cause": "",
+    "slug": "retrato-viii"
   }
 ]

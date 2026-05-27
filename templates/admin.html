@@ -301,6 +301,7 @@
       <div class="admin-section-title">
         <p class="section-kicker">Árvore genealógica</p>
         <h2>Montagem visual da linhagem</h2>
+        <p class="admin-help">Novo fluxo: escolha um par/conjuge, marque os filhos desse nucleo e salve. O sistema atualiza os ascendentes dos filhos automaticamente.</p>
         <p class="admin-help">Aqui é o lugar principal para montar a árvore: envie a imagem usada no nó, marque quem aparece, escolha status, geração, ordem e até dois ascendentes para cada familiar. Quem fica sem ascendente vira raiz/fundador.</p>
       </div>
       <div class="tree-editor-list">
@@ -344,6 +345,15 @@
                 <input type="text" name="death_cause" value="{{ member.death_cause }}">
               </label>
               <label>
+                Conjuge / par na arvore
+                <select name="partner_id">
+                  <option value="">Sem par vinculado</option>
+                  {% for possible_partner in members if possible_partner.id != member.id %}
+                    <option value="{{ possible_partner.id }}" {% if family_links[member.id].partner_id == possible_partner.id %}selected{% endif %}>{{ possible_partner.name }}</option>
+                  {% endfor %}
+                </select>
+              </label>
+              <label>
                 Ascendente principal
                 <select name="parent_1">
                   <option value="">Sem ascendente</option>
@@ -361,6 +371,19 @@
                   {% endfor %}
                 </select>
               </label>
+              <fieldset class="tree-children-field">
+                <legend>Filhos deste nucleo</legend>
+                <p>Marque os filhos do familiar ou do casal selecionado. Ao salvar, os ascendentes dos filhos serao vinculados automaticamente.</p>
+                <div class="tree-child-options">
+                  {% for possible_child in members if possible_child.id != member.id and possible_child.id != family_links[member.id].partner_id %}
+                    <label class="tree-child-option">
+                      <input type="checkbox" name="child_ids" value="{{ possible_child.id }}" {% if possible_child.id in family_links[member.id].child_ids %}checked{% endif %}>
+                      <img src="{{ media_url(possible_child.image) }}" alt="">
+                      <span>{{ possible_child.name }}</span>
+                    </label>
+                  {% endfor %}
+                </div>
+              </fieldset>
               <div class="admin-checks tree-checks">
                 <label><input type="checkbox" name="in_tree" {% if member.in_tree %}checked{% endif %}> Mostrar na árvore</label>
                 <label><input type="checkbox" name="featured" {% if member.featured %}checked{% endif %}> Destacar no topo</label>
@@ -435,6 +458,15 @@
             <label>
               Cônjuge / aliança
               <input type="text" name="spouse" value="{{ member.spouse }}">
+            </label>
+            <label>
+              Par na arvore
+              <select name="partner_id">
+                <option value="">Sem par vinculado</option>
+                {% for possible_partner in members if possible_partner.id != member.id %}
+                  <option value="{{ possible_partner.id }}" {% if member.partner_id == possible_partner.id %}selected{% endif %}>{{ possible_partner.name }}</option>
+                {% endfor %}
+              </select>
             </label>
             <label>
               Ascendente principal

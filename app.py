@@ -256,6 +256,9 @@ def normalize_member(member: dict[str, Any], index: int) -> dict[str, Any]:
     normalized.setdefault("territory", "")
     normalized.setdefault("birth_year", "")
     normalized.setdefault("spouse", "")
+    normalized["partner_id"] = str(normalized.get("partner_id") or "").strip()
+    if normalized["partner_id"] == normalized["id"]:
+        normalized["partner_id"] = ""
     normalized.setdefault("epithet", "")
     normalized.setdefault("quote", "")
     normalized.setdefault("biography", normalized.get("description", ""))
@@ -435,30 +438,89 @@ def record_failed_login(key: str) -> None:
     LOGIN_ATTEMPTS.setdefault(key, []).append(time.time())
 
 
+def valid_partner_id(member: dict[str, Any], by_id: dict[str, dict[str, Any]]) -> str:
+    partner_id = str(member.get("partner_id") or "").strip()
+    if partner_id and partner_id in by_id and partner_id != member["id"]:
+        return partner_id
+    return ""
+
+
+def family_unit_key(member: dict[str, Any], by_id: dict[str, dict[str, Any]]) -> tuple[str, ...]:
+    partner_id = valid_partner_id(member, by_id)
+    if not partner_id:
+        return (member["id"],)
+    partner = by_id[partner_id]
+    ordered = sort_members([member, partner])
+    return tuple(person["id"] for person in ordered)
+
+
+def build_family_links(members: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    member_ids = {member["id"] for member in members}
+    child_ids_by_parent = {member["id"]: [] for member in members}
+    for child in members:
+        for parent_id in child.get("parent_ids", []):
+            if parent_id in member_ids and child["id"] != parent_id:
+                child_ids_by_parent.setdefault(parent_id, []).append(child["id"])
+    return {
+        member["id"]: {
+            "partner_id": member.get("partner_id", ""),
+            "child_ids": child_ids_by_parent.get(member["id"], []),
+        }
+        for member in members
+    }
+
+
 def build_family_tree(members: list[dict[str, Any]]) -> list[dict[str, Any]]:
     tree_members = [member for member in members if member.get("in_tree")]
     by_id = {member["id"]: member for member in tree_members}
-    children_by_parent: dict[str, list[dict[str, Any]]] = {}
-    roots: list[dict[str, Any]] = []
+    if not by_id:
+        return []
+
+    units: dict[tuple[str, ...], list[dict[str, Any]]] = {}
+    unit_by_person: dict[str, tuple[str, ...]] = {}
+    for member in tree_members:
+        key = family_unit_key(member, by_id)
+        units.setdefault(key, [])
+        for person_id in key:
+            if person_id in by_id and by_id[person_id] not in units[key]:
+                units[key].append(by_id[person_id])
+            unit_by_person[person_id] = key
+
+    children_by_unit: dict[tuple[str, ...], list[tuple[str, ...]]] = {}
+    root_units: set[tuple[str, ...]] = set(units)
 
     for member in tree_members:
         parent_ids = [parent_id for parent_id in member.get("parent_ids", []) if parent_id in by_id and parent_id != member["id"]]
-        primary_parent = parent_ids[0] if parent_ids else None
-        if primary_parent:
-            children_by_parent.setdefault(primary_parent, []).append(member)
-        else:
-            roots.append(member)
-    if not roots and tree_members:
-        roots = tree_members
+        if not parent_ids:
+            continue
+        parent_unit = unit_by_person.get(parent_ids[0])
+        child_unit = unit_by_person.get(member["id"])
+        if not parent_unit or not child_unit or parent_unit == child_unit:
+            continue
+        children_by_unit.setdefault(parent_unit, [])
+        if child_unit not in children_by_unit[parent_unit]:
+            children_by_unit[parent_unit].append(child_unit)
+        root_units.discard(child_unit)
 
-    def branch(member: dict[str, Any], seen: set[str]) -> dict[str, Any]:
-        if member["id"] in seen:
-            return {"member": member, "children": []}
-        next_seen = seen | {member["id"]}
-        children = sort_members(children_by_parent.get(member["id"], []))
-        return {"member": member, "children": [branch(child, next_seen) for child in children]}
+    def unit_sort_key(key: tuple[str, ...]) -> tuple[int, int, str]:
+        people = sort_members([by_id[person_id] for person_id in key if person_id in by_id])
+        first = people[0] if people else {"sort_order": 999, "name": ""}
+        return (as_int(first.get("sort_order"), 999), generation_rank(first), str(first.get("name", "")).lower())
 
-    return [branch(root, set()) for root in sort_members(roots)]
+    def branch(key: tuple[str, ...], seen: set[tuple[str, ...]]) -> dict[str, Any]:
+        people = sort_members(units.get(key, []))
+        if key in seen:
+            return {"member": people[0] if people else {}, "members": people, "children": []}
+        next_seen = seen | {key}
+        child_keys = sorted(children_by_unit.get(key, []), key=unit_sort_key)
+        return {
+            "member": people[0] if people else {},
+            "members": people,
+            "children": [branch(child_key, next_seen) for child_key in child_keys],
+        }
+
+    roots = sorted(root_units or set(units), key=unit_sort_key)
+    return [branch(root, set()) for root in roots]
 
 
 @app.context_processor
@@ -565,13 +627,15 @@ def admin_logout():
 @app.get("/admin")
 @admin_required
 def admin():
+    members = load_members()
     return render_template(
         "admin.html",
-        members=load_members(),
+        members=members,
         house=load_house(),
         placeholders=PLACEHOLDERS,
         generation_options=GENERATION_OPTIONS,
         status_options=STATUS_OPTIONS,
+        family_links=build_family_links(members),
     )
 
 
@@ -675,6 +739,9 @@ def member_from_form(existing: dict[str, Any] | None, index: int) -> dict[str, A
     member["territory"] = request.form.get("territory", "").strip()
     member["birth_year"] = request.form.get("birth_year", "").strip()
     member["spouse"] = request.form.get("spouse", "").strip()
+    member["partner_id"] = request.form.get("partner_id", member.get("partner_id", "")).strip()
+    if member["partner_id"] == member["id"]:
+        member["partner_id"] = ""
     member["epithet"] = request.form.get("epithet", "").strip()
     member["quote"] = request.form.get("quote", "").strip()
     member["biography"] = request.form.get("biography", "").strip() or member["description"]
@@ -698,6 +765,9 @@ def update_member_tree_fields(member: dict[str, Any], index: int) -> dict[str, A
     updated["status"] = normalize_status(request.form.get("status", updated.get("status", "Vivo")))
     updated["death_cause"] = request.form.get("death_cause", "").strip() if updated["status"] == "Morto" else ""
     updated["sort_order"] = as_int(request.form.get("sort_order"), index + 1)
+    updated["partner_id"] = request.form.get("partner_id", updated.get("partner_id", "")).strip()
+    if updated["partner_id"] == updated["id"]:
+        updated["partner_id"] = ""
     updated["in_tree"] = "in_tree" in request.form
     updated["featured"] = "featured" in request.form
     updated["parent_ids"] = [
@@ -709,6 +779,54 @@ def update_member_tree_fields(member: dict[str, Any], index: int) -> dict[str, A
     if image_path:
         updated["image"] = image_path
     return updated
+
+
+def sync_partner_links(members: list[dict[str, Any]], member_id: str, partner_id: str) -> None:
+    by_id = {member["id"]: member for member in members}
+    member = by_id.get(member_id)
+    if not member:
+        return
+    partner_id = partner_id if partner_id in by_id and partner_id != member_id else ""
+
+    for other in members:
+        if other["id"] != partner_id and other.get("partner_id") == member_id:
+            other["partner_id"] = ""
+
+    previous_partner_id = member.get("partner_id", "")
+    if previous_partner_id and previous_partner_id != partner_id and previous_partner_id in by_id:
+        previous_partner = by_id[previous_partner_id]
+        if previous_partner.get("partner_id") == member_id:
+            previous_partner["partner_id"] = ""
+
+    member["partner_id"] = partner_id
+    if partner_id:
+        partner = by_id[partner_id]
+        old_partner_id = partner.get("partner_id", "")
+        if old_partner_id and old_partner_id != member_id and old_partner_id in by_id:
+            by_id[old_partner_id]["partner_id"] = ""
+        partner["partner_id"] = member_id
+        if not member.get("spouse"):
+            member["spouse"] = partner.get("name", "")
+        if not partner.get("spouse"):
+            partner["spouse"] = member.get("name", "")
+
+
+def sync_family_children(members: list[dict[str, Any]], parent_id: str, partner_id: str, child_ids: list[str]) -> None:
+    by_id = {member["id"]: member for member in members}
+    if parent_id not in by_id:
+        return
+    partner_id = partner_id if partner_id in by_id and partner_id != parent_id else ""
+    parent_pair = [parent_id] + ([partner_id] if partner_id else [])
+    selected_ids = {child_id for child_id in child_ids if child_id in by_id and child_id not in parent_pair}
+
+    for member in members:
+        if member["id"] in parent_pair:
+            continue
+        current_parents = [parent for parent in member.get("parent_ids", []) if parent in by_id and parent != member["id"]]
+        if member["id"] in selected_ids:
+            member["parent_ids"] = parent_pair.copy()
+        elif any(parent in parent_pair for parent in current_parents):
+            member["parent_ids"] = [parent for parent in current_parents if parent not in parent_pair]
 
 
 @app.post("/admin/members")
@@ -730,6 +848,7 @@ def update_member(member_id: str):
     for index, member in enumerate(members):
         if member["id"] == member_id:
             members[index] = member_from_form(member, index)
+            sync_partner_links(members, members[index]["id"], members[index].get("partner_id", ""))
             write_json(MEMBERS_FILE, sort_members(members))
             flash(f"Registro de {members[index]['name']} atualizado.", "success")
             return redirect(url_for("admin", _anchor="membros"))
@@ -744,6 +863,8 @@ def update_member_tree(member_id: str):
     for index, member in enumerate(members):
         if member["id"] == member_id:
             members[index] = update_member_tree_fields(member, index)
+            sync_partner_links(members, member_id, members[index].get("partner_id", ""))
+            sync_family_children(members, member_id, members[index].get("partner_id", ""), request.form.getlist("child_ids"))
             write_json(MEMBERS_FILE, sort_members(members))
             flash(f"Árvore atualizada para {member['name']}.", "success")
             return redirect(url_for("admin", _anchor="arvore"))
@@ -775,6 +896,8 @@ def delete_member(member_id: str):
         if member["id"] == member_id:
             continue
         member["parent_ids"] = [parent_id for parent_id in member.get("parent_ids", []) if parent_id != member_id]
+        if member.get("partner_id") == member_id:
+            member["partner_id"] = ""
         members.append(member)
     write_json(MEMBERS_FILE, sort_members(members))
     flash("Familiar removido da linhagem e da árvore.", "success")
