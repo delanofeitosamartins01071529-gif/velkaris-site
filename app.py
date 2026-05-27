@@ -463,11 +463,16 @@ def build_family_tree(members: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 @app.context_processor
 def inject_globals() -> dict[str, Any]:
+    try:
+        asset_version = int((STATIC_DIR / "css" / "styles.css").stat().st_mtime)
+    except OSError:
+        asset_version = int(time.time())
     return {
         "csrf_token": csrf_token,
         "admin_logged_in": bool(session.get("is_admin")),
         "site_house": load_house(),
         "media_url": media_url,
+        "asset_version": asset_version,
     }
 
 
