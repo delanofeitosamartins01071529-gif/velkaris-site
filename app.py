@@ -517,6 +517,7 @@ def build_family_tree(members: list[dict[str, Any]]) -> list[dict[str, Any]]:
             unit_by_person[person_id] = key
 
     children_by_unit: dict[tuple[str, ...], dict[tuple[str, ...], str]] = {}
+    secondary_links_by_unit: dict[tuple[str, ...], list[dict[str, str]]] = {}
     root_units: set[tuple[str, ...]] = set(units)
 
     def unit_sort_key(key: tuple[str, ...]) -> tuple[int, int, str]:
@@ -570,10 +571,23 @@ def build_family_tree(members: list[dict[str, Any]]) -> list[dict[str, Any]]:
         )
 
     for child_unit, candidates in candidate_links_by_child.items():
-        parent_unit, link_member_id = sorted(candidates, key=link_sort_key)[0]
+        sorted_candidates = sorted(candidates, key=link_sort_key)
+        parent_unit, link_member_id = sorted_candidates[0]
         children_by_unit.setdefault(parent_unit, {})
         children_by_unit[parent_unit].setdefault(child_unit, link_member_id)
         root_units.discard(child_unit)
+        seen_secondary: set[tuple[tuple[str, ...], str]] = set()
+        for secondary_parent_unit, secondary_member_id in sorted_candidates[1:]:
+            secondary_key = (secondary_parent_unit, secondary_member_id)
+            if secondary_parent_unit == parent_unit or secondary_key in seen_secondary:
+                continue
+            seen_secondary.add(secondary_key)
+            secondary_links_by_unit.setdefault(child_unit, []).append(
+                {
+                    "parent_unit_id": "|".join(secondary_parent_unit),
+                    "member_id": secondary_member_id,
+                }
+            )
 
     def line_position(people: list[dict[str, Any]], link_member_id: str | None) -> str:
         if not link_member_id or len(people) < 2:
@@ -589,9 +603,11 @@ def build_family_tree(members: list[dict[str, Any]]) -> list[dict[str, Any]]:
             return {
                 "member": people[0] if people else {},
                 "members": people,
+                "unit_id": "|".join(key),
                 "children": [],
                 "link_member_id": link_member_id,
                 "line_position": line_position(people, link_member_id),
+                "secondary_parent_links": secondary_links_by_unit.get(key, []),
             }
         next_seen = seen | {key}
         child_links = children_by_unit.get(key, {})
@@ -599,9 +615,11 @@ def build_family_tree(members: list[dict[str, Any]]) -> list[dict[str, Any]]:
         return {
             "member": people[0] if people else {},
             "members": people,
+            "unit_id": "|".join(key),
             "children": [branch(child_key, next_seen, child_links.get(child_key)) for child_key in child_keys],
             "link_member_id": link_member_id,
             "line_position": line_position(people, link_member_id),
+            "secondary_parent_links": secondary_links_by_unit.get(key, []),
         }
 
     roots = sorted(root_units, key=unit_sort_key)
@@ -641,11 +659,21 @@ def build_family_tree_payload(branches: list[dict[str, Any]]) -> list[dict[str, 
 
     def branch_payload(branch: dict[str, Any]) -> dict[str, Any]:
         members = [member_payload(member) for member in branch.get("members", [])]
+        branch_id = branch.get("unit_id") or "-".join(member.get("id", "") for member in branch.get("members", [])) or item_id("tree")
+        secondary_links = [
+            {
+                "parentUnitId": link.get("parent_unit_id", ""),
+                "memberId": link.get("member_id", ""),
+            }
+            for link in branch.get("secondary_parent_links", [])
+            if link.get("parent_unit_id") and link.get("member_id")
+        ]
         return {
-            "id": "-".join(member.get("id", "") for member in branch.get("members", [])) or item_id("tree"),
+            "id": branch_id,
             "members": members,
             "linkMemberId": branch.get("link_member_id"),
             "linePosition": branch.get("line_position", "50%"),
+            "secondaryLinks": secondary_links,
             "children": [branch_payload(child) for child in branch.get("children", [])],
         }
 

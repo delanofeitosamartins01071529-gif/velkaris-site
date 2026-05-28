@@ -310,6 +310,7 @@ const drawFamilyTreeLines = () => {
     path.setAttribute("d", d);
     familyTreeLines.appendChild(path);
   };
+  const placedById = new Map(familyTreePlaced.map((placed) => [placed.branch.id, placed]));
 
   familyTreePlaced.forEach((placed) => {
     const members = placed.branch.members || [];
@@ -330,6 +331,22 @@ const drawFamilyTreeLines = () => {
       makePath("descent-line", `M ${Math.min(...childTops.map((child) => child.x))} ${junctionY} L ${Math.max(...childTops.map((child) => child.x))} ${junctionY}`);
     }
     childTops.forEach((child) => makePath("descent-line", `M ${child.x} ${junctionY} L ${child.x} ${child.y}`));
+  });
+
+  familyTreePlaced.forEach((placed) => {
+    (placed.branch.secondaryLinks || []).forEach((link) => {
+      const parentPlaced = placedById.get(link.parentUnitId);
+      if (!parentPlaced || !link.memberId) return;
+      if (collapsedTreeBranches.has(parentPlaced.branch.id)) return;
+      const parent = {
+        x: parentPlaced.unitX + parentPlaced.unitWidth / 2,
+        y: parentPlaced.unitY + TREE_NODE_HEIGHT,
+      };
+      const child = memberCenter(placed, link.memberId, 0.5, 0);
+      const verticalDistance = child.y - parent.y;
+      const junctionY = parent.y + (verticalDistance > 86 ? Math.min(92, verticalDistance * 0.5) : 62);
+      makePath("secondary-descent-line", `M ${parent.x} ${parent.y} L ${parent.x} ${junctionY} L ${child.x} ${junctionY} L ${child.x} ${child.y}`);
+    });
   });
 };
 

@@ -1197,6 +1197,13 @@ body.is-loaded .loading-screen {
   filter: drop-shadow(0 0 7px rgba(142, 166, 199, 0.28));
 }
 
+.pedigree-lines .secondary-descent-line {
+  stroke: rgba(240, 208, 139, 0.76);
+  stroke-width: 2.2;
+  stroke-dasharray: 10 11;
+  filter: drop-shadow(0 0 8px rgba(240, 208, 139, 0.28));
+}
+
 .tree-node {
   display: grid;
   place-items: center;
