@@ -40,6 +40,7 @@
         <a href="{{ url_for('index') }}#inicio">Início</a>
         <a href="{{ url_for('index') }}#familia">A Família</a>
         <a href="{{ url_for('index') }}#linhagem">Linhagem</a>
+        <a href="{{ url_for('index') }}#arvore">Arvore</a>
         <a href="{{ url_for('index') }}#territorios">Territórios</a>
         <a href="{{ url_for('index') }}#cronicas">Crônicas</a>
         <a href="{{ url_for('index') }}#arquivos">Arquivos</a>
@@ -56,6 +57,10 @@
         {% endif %}
       </div>
     </header>
+
+    <a class="tree-jump-button" href="{{ url_for('index') }}#arvore" aria-label="Ir para a arvore genealogica">
+      <span aria-hidden="true">♔</span>
+    </a>
 
     <div class="flash-stack" aria-live="polite">
       {% with messages = get_flashed_messages(with_categories=true) %}

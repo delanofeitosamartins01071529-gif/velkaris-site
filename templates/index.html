@@ -176,49 +176,25 @@
           <button type="button" data-tree-zoom-out aria-label="Diminuir zoom">-</button>
           <button type="button" data-tree-zoom-reset aria-label="Restaurar zoom">100%</button>
           <button type="button" data-tree-zoom-in aria-label="Aumentar zoom">+</button>
-          <button type="button" data-tree-center>Centralizar</button>
+          <button type="button" data-tree-center>Centralizar arvore</button>
           <button type="button" data-tree-expand>Expandir</button>
           <button type="button" data-tree-collapse>Selar</button>
         </div>
       </div>
-      <div class="genealogy pedigree-board" data-tree data-pedigree>
-        <svg class="pedigree-lines" data-pedigree-lines aria-hidden="true"></svg>
-        {% macro render_branch(branch) %}
-          <li class="tree-branch pedigree-family" data-pedigree-family style="--branch-line-x: {{ branch.line_position }};">
-            <div class="tree-couple pedigree-couple {% if branch.members|length > 1 %}has-partner{% endif %}" data-pedigree-couple>
-              {% for tree_member in branch.members %}
-                <button class="tree-node is-open status-{{ tree_member.status|lower }} {% if branch.link_member_id == tree_member.id %}is-line-anchor{% endif %}" type="button" data-member-open="{{ tree_member.id }}" aria-label="Abrir registro de {{ tree_member.name }}">
-                  <img src="{{ media_url(tree_member.image) }}" alt="">
-                  <strong>{{ tree_member.name }}</strong>
-                  <span>{{ tree_member.title }}</span>
-                  <b class="tree-node-role">{{ tree_member.branch or "Casa Velkaris" }}</b>
-                  <small>{{ tree_member.generation }} - {{ tree_member.status }}</small>
-                </button>
-              {% endfor %}
-            </div>
-            {% if branch.children %}
-              <button class="tree-fold is-open" type="button" data-tree-toggle aria-label="Alternar descendentes">
-                <span></span>
-              </button>
-              <ul class="pedigree-children {% if branch.children|length == 1 %}is-single-child{% endif %}" data-pedigree-children>
-                {% for child in branch.children %}
-                  {{ render_branch(child) }}
-                {% endfor %}
-              </ul>
-            {% endif %}
-          </li>
-        {% endmacro %}
-
+      <div class="genealogy family-tree-viewport" data-tree data-family-tree>
         {% if family_tree %}
-          <ul class="family-tree">
-            {% for branch in family_tree %}
-              {{ render_branch(branch) }}
-            {% endfor %}
-          </ul>
+          <div class="family-tree-stage" data-family-stage>
+            <svg class="pedigree-lines family-tree-lines" data-family-lines aria-hidden="true"></svg>
+            <div class="family-tree-nodes" data-family-nodes></div>
+          </div>
+          <p class="tree-viewport-hint">Arraste para navegar. Use os controles para aproximar, afastar ou centralizar.</p>
         {% else %}
           <p class="empty-state">A árvore ainda não possui familiares ativos.</p>
         {% endif %}
       </div>
+      {% if family_tree %}
+        <script type="application/json" id="family-tree-data">{{ family_tree_payload|tojson }}</script>
+      {% endif %}
     </section>
 
     <section class="panel territories-panel reveal" id="territorios" data-reveal>

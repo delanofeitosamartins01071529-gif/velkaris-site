@@ -111,14 +111,19 @@ const closeMemberModal = (modal) => {
   document.body.classList.remove("modal-open");
 };
 
-document.querySelectorAll("[data-member-open]").forEach((card) => {
-  card.addEventListener("click", () => openMemberModal(card.dataset.memberOpen));
-  card.addEventListener("keydown", (event) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      openMemberModal(card.dataset.memberOpen);
-    }
-  });
+document.addEventListener("click", (event) => {
+  if (event.target.closest("[data-stop-modal]")) return;
+  const trigger = event.target.closest("[data-member-open]");
+  if (!trigger) return;
+  event.preventDefault();
+  openMemberModal(trigger.dataset.memberOpen);
+});
+
+document.addEventListener("keydown", (event) => {
+  const trigger = event.target.closest?.("[data-member-open]");
+  if (!trigger || (event.key !== "Enter" && event.key !== " ")) return;
+  event.preventDefault();
+  openMemberModal(trigger.dataset.memberOpen);
 });
 
 document.querySelectorAll("[data-stop-modal]").forEach((link) => {
@@ -170,140 +175,156 @@ document.querySelectorAll("[data-status-select]").forEach((select) => {
 });
 
 const tree = document.querySelector("[data-tree]");
-const pedigreeBoard = document.querySelector("[data-pedigree]");
-const familyTreeCanvas = pedigreeBoard?.querySelector(".family-tree");
-let pedigreeScale = 1;
-let hasUserMovedPedigree = false;
+const familyTreeViewport = document.querySelector("[data-family-tree]");
+const familyTreeStage = document.querySelector("[data-family-stage]");
+const familyTreeNodes = document.querySelector("[data-family-nodes]");
+const familyTreeLines = document.querySelector("[data-family-lines]");
+const familyTreeDataElement = document.querySelector("#family-tree-data");
+const TREE_VIEW_KEY = "velkaris.familyTree.view.v3";
+const TREE_MIN_SCALE = 0.24;
+const TREE_MAX_SCALE = 1.32;
+const TREE_NODE_WIDTH = 142;
+const TREE_NODE_HEIGHT = 174;
+const TREE_MEMBER_GAP = 16;
+const TREE_UNIT_PAD = 14;
+const TREE_LEVEL_GAP = 118;
+const TREE_SIBLING_GAP = 64;
+const TREE_ROOT_GAP = 96;
+const TREE_MARGIN = 96;
+let familyTreeData = [];
+let familyTreeLayouts = [];
+let familyTreePlaced = [];
+let familyTreeSize = { width: 0, height: 0 };
+let familyTreeView = { x: 0, y: 0, scale: 1 };
+let familyTreeUserMoved = false;
+let familyTreeFrame = 0;
+const collapsedTreeBranches = new Set();
 
-const schedulePedigreeDraw = () => requestAnimationFrame(drawPedigreeLines);
+const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#39;",
+}[char]));
 
-const setTreeOpen = (open) => {
-  tree?.classList.toggle("is-collapsed", !open);
-  document.querySelectorAll(".tree-branch").forEach((branch) => branch.classList.toggle("is-collapsed", !open));
-  document.querySelectorAll(".tree-node").forEach((node) => node.classList.toggle("is-open", open));
-  document.querySelectorAll("[data-tree-toggle]").forEach((control) => control.classList.toggle("is-open", open));
+const loadFamilyTreeData = () => {
+  if (!familyTreeDataElement) return [];
+  try {
+    const parsed = JSON.parse(familyTreeDataElement.textContent || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    return [];
+  }
 };
-document.querySelector("[data-tree-expand]")?.addEventListener("click", () => setTreeOpen(true));
-document.querySelector("[data-tree-collapse]")?.addEventListener("click", () => setTreeOpen(false));
-document.querySelectorAll("[data-tree-toggle]").forEach((node) => {
-  node.addEventListener("click", () => {
-    const branch = node.closest(".tree-branch");
-    if (!branch?.querySelector("ul")) return;
-    branch.classList.toggle("is-collapsed");
-    node.classList.toggle("is-open", !branch.classList.contains("is-collapsed"));
-    node.setAttribute("aria-expanded", String(!branch.classList.contains("is-collapsed")));
-    schedulePedigreeDraw();
-  });
-});
 
-const setPedigreeScale = (nextScale, shouldCenter = false) => {
-  pedigreeScale = Math.min(1.35, Math.max(0.62, Number(nextScale) || 1));
-  pedigreeBoard?.style.setProperty("--tree-scale", pedigreeScale.toFixed(2));
-  const label = document.querySelector("[data-tree-zoom-reset]");
-  if (label) label.textContent = `${Math.round(pedigreeScale * 100)}%`;
-  if (shouldCenter) requestAnimationFrame(() => centerPedigree(false));
-  schedulePedigreeDraw();
+const branchUnitWidth = (branch) => {
+  const count = Math.max(1, branch.members?.length || 1);
+  return count * TREE_NODE_WIDTH + Math.max(0, count - 1) * TREE_MEMBER_GAP + TREE_UNIT_PAD * 2;
 };
 
-const centerPedigree = (smooth = true) => {
-  if (!pedigreeBoard || !familyTreeCanvas) return;
-  const left = Math.max(0, (pedigreeBoard.scrollWidth - pedigreeBoard.clientWidth) / 2);
-  const top = Math.max(0, Math.min(pedigreeBoard.scrollTop, pedigreeBoard.scrollHeight - pedigreeBoard.clientHeight));
-  pedigreeBoard.scrollTo({ left, top, behavior: smooth ? "smooth" : "auto" });
-  schedulePedigreeDraw();
-};
-
-document.querySelector("[data-tree-zoom-out]")?.addEventListener("click", () => setPedigreeScale(pedigreeScale - 0.1, true));
-document.querySelector("[data-tree-zoom-in]")?.addEventListener("click", () => setPedigreeScale(pedigreeScale + 0.1, true));
-document.querySelector("[data-tree-zoom-reset]")?.addEventListener("click", () => setPedigreeScale(1, true));
-document.querySelector("[data-tree-center]")?.addEventListener("click", () => centerPedigree(true));
-
-if (pedigreeBoard) {
-  let startX = 0;
-  let startY = 0;
-  let startLeft = 0;
-  let startTop = 0;
-  let isPanning = false;
-
-  pedigreeBoard.addEventListener("pointerdown", (event) => {
-    if (event.button !== 0 || event.target.closest("button, a, input, select, textarea, label")) return;
-    isPanning = true;
-    hasUserMovedPedigree = true;
-    startX = event.clientX;
-    startY = event.clientY;
-    startLeft = pedigreeBoard.scrollLeft;
-    startTop = pedigreeBoard.scrollTop;
-    pedigreeBoard.classList.add("is-panning");
-    pedigreeBoard.setPointerCapture?.(event.pointerId);
-  });
-
-  pedigreeBoard.addEventListener("pointermove", (event) => {
-    if (!isPanning) return;
-    event.preventDefault();
-    pedigreeBoard.scrollLeft = startLeft - (event.clientX - startX);
-    pedigreeBoard.scrollTop = startTop - (event.clientY - startY);
-    schedulePedigreeDraw();
-  });
-
-  const stopPanning = (event) => {
-    if (!isPanning) return;
-    isPanning = false;
-    pedigreeBoard.classList.remove("is-panning");
-    pedigreeBoard.releasePointerCapture?.(event.pointerId);
+const layoutFamilyBranch = (branch, depth = 0) => {
+  const children = collapsedTreeBranches.has(branch.id) ? [] : (branch.children || []);
+  const childLayouts = children.map((child) => layoutFamilyBranch(child, depth + 1));
+  const childrenWidth = childLayouts.reduce((total, child, index) => total + child.width + (index ? TREE_SIBLING_GAP : 0), 0);
+  const unitWidth = branchUnitWidth(branch);
+  return {
+    branch,
+    childLayouts,
+    depth,
+    unitWidth,
+    width: Math.max(unitWidth, childrenWidth || 0),
   };
-  pedigreeBoard.addEventListener("pointerup", stopPanning);
-  pedigreeBoard.addEventListener("pointercancel", stopPanning);
-  pedigreeBoard.addEventListener("wheel", () => {
-    hasUserMovedPedigree = true;
-  }, { passive: true });
-}
+};
 
-const drawPedigreeLines = () => {
-  const board = pedigreeBoard;
-  const svg = document.querySelector("[data-pedigree-lines]");
-  if (!board || !svg) return;
+const placeFamilyBranch = (layout, left) => {
+  const y = TREE_MARGIN + layout.depth * (TREE_NODE_HEIGHT + TREE_LEVEL_GAP);
+  const unitX = left + layout.width / 2 - layout.unitWidth / 2;
+  const placed = {
+    branch: layout.branch,
+    depth: layout.depth,
+    unitX,
+    unitY: y,
+    unitWidth: layout.unitWidth,
+    children: [],
+  };
+  familyTreePlaced.push(placed);
 
-  const boardRect = board.getBoundingClientRect();
-  const width = Math.max(board.scrollWidth, board.clientWidth);
-  const height = Math.max(board.scrollHeight, board.clientHeight);
-  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
-  svg.setAttribute("width", width);
-  svg.setAttribute("height", height);
-  svg.innerHTML = "";
-
-  const point = (rect, xRatio, yRatio) => ({
-    x: rect.left - boardRect.left + board.scrollLeft + rect.width * xRatio,
-    y: rect.top - boardRect.top + board.scrollTop + rect.height * yRatio,
+  const childrenWidth = layout.childLayouts.reduce((total, child, index) => total + child.width + (index ? TREE_SIBLING_GAP : 0), 0);
+  let childLeft = left + Math.max(0, (layout.width - childrenWidth) / 2);
+  layout.childLayouts.forEach((childLayout) => {
+    const childPlaced = placeFamilyBranch(childLayout, childLeft);
+    placed.children.push(childPlaced);
+    childLeft += childLayout.width + TREE_SIBLING_GAP;
   });
+  return placed;
+};
+
+const buildFamilyTreeLayout = () => {
+  familyTreePlaced = [];
+  familyTreeLayouts = familyTreeData.map((branch) => layoutFamilyBranch(branch));
+  const rootsWidth = familyTreeLayouts.reduce((total, layout, index) => total + layout.width + (index ? TREE_ROOT_GAP : 0), 0);
+  let left = TREE_MARGIN;
+  familyTreeLayouts.forEach((layout) => {
+    placeFamilyBranch(layout, left);
+    left += layout.width + TREE_ROOT_GAP;
+  });
+  const maxDepth = familyTreePlaced.reduce((max, item) => Math.max(max, item.depth), 0);
+  familyTreeSize = {
+    width: Math.max(rootsWidth + TREE_MARGIN * 2, familyTreeViewport?.clientWidth || 0),
+    height: Math.max(TREE_MARGIN * 2 + (maxDepth + 1) * TREE_NODE_HEIGHT + maxDepth * TREE_LEVEL_GAP, familyTreeViewport?.clientHeight || 0),
+  };
+};
+
+const memberNodePosition = (placed, memberIndex, memberCount) => {
+  const totalMembersWidth = memberCount * TREE_NODE_WIDTH + Math.max(0, memberCount - 1) * TREE_MEMBER_GAP;
+  const firstX = placed.unitX + (placed.unitWidth - totalMembersWidth) / 2;
+  return {
+    x: firstX + memberIndex * (TREE_NODE_WIDTH + TREE_MEMBER_GAP),
+    y: placed.unitY,
+  };
+};
+
+const memberCenter = (placed, memberId, fallbackRatio = 0.5, yRatio = 0.5) => {
+  const members = placed.branch.members || [];
+  const index = members.findIndex((member) => member.id === memberId);
+  const safeIndex = index >= 0 ? index : Math.max(0, Math.round((members.length - 1) * fallbackRatio));
+  const position = memberNodePosition(placed, safeIndex, Math.max(1, members.length));
+  return {
+    x: position.x + TREE_NODE_WIDTH * 0.5,
+    y: position.y + TREE_NODE_HEIGHT * yRatio,
+  };
+};
+
+const drawFamilyTreeLines = () => {
+  if (!familyTreeLines) return;
+  familyTreeLines.setAttribute("viewBox", `0 0 ${familyTreeSize.width} ${familyTreeSize.height}`);
+  familyTreeLines.setAttribute("width", familyTreeSize.width);
+  familyTreeLines.setAttribute("height", familyTreeSize.height);
+  familyTreeLines.innerHTML = "";
+
   const makePath = (className, d) => {
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     path.setAttribute("class", className);
     path.setAttribute("d", d);
-    svg.appendChild(path);
+    familyTreeLines.appendChild(path);
   };
 
-  board.querySelectorAll("[data-pedigree-couple]").forEach((couple) => {
-    const nodes = [...couple.querySelectorAll(":scope > .tree-node")];
-    if (nodes.length > 1) {
-      const first = point(nodes[0].getBoundingClientRect(), 1, 0.42);
-      const last = point(nodes[nodes.length - 1].getBoundingClientRect(), 0, 0.42);
-      makePath("spouse-line", `M ${first.x} ${first.y} L ${last.x} ${last.y}`);
+  familyTreePlaced.forEach((placed) => {
+    const members = placed.branch.members || [];
+    if (members.length > 1) {
+      const first = memberCenter(placed, members[0].id, 0, 0.43);
+      const last = memberCenter(placed, members[members.length - 1].id, 1, 0.43);
+      makePath("spouse-line", `M ${first.x + TREE_NODE_WIDTH * 0.38} ${first.y} L ${last.x - TREE_NODE_WIDTH * 0.38} ${last.y}`);
     }
 
-    const children = couple.parentElement?.querySelector(":scope > [data-pedigree-children]");
-    const visibleChildren = children && getComputedStyle(children).display !== "none" ? [...children.children] : [];
-    if (!visibleChildren.length) return;
-
-    const coupleRect = couple.getBoundingClientRect();
-    const parent = point(coupleRect, 0.5, 1);
-    const childTops = visibleChildren.map((child) => {
-      const childCouple = child.querySelector(":scope > [data-pedigree-couple]");
-      const anchorNode = child.querySelector(":scope > [data-pedigree-couple] > .tree-node.is-line-anchor") || childCouple;
-      return anchorNode ? point(anchorNode.getBoundingClientRect(), 0.5, 0) : null;
-    }).filter(Boolean);
-    if (!childTops.length) return;
-
-    const junctionY = parent.y + Math.min(46, Math.max(28, (Math.min(...childTops.map((child) => child.y)) - parent.y) * 0.52));
+    const children = placed.children || [];
+    if (!children.length) return;
+    const parent = { x: placed.unitX + placed.unitWidth / 2, y: placed.unitY + TREE_NODE_HEIGHT };
+    const childTops = children.map((child) => memberCenter(child, child.branch.linkMemberId, 0.5, 0));
+    const minChildY = Math.min(...childTops.map((child) => child.y));
+    const junctionY = parent.y + Math.max(40, Math.min(76, (minChildY - parent.y) * 0.48));
     makePath("descent-line", `M ${parent.x} ${parent.y} L ${parent.x} ${junctionY}`);
     if (childTops.length > 1) {
       makePath("descent-line", `M ${Math.min(...childTops.map((child) => child.x))} ${junctionY} L ${Math.max(...childTops.map((child) => child.x))} ${junctionY}`);
@@ -312,14 +333,257 @@ const drawPedigreeLines = () => {
   });
 };
 
-window.addEventListener("load", () => {
-  if (pedigreeBoard && !hasUserMovedPedigree) centerPedigree(false);
-  schedulePedigreeDraw();
+const renderFamilyTreeNodes = () => {
+  if (!familyTreeNodes) return;
+  familyTreeNodes.innerHTML = "";
+  familyTreePlaced.forEach((placed) => {
+    const members = placed.branch.members || [];
+    members.forEach((member, index) => {
+      const position = memberNodePosition(placed, index, Math.max(1, members.length));
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = `tree-node family-tree-node is-open status-${member.statusClass || ""} ${placed.branch.linkMemberId === member.id ? "is-line-anchor" : ""}`;
+      button.dataset.memberOpen = member.id;
+      button.setAttribute("aria-label", `Abrir registro de ${member.name || "familiar"}`);
+      button.style.left = `${position.x}px`;
+      button.style.top = `${position.y}px`;
+      button.innerHTML = `
+        <img src="${escapeHtml(member.image)}" alt="">
+        <strong>${escapeHtml(member.name)}</strong>
+        <span>${escapeHtml(member.title)}</span>
+        <b class="tree-node-role">${escapeHtml(member.branch || "Casa Velkaris")}</b>
+        <small>${escapeHtml(member.generation)} - ${escapeHtml(member.status)}</small>
+      `;
+      familyTreeNodes.appendChild(button);
+    });
+
+    if ((placed.branch.children || []).length) {
+      const fold = document.createElement("button");
+      fold.type = "button";
+      fold.className = `tree-fold ${collapsedTreeBranches.has(placed.branch.id) ? "" : "is-open"}`;
+      fold.dataset.treeToggle = placed.branch.id;
+      fold.setAttribute("aria-label", "Alternar descendentes");
+      fold.setAttribute("aria-expanded", String(!collapsedTreeBranches.has(placed.branch.id)));
+      fold.style.left = `${placed.unitX + placed.unitWidth / 2 - 15}px`;
+      fold.style.top = `${placed.unitY + TREE_NODE_HEIGHT + 11}px`;
+      fold.innerHTML = "<span></span>";
+      familyTreeNodes.appendChild(fold);
+    }
+  });
+};
+
+const applyFamilyTreeTransform = () => {
+  if (!familyTreeStage || !familyTreeViewport) return;
+  const viewport = familyTreeViewport.getBoundingClientRect();
+  const scaledWidth = familyTreeSize.width * familyTreeView.scale;
+  const scaledHeight = familyTreeSize.height * familyTreeView.scale;
+  const slack = 180;
+  familyTreeView.x = scaledWidth <= viewport.width
+    ? (viewport.width - scaledWidth) / 2
+    : clamp(familyTreeView.x, viewport.width - scaledWidth - slack, slack);
+  familyTreeView.y = scaledHeight <= viewport.height
+    ? (viewport.height - scaledHeight) / 2
+    : clamp(familyTreeView.y, viewport.height - scaledHeight - slack, slack);
+  familyTreeStage.style.width = `${familyTreeSize.width}px`;
+  familyTreeStage.style.height = `${familyTreeSize.height}px`;
+  familyTreeStage.style.transform = `translate3d(${familyTreeView.x}px, ${familyTreeView.y}px, 0) scale(${familyTreeView.scale})`;
+  const label = document.querySelector("[data-tree-zoom-reset]");
+  if (label) label.textContent = `${Math.round(familyTreeView.scale * 100)}%`;
+};
+
+const saveFamilyTreeView = () => {
+  try {
+    const viewport = familyTreeViewport?.getBoundingClientRect();
+    localStorage.setItem(TREE_VIEW_KEY, JSON.stringify({
+      ...familyTreeView,
+      viewportWidth: viewport?.width || 0,
+      viewportHeight: viewport?.height || 0,
+    }));
+  } catch (error) {
+    // Local storage can be blocked in private contexts.
+  }
+};
+
+const loadFamilyTreeView = () => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(TREE_VIEW_KEY) || "null");
+    if (!saved) return false;
+    const viewport = familyTreeViewport?.getBoundingClientRect();
+    const savedWidth = Number(saved.viewportWidth) || 0;
+    const savedHeight = Number(saved.viewportHeight) || 0;
+    if (!viewport || !savedWidth || !savedHeight) return false;
+    const widthDelta = Math.abs(savedWidth - viewport.width) / Math.max(viewport.width, 1);
+    const heightDelta = Math.abs(savedHeight - viewport.height) / Math.max(viewport.height, 1);
+    if (widthDelta > 0.22 || heightDelta > 0.22) return false;
+    familyTreeView = {
+      x: Number(saved.x) || 0,
+      y: Number(saved.y) || 0,
+      scale: clamp(Number(saved.scale) || 1, TREE_MIN_SCALE, TREE_MAX_SCALE),
+    };
+    return true;
+  } catch (error) {
+    return false;
+  }
+};
+
+const fitFamilyTree = (shouldSave = true) => {
+  if (!familyTreeViewport) return;
+  const viewport = familyTreeViewport.getBoundingClientRect();
+  const padding = viewport.width < 720 ? 42 : 88;
+  const fitScale = Math.min(
+    (viewport.width - padding) / Math.max(1, familyTreeSize.width),
+    (viewport.height - padding) / Math.max(1, familyTreeSize.height),
+    TREE_MAX_SCALE
+  );
+  familyTreeView.scale = clamp(fitScale, TREE_MIN_SCALE, TREE_MAX_SCALE);
+  familyTreeView.x = (viewport.width - familyTreeSize.width * familyTreeView.scale) / 2;
+  familyTreeView.y = (viewport.height - familyTreeSize.height * familyTreeView.scale) / 2;
+  applyFamilyTreeTransform();
+  if (shouldSave) saveFamilyTreeView();
+};
+
+const centerFamilyTree = (shouldSave = true) => {
+  if (!familyTreeViewport) return;
+  const viewport = familyTreeViewport.getBoundingClientRect();
+  familyTreeView.x = (viewport.width - familyTreeSize.width * familyTreeView.scale) / 2;
+  familyTreeView.y = (viewport.height - familyTreeSize.height * familyTreeView.scale) / 2;
+  applyFamilyTreeTransform();
+  if (shouldSave) saveFamilyTreeView();
+};
+
+const zoomFamilyTree = (nextScale, originX, originY) => {
+  if (!familyTreeViewport) return;
+  const viewport = familyTreeViewport.getBoundingClientRect();
+  const oldScale = familyTreeView.scale;
+  const scale = clamp(nextScale, TREE_MIN_SCALE, TREE_MAX_SCALE);
+  const ox = originX ?? viewport.width / 2;
+  const oy = originY ?? viewport.height / 2;
+  const worldX = (ox - familyTreeView.x) / oldScale;
+  const worldY = (oy - familyTreeView.y) / oldScale;
+  familyTreeView.scale = scale;
+  familyTreeView.x = ox - worldX * scale;
+  familyTreeView.y = oy - worldY * scale;
+  familyTreeUserMoved = true;
+  applyFamilyTreeTransform();
+  saveFamilyTreeView();
+};
+
+const renderFamilyTree = (preserveView = true) => {
+  if (!familyTreeViewport || !familyTreeStage || !familyTreeNodes || !familyTreeLines || !familyTreeData.length) return;
+  buildFamilyTreeLayout();
+  renderFamilyTreeNodes();
+  drawFamilyTreeLines();
+  if (preserveView && (familyTreeUserMoved || loadFamilyTreeView())) {
+    applyFamilyTreeTransform();
+  } else {
+    fitFamilyTree(false);
+  }
+};
+
+const scheduleFamilyTreeRender = () => {
+  if (familyTreeFrame) return;
+  familyTreeFrame = requestAnimationFrame(() => {
+    familyTreeFrame = 0;
+    renderFamilyTree(true);
+  });
+};
+
+const setTreeOpen = (open) => {
+  if (!familyTreeData.length) return;
+  const collect = (branch) => {
+    if ((branch.children || []).length) {
+      if (open) collapsedTreeBranches.delete(branch.id);
+      else collapsedTreeBranches.add(branch.id);
+    }
+    (branch.children || []).forEach(collect);
+  };
+  familyTreeData.forEach(collect);
+  familyTreeUserMoved = false;
+  renderFamilyTree(false);
+  fitFamilyTree();
+};
+
+familyTreeData = loadFamilyTreeData();
+if (familyTreeData.length) {
+  renderFamilyTree(false);
+  if (loadFamilyTreeView()) applyFamilyTreeTransform();
+}
+
+document.querySelector("[data-tree-expand]")?.addEventListener("click", () => setTreeOpen(true));
+document.querySelector("[data-tree-collapse]")?.addEventListener("click", () => setTreeOpen(false));
+document.querySelector("[data-tree-zoom-out]")?.addEventListener("click", () => zoomFamilyTree(familyTreeView.scale - 0.1));
+document.querySelector("[data-tree-zoom-in]")?.addEventListener("click", () => zoomFamilyTree(familyTreeView.scale + 0.1));
+document.querySelector("[data-tree-zoom-reset]")?.addEventListener("click", () => {
+  familyTreeUserMoved = false;
+  fitFamilyTree();
 });
-window.addEventListener("resize", schedulePedigreeDraw);
-pedigreeBoard?.addEventListener("scroll", schedulePedigreeDraw, { passive: true });
-document.querySelector("[data-tree-expand]")?.addEventListener("click", schedulePedigreeDraw);
-document.querySelector("[data-tree-collapse]")?.addEventListener("click", schedulePedigreeDraw);
+document.querySelector("[data-tree-center]")?.addEventListener("click", () => centerFamilyTree());
+
+familyTreeViewport?.addEventListener("click", (event) => {
+  const toggle = event.target.closest("[data-tree-toggle]");
+  if (!toggle) return;
+  event.preventDefault();
+  const branchId = toggle.dataset.treeToggle;
+  if (!branchId) return;
+  if (collapsedTreeBranches.has(branchId)) collapsedTreeBranches.delete(branchId);
+  else collapsedTreeBranches.add(branchId);
+  familyTreeUserMoved = false;
+  renderFamilyTree(false);
+  fitFamilyTree();
+});
+
+if (familyTreeViewport) {
+  let isPanning = false;
+  let startX = 0;
+  let startY = 0;
+  let startViewX = 0;
+  let startViewY = 0;
+
+  familyTreeViewport.addEventListener("pointerdown", (event) => {
+    if (event.button !== 0 || event.target.closest("button, a, input, select, textarea, label")) return;
+    isPanning = true;
+    familyTreeUserMoved = true;
+    startX = event.clientX;
+    startY = event.clientY;
+    startViewX = familyTreeView.x;
+    startViewY = familyTreeView.y;
+    familyTreeViewport.classList.add("is-panning");
+    familyTreeViewport.setPointerCapture?.(event.pointerId);
+  });
+
+  familyTreeViewport.addEventListener("pointermove", (event) => {
+    if (!isPanning) return;
+    event.preventDefault();
+    familyTreeView.x = startViewX + event.clientX - startX;
+    familyTreeView.y = startViewY + event.clientY - startY;
+    applyFamilyTreeTransform();
+  });
+
+  const stopPanning = (event) => {
+    if (!isPanning) return;
+    isPanning = false;
+    familyTreeViewport.classList.remove("is-panning");
+    familyTreeViewport.releasePointerCapture?.(event.pointerId);
+    saveFamilyTreeView();
+  };
+  familyTreeViewport.addEventListener("pointerup", stopPanning);
+  familyTreeViewport.addEventListener("pointercancel", stopPanning);
+  familyTreeViewport.addEventListener("wheel", (event) => {
+    event.preventDefault();
+    const rect = familyTreeViewport.getBoundingClientRect();
+    const direction = event.deltaY > 0 ? -0.08 : 0.08;
+    zoomFamilyTree(familyTreeView.scale + direction, event.clientX - rect.left, event.clientY - rect.top);
+  }, { passive: false });
+}
+
+window.addEventListener("load", () => {
+  renderFamilyTree(true);
+  document.fonts?.ready.then(scheduleFamilyTreeRender);
+});
+window.addEventListener("resize", () => {
+  if (!familyTreeUserMoved) renderFamilyTree(false);
+  else scheduleFamilyTreeRender();
+});
 
 document.querySelectorAll("[data-preview-input]").forEach((input) => {
   input.addEventListener("change", () => {

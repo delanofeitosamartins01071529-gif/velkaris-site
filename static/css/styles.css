@@ -276,6 +276,35 @@ body.is-loaded .loading-screen {
   width: 100%;
 }
 
+.tree-jump-button {
+  position: fixed;
+  right: clamp(0.9rem, 2vw, 1.6rem);
+  bottom: clamp(1rem, 2.5vw, 1.8rem);
+  z-index: 50;
+  display: grid;
+  width: 50px;
+  height: 50px;
+  place-items: center;
+  border: 1px solid rgba(240, 208, 139, 0.5);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(240, 208, 139, 0.16), rgba(5, 8, 13, 0.92) 62%),
+    linear-gradient(180deg, rgba(16, 31, 54, 0.92), rgba(3, 6, 10, 0.96));
+  color: var(--bright-gold);
+  font-size: 1.25rem;
+  text-decoration: none;
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.45), 0 0 28px rgba(185, 148, 85, 0.18);
+  transition: transform 0.24s ease, border-color 0.24s ease, box-shadow 0.24s ease;
+}
+
+.tree-jump-button:hover,
+.tree-jump-button:focus-visible {
+  border-color: var(--bright-gold);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5), 0 0 36px rgba(240, 208, 139, 0.24);
+  outline: 0;
+  transform: translateY(-3px);
+}
+
 .header-actions {
   display: inline-flex;
   align-items: center;
@@ -1416,6 +1445,158 @@ body.is-loaded .loading-screen {
   filter: saturate(0.5);
 }
 
+.family-tree-viewport {
+  position: relative;
+  height: clamp(620px, 72vh, 820px);
+  min-height: 620px;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgba(185, 148, 85, 0.24);
+  background:
+    radial-gradient(circle at 50% 25%, rgba(17, 42, 76, 0.2), transparent 32rem),
+    linear-gradient(180deg, rgba(5, 11, 20, 0.78), rgba(2, 5, 9, 0.92));
+  contain: layout paint;
+  cursor: grab;
+  touch-action: none;
+}
+
+.family-tree-viewport::before {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  content: "";
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(142, 166, 199, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(142, 166, 199, 0.035) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: radial-gradient(circle at 50% 50%, #000 0%, transparent 78%);
+}
+
+.family-tree-viewport.is-panning {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.family-tree-stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+.family-tree-nodes,
+.family-tree-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.family-tree-lines {
+  z-index: 0;
+}
+
+.family-tree-nodes {
+  z-index: 1;
+}
+
+.family-tree-stage .tree-node {
+  position: absolute;
+  width: 142px;
+  min-height: 174px;
+  padding: 0.78rem 0.55rem;
+  border: 1px solid rgba(185, 148, 85, 0.38);
+  background:
+    linear-gradient(180deg, rgba(11, 18, 30, 0.9), rgba(3, 6, 10, 0.94)),
+    radial-gradient(circle at 50% 0%, rgba(142, 166, 199, 0.12), transparent 7rem);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.34), inset 0 0 0 1px rgba(255, 255, 255, 0.025);
+  isolation: isolate;
+  transition: border-color 0.28s ease, box-shadow 0.28s ease, background 0.28s ease, filter 0.28s ease;
+}
+
+.family-tree-stage .tree-node:hover,
+.family-tree-stage .tree-node:focus-visible {
+  border-color: rgba(240, 208, 139, 0.72);
+  background:
+    linear-gradient(180deg, rgba(15, 26, 43, 0.94), rgba(3, 6, 10, 0.96)),
+    radial-gradient(circle at 50% 0%, rgba(240, 208, 139, 0.15), transparent 7rem);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.45), 0 0 32px rgba(185, 148, 85, 0.2), inset 0 0 0 1px rgba(240, 208, 139, 0.08);
+  outline: 0;
+  transform: none;
+}
+
+.family-tree-stage .tree-node strong,
+.family-tree-stage .tree-node small {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.family-tree-stage .tree-node strong {
+  color: var(--bright-gold);
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.family-tree-stage .tree-node span {
+  max-width: 100%;
+  overflow: hidden;
+  color: rgba(232, 224, 211, 0.7);
+  font-family: var(--font-serif);
+  font-size: 0.82rem;
+  text-overflow: ellipsis;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.family-tree-stage .tree-node small {
+  color: var(--moon-blue);
+  font-family: var(--font-display);
+  font-size: 0.58rem;
+  text-transform: uppercase;
+}
+
+.family-tree-stage .tree-node.status-morto img {
+  filter: grayscale(0.9) brightness(0.72);
+}
+
+.family-tree-stage .tree-node.status-morto {
+  border-color: rgba(123, 131, 145, 0.42);
+}
+
+.family-tree-stage .tree-node.status-desaparecido img {
+  opacity: 0.62;
+  filter: saturate(0.5);
+}
+
+.family-tree-stage .tree-fold {
+  position: absolute;
+  margin: 0;
+}
+
+.tree-viewport-hint {
+  position: absolute;
+  right: 1rem;
+  bottom: 0.9rem;
+  z-index: 3;
+  max-width: min(470px, calc(100% - 2rem));
+  margin: 0;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid rgba(185, 148, 85, 0.2);
+  background: rgba(3, 6, 10, 0.62);
+  color: rgba(232, 224, 211, 0.68);
+  font-family: var(--font-serif);
+  font-size: 0.92rem;
+  pointer-events: none;
+}
+
 .empty-state {
   margin: 0;
   padding: 1rem;
@@ -2428,6 +2609,17 @@ body.is-loaded .loading-screen {
   .genealogy > * {
     min-width: 740px;
   }
+
+  .family-tree-viewport {
+    height: min(760px, 74svh);
+    min-height: 560px;
+    overflow: hidden;
+    padding-bottom: 0;
+  }
+
+  .family-tree-viewport > * {
+    min-width: 0;
+  }
 }
 
 @media (max-width: 640px) {
@@ -2438,6 +2630,25 @@ body.is-loaded .loading-screen {
   .site-header {
     min-height: 68px;
     padding-inline: 0.85rem;
+  }
+
+  .tree-jump-button {
+    width: 44px;
+    height: 44px;
+    right: 0.8rem;
+    bottom: 0.8rem;
+  }
+
+  .family-tree-viewport {
+    height: 680px;
+    min-height: 520px;
+  }
+
+  .tree-viewport-hint {
+    left: 0.75rem;
+    right: 0.75rem;
+    max-width: none;
+    font-size: 0.82rem;
   }
 
   .brand-mark span {

@@ -626,6 +626,32 @@ def build_family_tree(members: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return [branch(root, set()) for root in roots]
 
 
+def build_family_tree_payload(branches: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    def member_payload(member: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "id": member.get("id", ""),
+            "name": member.get("name", ""),
+            "title": member.get("title", ""),
+            "branch": member.get("branch", "Casa Velkaris"),
+            "generation": member.get("generation", ""),
+            "status": member.get("status", ""),
+            "statusClass": slugify(member.get("status", "")),
+            "image": media_url(member.get("image", "")),
+        }
+
+    def branch_payload(branch: dict[str, Any]) -> dict[str, Any]:
+        members = [member_payload(member) for member in branch.get("members", [])]
+        return {
+            "id": "-".join(member.get("id", "") for member in branch.get("members", [])) or item_id("tree"),
+            "members": members,
+            "linkMemberId": branch.get("link_member_id"),
+            "linePosition": branch.get("line_position", "50%"),
+            "children": [branch_payload(child) for child in branch.get("children", [])],
+        }
+
+    return [branch_payload(branch) for branch in branches]
+
+
 @app.context_processor
 def inject_globals() -> dict[str, Any]:
     try:
@@ -654,12 +680,14 @@ def index():
     if len(featured_members) < 5:
         featured_ids = {member["id"] for member in featured_members}
         featured_members.extend([member for member in members if member["id"] not in featured_ids][: 5 - len(featured_members)])
+    family_tree = build_family_tree(members)
     return render_template(
         "index.html",
         members=members,
         house=house,
         featured_members=featured_members[:5],
-        family_tree=build_family_tree(members),
+        family_tree=family_tree,
+        family_tree_payload=build_family_tree_payload(family_tree),
         generation_options=GENERATION_OPTIONS,
     )
 
