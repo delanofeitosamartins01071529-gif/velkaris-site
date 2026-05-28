@@ -37,9 +37,12 @@
 
       const parent = point(couple.getBoundingClientRect(), 0.5, 1);
       const childTops = visibleChildren
-        .map((child) => child.querySelector(":scope > [data-pedigree-couple]"))
-        .filter(Boolean)
-        .map((childCouple) => point(childCouple.getBoundingClientRect(), 0.5, 0));
+        .map((child) => {
+          const childCouple = child.querySelector(":scope > [data-pedigree-couple]");
+          const anchorNode = child.querySelector(":scope > [data-pedigree-couple] > .tree-node.is-line-anchor") || childCouple;
+          return anchorNode ? point(anchorNode.getBoundingClientRect(), 0.5, 0) : null;
+        })
+        .filter(Boolean);
       if (!childTops.length) return;
 
       const junctionY = parent.y + Math.min(46, Math.max(28, (Math.min(...childTops.map((child) => child.y)) - parent.y) * 0.52));

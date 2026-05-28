@@ -120,11 +120,38 @@
               <dl class="member-facts">
                 <div><dt>Status</dt><dd>{{ member.status }}</dd></div>
                 {% if member.status == "Morto" and member.death_cause %}<div><dt>Causa da morte</dt><dd>{{ member.death_cause }}</dd></div>{% endif %}
+                <div><dt>Posicao</dt><dd>{{ member.generation }}</dd></div>
                 <div><dt>Ramo</dt><dd>{{ member.branch }}</dd></div>
                 {% if member.territory %}<div><dt>Domínio</dt><dd>{{ member.territory }}</dd></div>{% endif %}
                 {% if member.birth_year %}<div><dt>Nascimento</dt><dd>{{ member.birth_year }}</dd></div>{% endif %}
                 {% if member.spouse %}<div><dt>Aliança</dt><dd>{{ member.spouse }}</dd></div>{% endif %}
               </dl>
+              <div class="member-relations">
+                <div>
+                  <span>Pais</span>
+                  <p>
+                    {% for parent in members if parent.id in member.parent_ids %}
+                      {{ parent.name }}{% if not loop.last %}, {% endif %}
+                    {% else %}
+                      Registro selado
+                    {% endfor %}
+                  </p>
+                </div>
+                <div>
+                  <span>Conjuge</span>
+                  <p>{{ member.spouse or "Sem alianca registrada" }}</p>
+                </div>
+                <div>
+                  <span>Filhos</span>
+                  <p>
+                    {% for child in members if member.id in child.parent_ids %}
+                      {{ child.name }}{% if not loop.last %}, {% endif %}
+                    {% else %}
+                      Nenhum descendente registrado
+                    {% endfor %}
+                  </p>
+                </div>
+              </div>
               <p>{{ member.biography }}</p>
               {% if member.traits %}
                 <div class="member-traits">
@@ -139,13 +166,17 @@
       {% endfor %}
     </section>
 
-    <section class="panel tree-panel reveal" data-reveal>
+    <section class="panel tree-panel reveal" id="arvore" data-reveal>
       <div class="panel-heading row-heading">
         <div>
           <p class="section-kicker">Árvore Genealógica</p>
           <h2>{{ house.tree_heading }}</h2>
         </div>
-        <div class="tree-controls">
+        <div class="tree-controls" aria-label="Controles da arvore">
+          <button type="button" data-tree-zoom-out aria-label="Diminuir zoom">-</button>
+          <button type="button" data-tree-zoom-reset aria-label="Restaurar zoom">100%</button>
+          <button type="button" data-tree-zoom-in aria-label="Aumentar zoom">+</button>
+          <button type="button" data-tree-center>Centralizar</button>
           <button type="button" data-tree-expand>Expandir</button>
           <button type="button" data-tree-collapse>Selar</button>
         </div>
@@ -153,18 +184,22 @@
       <div class="genealogy pedigree-board" data-tree data-pedigree>
         <svg class="pedigree-lines" data-pedigree-lines aria-hidden="true"></svg>
         {% macro render_branch(branch) %}
-          <li class="tree-branch pedigree-family" data-pedigree-family>
+          <li class="tree-branch pedigree-family" data-pedigree-family style="--branch-line-x: {{ branch.line_position }};">
             <div class="tree-couple pedigree-couple {% if branch.members|length > 1 %}has-partner{% endif %}" data-pedigree-couple>
               {% for tree_member in branch.members %}
-                <button class="tree-node is-open status-{{ tree_member.status|lower }} {% if branch.link_member_id == tree_member.id %}is-line-anchor{% endif %}" type="button" data-tree-toggle>
+                <button class="tree-node is-open status-{{ tree_member.status|lower }} {% if branch.link_member_id == tree_member.id %}is-line-anchor{% endif %}" type="button" data-member-open="{{ tree_member.id }}" aria-label="Abrir registro de {{ tree_member.name }}">
                   <img src="{{ media_url(tree_member.image) }}" alt="">
                   <strong>{{ tree_member.name }}</strong>
                   <span>{{ tree_member.title }}</span>
-                                <small>{{ tree_member.generation }} - {{ tree_member.status }}</small>
+                  <b class="tree-node-role">{{ tree_member.branch or "Casa Velkaris" }}</b>
+                  <small>{{ tree_member.generation }} - {{ tree_member.status }}</small>
                 </button>
               {% endfor %}
             </div>
             {% if branch.children %}
+              <button class="tree-fold is-open" type="button" data-tree-toggle aria-label="Alternar descendentes">
+                <span></span>
+              </button>
               <ul class="pedigree-children {% if branch.children|length == 1 %}is-single-child{% endif %}" data-pedigree-children>
                 {% for child in branch.children %}
                   {{ render_branch(child) }}

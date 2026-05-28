@@ -58,6 +58,7 @@ Recursos principais:
 - Ancestrais em cards compactos e clicáveis.
 - Cards de familiares com modal detalhado.
 - Página individual por familiar, por exemplo `/linhagem/kayzer-velkaris`.
+- Árvore genealógica com casais lado a lado, filhos centralizados, zoom, pan/arrastar, linhas SVG recalculadas e modal ao clicar em qualquer membro.
 - Mapa interativo de territórios.
 - Linha do tempo histórica.
 - Sistema de eras.
@@ -118,3 +119,9 @@ Também pode ser adaptado para Railway ou Fly.io usando o mesmo comando de start
 - Configure Supabase para persistência real de conteúdo e uploads.
 - Configure domínio próprio no provedor de deploy.
 - Mantenha `SUPABASE_SERVICE_ROLE_KEY` apenas no backend.
+
+## Fluxo da Árvore
+
+No painel admin, use `Montagem visual da linhagem` para vincular o par/cônjuge e marcar os filhos daquele núcleo. Apenas um membro do casal edita os filhos do núcleo, evitando duplicidade. Depois use `Salvar toda a arvore` para publicar várias alterações de uma vez.
+
+A renderização pública escolhe automaticamente o ramo principal de cada casal pela ordem visual/admin, separa gerações, evita duplicar o mesmo núcleo familiar e ancora a linha no membro correto do casal, por exemplo no Olaf quando apenas ele é filho dos ascendentes.

@@ -827,6 +827,11 @@ body.is-loaded .loading-screen {
   background: rgba(5, 8, 13, 0.72);
 }
 
+.tree-controls button[data-tree-zoom-reset] {
+  min-width: 64px;
+  color: rgba(232, 224, 211, 0.86);
+}
+
 .member-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1062,6 +1067,7 @@ body.is-loaded .loading-screen {
 }
 
 .member-facts div,
+.member-relations div,
 .member-traits {
   padding: 0.75rem;
   border: 1px solid rgba(185, 148, 85, 0.22);
@@ -1069,6 +1075,7 @@ body.is-loaded .loading-screen {
 }
 
 .member-facts dt,
+.member-relations span,
 .member-traits span {
   color: var(--old-gold);
   font-family: var(--font-display);
@@ -1077,21 +1084,59 @@ body.is-loaded .loading-screen {
 }
 
 .member-facts dd,
+.member-relations p,
 .member-traits p {
   margin: 0.2rem 0 0;
   color: rgba(232, 224, 211, 0.82);
 }
 
+.member-relations {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+  margin: 1rem 0;
+}
+
 .genealogy {
+  --tree-scale: 1;
   position: relative;
   overflow: auto;
   min-height: 460px;
   padding: 2rem 1rem 2.5rem;
+  cursor: grab;
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
+  scrollbar-color: rgba(185, 148, 85, 0.56) rgba(5, 8, 13, 0.4);
+  scrollbar-width: thin;
   transition: min-height 0.35s ease;
 }
 
 .genealogy.is-collapsed {
   min-height: 280px;
+}
+
+.genealogy.is-panning {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.genealogy button,
+.genealogy a {
+  cursor: pointer;
+}
+
+.genealogy::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.genealogy::-webkit-scrollbar-track {
+  background: rgba(5, 8, 13, 0.5);
+}
+
+.genealogy::-webkit-scrollbar-thumb {
+  border: 2px solid rgba(5, 8, 13, 0.8);
+  background: linear-gradient(180deg, rgba(240, 208, 139, 0.72), rgba(76, 93, 125, 0.72));
 }
 
 .pedigree-lines {
@@ -1176,15 +1221,24 @@ body.is-loaded .loading-screen {
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  gap: clamp(2.5rem, 7vw, 6rem);
+  gap: clamp(1.6rem, 4vw, 4rem);
   align-items: flex-start;
   padding: 1.2rem 1.2rem 2.4rem;
+  zoom: var(--tree-scale);
+  transition: filter 0.25s ease;
+}
+
+@supports not (zoom: 1) {
+  .family-tree {
+    transform: scale(var(--tree-scale));
+    transform-origin: top center;
+  }
 }
 
 .family-tree ul {
   display: flex;
   justify-content: center;
-  gap: clamp(2rem, 5vw, 4.5rem);
+  gap: clamp(1.25rem, 3.2vw, 3rem);
   padding-top: 4.4rem;
 }
 
@@ -1214,6 +1268,52 @@ body.is-loaded .loading-screen {
   display: none;
 }
 
+.tree-fold {
+  position: relative;
+  z-index: 3;
+  display: inline-grid;
+  width: 30px;
+  height: 30px;
+  min-height: 30px;
+  place-items: center;
+  margin: 0.72rem 0 -2.35rem;
+  border: 1px solid rgba(240, 208, 139, 0.44);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(240, 208, 139, 0.2), rgba(5, 8, 13, 0.92) 64%),
+    linear-gradient(180deg, rgba(21, 34, 56, 0.94), rgba(3, 6, 10, 0.98));
+  box-shadow: 0 0 20px rgba(185, 148, 85, 0.18), inset 0 0 12px rgba(240, 208, 139, 0.08);
+  color: var(--bright-gold);
+  cursor: pointer;
+  transition: transform 0.24s ease, border-color 0.24s ease, box-shadow 0.24s ease;
+}
+
+.tree-fold span,
+.tree-fold::after {
+  position: absolute;
+  width: 12px;
+  height: 1px;
+  content: "";
+  background: currentColor;
+  box-shadow: 0 0 10px rgba(240, 208, 139, 0.5);
+  transition: transform 0.24s ease;
+}
+
+.tree-fold::after {
+  transform: rotate(90deg);
+}
+
+.tree-fold.is-open::after {
+  transform: rotate(0deg);
+}
+
+.tree-fold:hover,
+.tree-fold:focus-visible {
+  border-color: var(--bright-gold);
+  box-shadow: 0 0 28px rgba(240, 208, 139, 0.26), inset 0 0 16px rgba(240, 208, 139, 0.1);
+  transform: translateY(-2px);
+}
+
 .pedigree-children {
   transform-origin: top center;
   transition: opacity 0.24s ease, transform 0.24s ease;
@@ -1231,7 +1331,7 @@ body.is-loaded .loading-screen {
 }
 
 .family-tree .tree-node {
-  width: 144px;
+  width: 136px;
   min-height: 166px;
   padding: 0.78rem 0.55rem;
   border: 1px solid rgba(185, 148, 85, 0.38);
@@ -1239,6 +1339,9 @@ body.is-loaded .loading-screen {
     linear-gradient(180deg, rgba(11, 18, 30, 0.84), rgba(3, 6, 10, 0.9)),
     radial-gradient(circle at 50% 0%, rgba(142, 166, 199, 0.12), transparent 7rem);
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.34), inset 0 0 0 1px rgba(255, 255, 255, 0.025);
+  isolation: isolate;
+  transform: translateY(0);
+  transition: transform 0.28s ease, border-color 0.28s ease, box-shadow 0.28s ease, background 0.28s ease, filter 0.28s ease;
 }
 
 .family-tree .tree-node strong,
@@ -1268,11 +1371,36 @@ body.is-loaded .loading-screen {
   white-space: nowrap;
 }
 
+.tree-node-role {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  color: rgba(240, 208, 139, 0.76);
+  font-family: var(--font-body);
+  font-size: 0.55rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
 .family-tree .tree-node small {
   color: var(--moon-blue);
   font-family: var(--font-display);
   font-size: 0.58rem;
   text-transform: uppercase;
+}
+
+.family-tree .tree-node:hover,
+.family-tree .tree-node:focus-visible {
+  border-color: rgba(240, 208, 139, 0.72);
+  background:
+    linear-gradient(180deg, rgba(15, 26, 43, 0.92), rgba(3, 6, 10, 0.95)),
+    radial-gradient(circle at 50% 0%, rgba(240, 208, 139, 0.15), transparent 7rem);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.45), 0 0 32px rgba(185, 148, 85, 0.2), inset 0 0 0 1px rgba(240, 208, 139, 0.08);
+  outline: 0;
+  transform: translateY(-5px);
 }
 
 .family-tree .tree-node.status-morto img {
@@ -2276,6 +2404,7 @@ body.is-loaded .loading-screen {
   .admin-list.two-col,
   .admin-media-strip,
   .member-modal-shell,
+  .member-relations,
   .member-page-grid,
   .member-facts {
     grid-template-columns: 1fr;

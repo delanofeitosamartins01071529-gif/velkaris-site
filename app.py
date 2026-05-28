@@ -441,10 +441,14 @@ def record_failed_login(key: str) -> None:
 def valid_partner_id(member: dict[str, Any], by_id: dict[str, dict[str, Any]]) -> str:
     partner_id = str(member.get("partner_id") or "").strip()
     member_name_key = slugify(member.get("name", ""))
-    spouse_key = slugify(member.get("spouse", ""))
+    spouse_raw = str(member.get("spouse") or "").strip()
+    spouse_key = slugify(spouse_raw) if spouse_raw else ""
 
     def spouse_points_to(person: dict[str, Any], target: dict[str, Any]) -> bool:
-        spouse = slugify(person.get("spouse", ""))
+        spouse_raw_value = str(person.get("spouse") or "").strip()
+        if not spouse_raw_value:
+            return True
+        spouse = slugify(spouse_raw_value)
         return not spouse or spouse == slugify(target.get("name", ""))
 
     if partner_id and partner_id in by_id and partner_id != member["id"]:
@@ -548,13 +552,27 @@ def build_family_tree(members: list[dict[str, Any]]) -> list[dict[str, Any]]:
         candidates.sort(key=lambda candidate: (-candidate[0], -candidate[2], -candidate[3], -candidate[1], unit_sort_key(candidate[4])))
         return candidates[0][4]
 
+    candidate_links_by_child: dict[tuple[str, ...], list[tuple[tuple[str, ...], str]]] = {}
     for member in tree_members:
         parent_unit = parent_unit_for(member)
         child_unit = unit_by_person.get(member["id"])
         if not parent_unit or not child_unit or parent_unit == child_unit:
             continue
+        candidate_links_by_child.setdefault(child_unit, []).append((parent_unit, member["id"]))
+
+    def link_sort_key(candidate: tuple[tuple[str, ...], str]) -> tuple[int, int, tuple[int, int, str]]:
+        parent_unit, member_id = candidate
+        member = by_id.get(member_id, {})
+        return (
+            as_int(member.get("sort_order"), 999),
+            generation_rank(member),
+            unit_sort_key(parent_unit),
+        )
+
+    for child_unit, candidates in candidate_links_by_child.items():
+        parent_unit, link_member_id = sorted(candidates, key=link_sort_key)[0]
         children_by_unit.setdefault(parent_unit, {})
-        children_by_unit[parent_unit].setdefault(child_unit, member["id"])
+        children_by_unit[parent_unit].setdefault(child_unit, link_member_id)
         root_units.discard(child_unit)
 
     def line_position(people: list[dict[str, Any]], link_member_id: str | None) -> str:

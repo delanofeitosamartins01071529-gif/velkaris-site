@@ -170,31 +170,96 @@ document.querySelectorAll("[data-status-select]").forEach((select) => {
 });
 
 const tree = document.querySelector("[data-tree]");
+const pedigreeBoard = document.querySelector("[data-pedigree]");
+const familyTreeCanvas = pedigreeBoard?.querySelector(".family-tree");
+let pedigreeScale = 1;
+let hasUserMovedPedigree = false;
+
+const schedulePedigreeDraw = () => requestAnimationFrame(drawPedigreeLines);
+
 const setTreeOpen = (open) => {
   tree?.classList.toggle("is-collapsed", !open);
   document.querySelectorAll(".tree-branch").forEach((branch) => branch.classList.toggle("is-collapsed", !open));
   document.querySelectorAll(".tree-node").forEach((node) => node.classList.toggle("is-open", open));
+  document.querySelectorAll("[data-tree-toggle]").forEach((control) => control.classList.toggle("is-open", open));
 };
 document.querySelector("[data-tree-expand]")?.addEventListener("click", () => setTreeOpen(true));
 document.querySelector("[data-tree-collapse]")?.addEventListener("click", () => setTreeOpen(false));
-document.querySelectorAll(".tree-node[data-node]").forEach((node) => {
-  node.addEventListener("click", () => {
-    node.classList.toggle("is-open");
-    tree?.classList.toggle("is-collapsed");
-  });
-});
 document.querySelectorAll("[data-tree-toggle]").forEach((node) => {
   node.addEventListener("click", () => {
     const branch = node.closest(".tree-branch");
     if (!branch?.querySelector("ul")) return;
     branch.classList.toggle("is-collapsed");
     node.classList.toggle("is-open", !branch.classList.contains("is-collapsed"));
-    requestAnimationFrame(drawPedigreeLines);
+    node.setAttribute("aria-expanded", String(!branch.classList.contains("is-collapsed")));
+    schedulePedigreeDraw();
   });
 });
 
+const setPedigreeScale = (nextScale, shouldCenter = false) => {
+  pedigreeScale = Math.min(1.35, Math.max(0.62, Number(nextScale) || 1));
+  pedigreeBoard?.style.setProperty("--tree-scale", pedigreeScale.toFixed(2));
+  const label = document.querySelector("[data-tree-zoom-reset]");
+  if (label) label.textContent = `${Math.round(pedigreeScale * 100)}%`;
+  if (shouldCenter) requestAnimationFrame(() => centerPedigree(false));
+  schedulePedigreeDraw();
+};
+
+const centerPedigree = (smooth = true) => {
+  if (!pedigreeBoard || !familyTreeCanvas) return;
+  const left = Math.max(0, (pedigreeBoard.scrollWidth - pedigreeBoard.clientWidth) / 2);
+  const top = Math.max(0, Math.min(pedigreeBoard.scrollTop, pedigreeBoard.scrollHeight - pedigreeBoard.clientHeight));
+  pedigreeBoard.scrollTo({ left, top, behavior: smooth ? "smooth" : "auto" });
+  schedulePedigreeDraw();
+};
+
+document.querySelector("[data-tree-zoom-out]")?.addEventListener("click", () => setPedigreeScale(pedigreeScale - 0.1, true));
+document.querySelector("[data-tree-zoom-in]")?.addEventListener("click", () => setPedigreeScale(pedigreeScale + 0.1, true));
+document.querySelector("[data-tree-zoom-reset]")?.addEventListener("click", () => setPedigreeScale(1, true));
+document.querySelector("[data-tree-center]")?.addEventListener("click", () => centerPedigree(true));
+
+if (pedigreeBoard) {
+  let startX = 0;
+  let startY = 0;
+  let startLeft = 0;
+  let startTop = 0;
+  let isPanning = false;
+
+  pedigreeBoard.addEventListener("pointerdown", (event) => {
+    if (event.button !== 0 || event.target.closest("button, a, input, select, textarea, label")) return;
+    isPanning = true;
+    hasUserMovedPedigree = true;
+    startX = event.clientX;
+    startY = event.clientY;
+    startLeft = pedigreeBoard.scrollLeft;
+    startTop = pedigreeBoard.scrollTop;
+    pedigreeBoard.classList.add("is-panning");
+    pedigreeBoard.setPointerCapture?.(event.pointerId);
+  });
+
+  pedigreeBoard.addEventListener("pointermove", (event) => {
+    if (!isPanning) return;
+    event.preventDefault();
+    pedigreeBoard.scrollLeft = startLeft - (event.clientX - startX);
+    pedigreeBoard.scrollTop = startTop - (event.clientY - startY);
+    schedulePedigreeDraw();
+  });
+
+  const stopPanning = (event) => {
+    if (!isPanning) return;
+    isPanning = false;
+    pedigreeBoard.classList.remove("is-panning");
+    pedigreeBoard.releasePointerCapture?.(event.pointerId);
+  };
+  pedigreeBoard.addEventListener("pointerup", stopPanning);
+  pedigreeBoard.addEventListener("pointercancel", stopPanning);
+  pedigreeBoard.addEventListener("wheel", () => {
+    hasUserMovedPedigree = true;
+  }, { passive: true });
+}
+
 const drawPedigreeLines = () => {
-  const board = document.querySelector("[data-pedigree]");
+  const board = pedigreeBoard;
   const svg = document.querySelector("[data-pedigree-lines]");
   if (!board || !svg) return;
 
@@ -233,7 +298,8 @@ const drawPedigreeLines = () => {
     const parent = point(coupleRect, 0.5, 1);
     const childTops = visibleChildren.map((child) => {
       const childCouple = child.querySelector(":scope > [data-pedigree-couple]");
-      return childCouple ? point(childCouple.getBoundingClientRect(), 0.5, 0) : null;
+      const anchorNode = child.querySelector(":scope > [data-pedigree-couple] > .tree-node.is-line-anchor") || childCouple;
+      return anchorNode ? point(anchorNode.getBoundingClientRect(), 0.5, 0) : null;
     }).filter(Boolean);
     if (!childTops.length) return;
 
@@ -246,11 +312,14 @@ const drawPedigreeLines = () => {
   });
 };
 
-window.addEventListener("load", () => requestAnimationFrame(drawPedigreeLines));
-window.addEventListener("resize", () => requestAnimationFrame(drawPedigreeLines));
-document.querySelector("[data-pedigree]")?.addEventListener("scroll", () => requestAnimationFrame(drawPedigreeLines), { passive: true });
-document.querySelector("[data-tree-expand]")?.addEventListener("click", () => requestAnimationFrame(drawPedigreeLines));
-document.querySelector("[data-tree-collapse]")?.addEventListener("click", () => requestAnimationFrame(drawPedigreeLines));
+window.addEventListener("load", () => {
+  if (pedigreeBoard && !hasUserMovedPedigree) centerPedigree(false);
+  schedulePedigreeDraw();
+});
+window.addEventListener("resize", schedulePedigreeDraw);
+pedigreeBoard?.addEventListener("scroll", schedulePedigreeDraw, { passive: true });
+document.querySelector("[data-tree-expand]")?.addEventListener("click", schedulePedigreeDraw);
+document.querySelector("[data-tree-collapse]")?.addEventListener("click", schedulePedigreeDraw);
 
 document.querySelectorAll("[data-preview-input]").forEach((input) => {
   input.addEventListener("change", () => {
