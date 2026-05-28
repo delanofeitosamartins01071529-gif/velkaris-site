@@ -898,6 +898,7 @@ def update_member_fields_from_sources(member: dict[str, Any], index: int, form, 
 
 def update_member_tree_fields_from_sources(member: dict[str, Any], index: int, form, files, prefix: str = "") -> dict[str, Any]:
     updated = dict(member)
+    updated["title"] = form.get(f"{prefix}title", updated.get("title", "Retrato reservado")).strip() or "Retrato reservado"
     updated["generation"] = form.get(f"{prefix}generation", updated.get("generation", GENERATION_OPTIONS[0])).strip() or GENERATION_OPTIONS[0]
     updated["status"] = normalize_status(form.get(f"{prefix}status", updated.get("status", "Vivo")))
     updated["death_cause"] = form.get(f"{prefix}death_cause", "").strip() if updated["status"] == "Morto" else ""

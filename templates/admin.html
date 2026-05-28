@@ -326,6 +326,10 @@
                 <input type="file" name="portrait" accept=".png,.jpg,.jpeg,.webp" data-preview-input>
               </label>
               <label>
+                Titulo do card
+                <input type="text" name="title" value="{{ member.title }}" placeholder="O Patriarca, A Matriarca, O Punho Forte...">
+              </label>
+              <label>
                 Geração
                 <select name="generation">
                   {% for generation in generation_options %}
