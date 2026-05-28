@@ -68,19 +68,23 @@
       </div>
     </section>
 
-    <section class="panel members-panel reveal" id="linhagem" data-reveal>
+    <section class="panel members-panel reveal is-collapsed" id="linhagem" data-reveal data-portraits-section>
       <div class="panel-heading row-heading">
         <div>
           <p class="section-kicker">Membros da Família</p>
           <h2>{{ house.members_heading }}</h2>
         </div>
+        <button class="portrait-toggle" type="button" data-portraits-toggle aria-expanded="false" aria-controls="portrait-gallery">
+          <span data-portraits-toggle-label>Expandir retratos</span>
+        </button>
+      </div>
+      <div class="portrait-gallery" id="portrait-gallery" data-portraits-content hidden>
         <div class="filter-bar" aria-label="Filtrar por geração">
           <button type="button" class="is-active" data-filter="all">Todos</button>
           {% for generation in generation_options %}
             <button type="button" data-filter="{{ generation }}">{{ generation.split(" ")[0] }}</button>
           {% endfor %}
         </div>
-      </div>
       <div class="member-grid">
         {% for member in members %}
           <article class="member-card" role="button" tabindex="0" data-member-card data-member-open="{{ member.id }}" data-generation="{{ member.generation }}">
@@ -164,6 +168,7 @@
           </div>
         </dialog>
       {% endfor %}
+      </div>
     </section>
 
     <section class="panel tree-panel reveal" id="arvore" data-reveal>

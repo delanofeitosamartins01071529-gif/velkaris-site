@@ -560,7 +560,8 @@ body.is-loaded .loading-screen {
 .ghost-cta,
 .text-link,
 .filter-bar button,
-.tree-controls button {
+.tree-controls button,
+.portrait-toggle {
   position: relative;
   display: inline-flex;
   min-height: 44px;
@@ -585,7 +586,9 @@ body.is-loaded .loading-screen {
 .text-link:hover,
 .filter-bar button:hover,
 .filter-bar button.is-active,
-.tree-controls button:hover {
+.tree-controls button:hover,
+.portrait-toggle:hover,
+.portrait-toggle[aria-expanded="true"] {
   color: #fff3d8;
   border-color: var(--bright-gold);
   box-shadow: 0 0 26px rgba(185, 148, 85, 0.18), inset 0 0 18px rgba(185, 148, 85, 0.08);
@@ -854,6 +857,27 @@ body.is-loaded .loading-screen {
   min-height: 38px;
   padding: 0.55rem 0.85rem;
   background: rgba(5, 8, 13, 0.72);
+}
+
+.portrait-toggle {
+  min-width: 176px;
+  background:
+    radial-gradient(circle at 18% 50%, rgba(240, 208, 139, 0.16), transparent 5rem),
+    linear-gradient(180deg, rgba(35, 27, 17, 0.72), rgba(7, 10, 15, 0.86));
+  white-space: nowrap;
+}
+
+.portrait-gallery {
+  overflow: hidden;
+  will-change: height, opacity, transform;
+}
+
+.portrait-gallery .filter-bar {
+  margin-bottom: 1rem;
+}
+
+.portrait-gallery[hidden] {
+  display: none;
 }
 
 .tree-controls button[data-tree-zoom-reset] {
@@ -2710,6 +2734,10 @@ body.is-loaded .loading-screen {
 
   .filter-bar {
     justify-content: start;
+  }
+
+  .portrait-toggle {
+    width: 100%;
   }
 
   .span-2,

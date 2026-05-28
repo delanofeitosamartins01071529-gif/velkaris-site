@@ -89,6 +89,74 @@ document.querySelectorAll("[data-filter]").forEach((button) => {
   });
 });
 
+const portraitsSection = document.querySelector("[data-portraits-section]");
+const portraitsContent = document.querySelector("[data-portraits-content]");
+const portraitsToggle = document.querySelector("[data-portraits-toggle]");
+const portraitsToggleLabel = document.querySelector("[data-portraits-toggle-label]");
+let isPortraitsExpanded = false;
+let portraitsAnimation = null;
+
+const clearPortraitAnimationStyles = () => {
+  if (!portraitsContent) return;
+  portraitsContent.style.height = "";
+  portraitsContent.style.opacity = "";
+  portraitsContent.style.transform = "";
+  portraitsContent.style.overflow = "";
+};
+
+const setPortraitsExpanded = (expanded, animate = true) => {
+  if (!portraitsSection || !portraitsContent || !portraitsToggle) return;
+  if (portraitsAnimation) portraitsAnimation.cancel();
+  isPortraitsExpanded = expanded;
+  portraitsToggle.setAttribute("aria-expanded", String(expanded));
+  portraitsToggleLabel && (portraitsToggleLabel.textContent = expanded ? "Recolher retratos" : "Expandir retratos");
+  portraitsSection.classList.toggle("is-expanded", expanded);
+  portraitsSection.classList.toggle("is-collapsed", !expanded);
+
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (expanded) portraitsContent.hidden = false;
+  if (!animate || reduceMotion || typeof portraitsContent.animate !== "function") {
+    portraitsContent.hidden = !expanded;
+    clearPortraitAnimationStyles();
+    return;
+  }
+
+  const startHeight = expanded ? 0 : portraitsContent.scrollHeight;
+  const endHeight = expanded ? portraitsContent.scrollHeight : 0;
+  portraitsContent.style.overflow = "hidden";
+  portraitsContent.style.height = `${startHeight}px`;
+  portraitsContent.style.opacity = expanded ? "0" : "1";
+  portraitsContent.style.transform = expanded ? "translateY(-10px)" : "translateY(0)";
+  portraitsContent.offsetHeight;
+
+  const animation = portraitsContent.animate(
+    [
+      { height: `${startHeight}px`, opacity: expanded ? 0 : 1, transform: expanded ? "translateY(-10px)" : "translateY(0)" },
+      { height: `${endHeight}px`, opacity: expanded ? 1 : 0, transform: expanded ? "translateY(0)" : "translateY(-8px)" },
+    ],
+    {
+      duration: expanded ? 540 : 360,
+      easing: "cubic-bezier(0.16, 1, 0.3, 1)",
+      fill: "forwards",
+    }
+  );
+  portraitsAnimation = animation;
+  animation.onfinish = () => {
+    if (portraitsAnimation !== animation) return;
+    portraitsContent.hidden = !expanded;
+    animation.cancel();
+    portraitsAnimation = null;
+    clearPortraitAnimationStyles();
+  };
+  animation.oncancel = () => {
+    if (portraitsAnimation === animation) portraitsAnimation = null;
+  };
+};
+
+portraitsToggle?.addEventListener("click", () => {
+  setPortraitsExpanded(!isPortraitsExpanded);
+});
+
 const openMemberModal = (memberId) => {
   const escapedId = window.CSS?.escape ? CSS.escape(memberId) : memberId.replace(/"/g, '\\"');
   const modal = document.querySelector(`[data-member-modal="${escapedId}"]`);
