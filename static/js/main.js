@@ -602,13 +602,26 @@ window.addEventListener("resize", () => {
   else scheduleFamilyTreeRender();
 });
 
+const findPreviewTarget = (input) => {
+  const previewKey = input.dataset.previewInput?.trim();
+  const scope = input.closest("form, .tree-editor-row, .admin-member-card, .admin-list-card, .admin-card") || document;
+  if (previewKey) {
+    return [...scope.querySelectorAll("[data-preview-target]")]
+      .find((target) => target.dataset.previewTarget === previewKey);
+  }
+  const card = input.closest(".tree-editor-row, .admin-member-card, .admin-list-card, .admin-card");
+  return card?.querySelector("[data-preview-target]");
+};
+
 document.querySelectorAll("[data-preview-input]").forEach((input) => {
   input.addEventListener("change", () => {
     const file = input.files?.[0];
-    const card = input.closest(".tree-editor-row, .admin-member-card, .admin-list-card, .admin-card");
-    const img = card?.querySelector("[data-preview-target]");
+    const img = findPreviewTarget(input);
     if (!file || !img) return;
-    img.src = URL.createObjectURL(file);
+    if (img.dataset.previewObjectUrl) URL.revokeObjectURL(img.dataset.previewObjectUrl);
+    const objectUrl = URL.createObjectURL(file);
+    img.dataset.previewObjectUrl = objectUrl;
+    img.src = objectUrl;
   });
 });
 

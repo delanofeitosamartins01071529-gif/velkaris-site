@@ -91,27 +91,27 @@
         </label>
         <label>
           Brasão oficial
-          <input type="file" name="crest_image" accept=".png,.jpg,.jpeg,.webp" data-preview-input>
+          <input type="file" name="crest_image" accept=".png,.jpg,.jpeg,.webp" data-preview-input="crest_image">
         </label>
         <label>
           Imagem do castelo/hero
-          <input type="file" name="hero_image" accept=".png,.jpg,.jpeg,.webp" data-preview-input>
+          <input type="file" name="hero_image" accept=".png,.jpg,.jpeg,.webp" data-preview-input="hero_image">
         </label>
         <label>
           Mapa dos territórios
-          <input type="file" name="territory_map" accept=".png,.jpg,.jpeg,.webp" data-preview-input>
+          <input type="file" name="territory_map" accept=".png,.jpg,.jpeg,.webp" data-preview-input="territory_map">
         </label>
         <div class="admin-media-strip span-2">
           <figure>
-            <img src="{{ media_url(house.crest_image) }}" alt="" data-preview-target>
+            <img src="{{ media_url(house.crest_image) }}" alt="" data-preview-target="crest_image">
             <figcaption>Brasão</figcaption>
           </figure>
           <figure>
-            <img src="{{ media_url(house.hero_image) }}" alt="">
+            <img src="{{ media_url(house.hero_image) }}" alt="" data-preview-target="hero_image">
             <figcaption>Hero</figcaption>
           </figure>
           <figure>
-            <img src="{{ media_url(house.territory_map) }}" alt="">
+            <img src="{{ media_url(house.territory_map) }}" alt="" data-preview-target="territory_map">
             <figcaption>Mapa</figcaption>
           </figure>
         </div>
