@@ -1084,46 +1084,43 @@ body.is-loaded .loading-screen {
 
 .genealogy {
   position: relative;
-  min-height: 420px;
-  padding: 1.5rem 1rem;
+  overflow: auto;
+  min-height: 460px;
+  padding: 2rem 1rem 2.5rem;
   transition: min-height 0.35s ease;
 }
 
 .genealogy.is-collapsed {
-  min-height: 250px;
+  min-height: 280px;
 }
 
-.tree-lines {
+.pedigree-lines {
   position: absolute;
   inset: 0;
+  z-index: 0;
   width: 100%;
   height: 100%;
   pointer-events: none;
+  overflow: visible;
 }
 
-.tree-lines path {
+.pedigree-lines path {
   fill: none;
-  stroke: rgba(240, 208, 139, 0.42);
-  stroke-width: 1.3;
-  stroke-dasharray: 680;
-  stroke-dashoffset: 680;
-  animation: drawLine 2.8s ease forwards;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
 }
 
-.tree-row {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  justify-content: center;
-  gap: clamp(0.8rem, 3vw, 3rem);
-  margin: 1.1rem 0;
-  transition: opacity 0.35s ease, transform 0.35s ease;
+.pedigree-lines .spouse-line {
+  stroke: rgba(240, 208, 139, 0.92);
+  stroke-width: 3;
+  filter: drop-shadow(0 0 8px rgba(240, 208, 139, 0.36));
 }
 
-.genealogy.is-collapsed .tree-row:nth-of-type(n + 4) {
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(-10px);
+.pedigree-lines .descent-line {
+  stroke: rgba(142, 166, 199, 0.9);
+  stroke-width: 2.4;
+  filter: drop-shadow(0 0 7px rgba(142, 166, 199, 0.28));
 }
 
 .tree-node {
@@ -1168,9 +1165,6 @@ body.is-loaded .loading-screen {
 .family-tree,
 .family-tree ul {
   position: relative;
-  display: flex;
-  justify-content: center;
-  gap: clamp(1rem, 3vw, 2.4rem);
   min-width: max-content;
   margin: 0;
   padding: 0;
@@ -1178,34 +1172,28 @@ body.is-loaded .loading-screen {
 }
 
 .family-tree {
+  z-index: 1;
+  display: flex;
   align-items: flex-start;
-  padding: 1rem 1rem 2rem;
+  justify-content: center;
+  gap: clamp(2.5rem, 7vw, 6rem);
+  align-items: flex-start;
+  padding: 1.2rem 1.2rem 2.4rem;
 }
 
 .family-tree ul {
-  padding-top: 2.4rem;
-}
-
-.family-tree ul::before {
-  position: absolute;
-  top: 1.1rem;
-  left: 50%;
-  width: calc(100% - 7rem);
-  min-width: 2rem;
-  height: 1px;
-  content: "";
-  background: linear-gradient(90deg, transparent, rgba(240, 208, 139, 0.58), transparent);
-  transform: translateX(-50%);
-}
-
-.family-tree ul.is-single-child::before {
-  display: none;
+  display: flex;
+  justify-content: center;
+  gap: clamp(2rem, 5vw, 4.5rem);
+  padding-top: 4.4rem;
 }
 
 .tree-branch {
   position: relative;
   display: grid;
   justify-items: center;
+  align-content: start;
+  transition: opacity 0.25s ease, filter 0.25s ease;
 }
 
 .tree-couple {
@@ -1213,45 +1201,44 @@ body.is-loaded .loading-screen {
   display: inline-flex;
   align-items: stretch;
   justify-content: center;
-  gap: 0.7rem;
+  gap: 1rem;
+  padding: 0.85rem;
+  border: 1px solid rgba(240, 208, 139, 0.22);
+  background:
+    linear-gradient(180deg, rgba(6, 12, 22, 0.72), rgba(3, 6, 10, 0.88)),
+    radial-gradient(circle at 50% 0%, rgba(240, 208, 139, 0.1), transparent 12rem);
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.34);
 }
 
 .tree-couple.has-partner::before {
-  position: absolute;
-  top: 2.55rem;
-  left: 4.6rem;
-  right: 4.6rem;
-  height: 1px;
-  content: "";
-  background: linear-gradient(90deg, transparent, rgba(240, 208, 139, 0.74), transparent);
-  box-shadow: 0 0 14px rgba(185, 148, 85, 0.22);
-}
-
-.tree-branch::before {
-  position: absolute;
-  top: -1.3rem;
-  left: var(--branch-line-x, 50%);
-  width: 1px;
-  height: 1.3rem;
-  content: "";
-  background: linear-gradient(180deg, rgba(240, 208, 139, 0.58), rgba(240, 208, 139, 0.12));
-  transform: translateX(-50%);
-}
-
-.family-tree > .tree-branch::before {
   display: none;
 }
 
-.tree-branch.is-collapsed > ul {
+.pedigree-children {
+  transform-origin: top center;
+  transition: opacity 0.24s ease, transform 0.24s ease;
+}
+
+.tree-branch.is-collapsed > .pedigree-children,
+.genealogy.is-collapsed .family-tree > .tree-branch > .pedigree-children > .tree-branch > .pedigree-children {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-10px) scaleY(0.98);
+}
+
+.tree-branch.is-collapsed > .pedigree-children {
   display: none;
 }
 
 .family-tree .tree-node {
-  width: 132px;
-  min-height: 158px;
-  padding: 0.7rem 0.45rem;
-  border: 1px solid rgba(185, 148, 85, 0.26);
-  background: rgba(3, 6, 10, 0.58);
+  width: 144px;
+  min-height: 166px;
+  padding: 0.78rem 0.55rem;
+  border: 1px solid rgba(185, 148, 85, 0.38);
+  background:
+    linear-gradient(180deg, rgba(11, 18, 30, 0.84), rgba(3, 6, 10, 0.9)),
+    radial-gradient(circle at 50% 0%, rgba(142, 166, 199, 0.12), transparent 7rem);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.34), inset 0 0 0 1px rgba(255, 255, 255, 0.025);
 }
 
 .family-tree .tree-node strong,
@@ -1825,7 +1812,8 @@ body.is-loaded .loading-screen {
   gap: 0.85rem;
 }
 
-.tree-bulk-actions {
+.tree-bulk-actions,
+.member-bulk-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
@@ -1833,7 +1821,8 @@ body.is-loaded .loading-screen {
   margin-top: 0.9rem;
 }
 
-.tree-bulk-actions span {
+.tree-bulk-actions span,
+.member-bulk-actions span {
   color: rgba(232, 224, 211, 0.68);
   font-family: var(--font-serif);
 }
