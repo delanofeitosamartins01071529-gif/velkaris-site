@@ -1,106 +1,102 @@
 [
   {
     "id": "velkaris-02",
-    "name": "Retrato II",
-    "title": "Arquivo selado",
+    "name": "Altair Velkaris",
+    "title": "O Patriarca",
     "generation": "1ª Geração",
     "description": "Registro nobre aguardando imagem oficial e título definitivo.",
     "image": "assets/member-placeholder-2.png",
-    "sort_order": 2,
+    "sort_order": 1,
     "featured": true,
     "in_tree": true,
     "parent_ids": [],
-    "status": "Vivo",
+    "status": "Morto",
+    "death_cause": "Velhice",
     "branch": "Ramo principal",
     "territory": "",
     "birth_year": "",
-    "spouse": "",
-    "partner_id": "",
+    "spouse": "Verônica Velkaris",
+    "partner_id": "velkaris-03",
     "epithet": "",
     "quote": "",
     "biography": "Registro nobre aguardando imagem oficial e título definitivo.",
     "traits": "",
-    "death_cause": "",
-    "slug": "retrato-ii"
+    "slug": "altair-velkaris"
   },
   {
     "id": "velkaris-03",
-    "name": "Retrato III",
-    "title": "Guarda da Casa",
-    "generation": "2ª Geração",
+    "name": "Verônica Velkaris",
+    "title": "A Matriarca",
+    "generation": "1ª Geração",
     "description": "Figura preservada nos corredores antigos até a confirmação pública.",
     "image": "assets/member-placeholder-3.png",
-    "sort_order": 3,
+    "sort_order": 2,
     "featured": true,
     "in_tree": true,
-    "parent_ids": [
-      "velkaris-02"
-    ],
-    "status": "Vivo",
+    "parent_ids": [],
+    "status": "Morto",
+    "death_cause": "Velhice",
     "branch": "Ramo principal",
     "territory": "",
     "birth_year": "",
-    "spouse": "Retrato IV",
-    "partner_id": "velkaris-04",
+    "spouse": "Altair Velkaris",
+    "partner_id": "velkaris-02",
     "epithet": "",
     "quote": "",
     "biography": "Figura preservada nos corredores antigos até a confirmação pública.",
     "traits": "",
-    "death_cause": "",
-    "slug": "retrato-iii"
+    "slug": "veronica-velkaris"
   },
   {
     "id": "velkaris-04",
-    "name": "Retrato IV",
-    "title": "Conselho interno",
+    "name": "Olaf Velkaris",
+    "title": "O Punho Forte",
     "generation": "2ª Geração",
     "description": "Membro associado aos votos de honra, lealdade e soberania.",
     "image": "assets/member-placeholder-4.png",
-    "sort_order": 4,
+    "sort_order": 3,
     "featured": true,
     "in_tree": true,
     "parent_ids": [
-      "velkaris-02"
+      "velkaris-02",
+      "velkaris-03"
     ],
     "status": "Vivo",
+    "death_cause": "",
     "branch": "Ramo principal",
     "territory": "",
     "birth_year": "",
-    "spouse": "Retrato III",
-    "partner_id": "velkaris-03",
+    "spouse": "Lúcia Velkaris",
+    "partner_id": "velkaris-05",
     "epithet": "",
     "quote": "",
     "biography": "Membro associado aos votos de honra, lealdade e soberania.",
     "traits": "",
-    "death_cause": "",
-    "slug": "retrato-iv"
+    "slug": "olaf-velkaris"
   },
   {
     "id": "velkaris-05",
-    "name": "Retrato V",
-    "title": "Emissário Velkaris",
-    "generation": "3ª Geração",
+    "name": "Lúcia Velkaris",
+    "title": "A Mãe Amável",
+    "generation": "2ª Geração",
     "description": "Lugar reservado para um retrato oficial dos arquivos familiares.",
     "image": "assets/member-placeholder-1.png",
-    "sort_order": 5,
+    "sort_order": 4,
     "featured": true,
     "in_tree": true,
-    "parent_ids": [
-      "velkaris-03",
-      "velkaris-04"
-    ],
+    "parent_ids": [],
     "status": "Vivo",
+    "death_cause": "",
     "branch": "Ramo principal",
     "territory": "",
     "birth_year": "",
-    "spouse": "Retrato VI",
-    "partner_id": "velkaris-06",
+    "spouse": "Olaf Velkaris",
+    "partner_id": "velkaris-04",
     "epithet": "",
     "quote": "",
     "biography": "Lugar reservado para um retrato oficial dos arquivos familiares.",
     "traits": "",
-    "death_cause": "",
-    "slug": "retrato-v"
+    "slug": "lucia-velkaris"
   },
   {
     "id": "velkaris-06",
@@ -113,20 +109,20 @@
     "featured": false,
     "in_tree": true,
     "parent_ids": [
-      "velkaris-03",
-      "velkaris-04"
+      "velkaris-04",
+      "velkaris-05"
     ],
     "status": "Vivo",
+    "death_cause": "",
     "branch": "Ramo principal",
     "territory": "",
     "birth_year": "",
-    "spouse": "Retrato V",
-    "partner_id": "velkaris-05",
+    "spouse": "",
+    "partner_id": "",
     "epithet": "",
     "quote": "",
     "biography": "Registro incompleto, mantido sob vigília dos escribas da Casa.",
     "traits": "",
-    "death_cause": "",
     "slug": "retrato-vi"
   },
   {
@@ -140,10 +136,10 @@
     "featured": false,
     "in_tree": true,
     "parent_ids": [
-      "velkaris-05",
       "velkaris-06"
     ],
     "status": "Vivo",
+    "death_cause": "",
     "branch": "Ramo principal",
     "territory": "",
     "birth_year": "",
@@ -153,7 +149,6 @@
     "quote": "",
     "biography": "Nome ainda oculto nos volumes privados da linhagem.",
     "traits": "",
-    "death_cause": "",
     "slug": "retrato-vii"
   },
   {
@@ -167,10 +162,10 @@
     "featured": false,
     "in_tree": true,
     "parent_ids": [
-      "velkaris-05",
       "velkaris-06"
     ],
     "status": "Vivo",
+    "death_cause": "",
     "branch": "Ramo principal",
     "territory": "",
     "birth_year": "",
@@ -180,7 +175,6 @@
     "quote": "",
     "biography": "Aguardando a pintura oficial para ocupar seu lugar na galeria.",
     "traits": "",
-    "death_cause": "",
     "slug": "retrato-viii"
   }
 ]
