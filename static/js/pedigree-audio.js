@@ -51,9 +51,15 @@
     });
   };
 
-  window.addEventListener("load", () => requestAnimationFrame(drawPedigreeLines));
-  window.addEventListener("resize", () => requestAnimationFrame(drawPedigreeLines));
-  document.querySelector("[data-pedigree]")?.addEventListener("scroll", () => requestAnimationFrame(drawPedigreeLines), { passive: true });
+  const schedulePedigreeDraw = () => requestAnimationFrame(drawPedigreeLines);
+  window.addEventListener("load", schedulePedigreeDraw);
+  window.addEventListener("resize", schedulePedigreeDraw);
+  window.addEventListener("scroll", schedulePedigreeDraw, { passive: true });
+  document.fonts?.ready.then(drawPedigreeLines);
+  document.querySelectorAll("[data-pedigree] img").forEach((image) => {
+    if (!image.complete) image.addEventListener("load", schedulePedigreeDraw, { once: true });
+  });
+  document.querySelector("[data-pedigree]")?.addEventListener("scroll", schedulePedigreeDraw, { passive: true });
   document.querySelectorAll("[data-tree-toggle], [data-tree-expand], [data-tree-collapse]").forEach((control) => {
     control.addEventListener("click", () => setTimeout(drawPedigreeLines, 80));
   });
