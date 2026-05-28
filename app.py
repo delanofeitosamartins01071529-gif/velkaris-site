@@ -440,8 +440,26 @@ def record_failed_login(key: str) -> None:
 
 def valid_partner_id(member: dict[str, Any], by_id: dict[str, dict[str, Any]]) -> str:
     partner_id = str(member.get("partner_id") or "").strip()
+    member_name_key = slugify(member.get("name", ""))
+    spouse_key = slugify(member.get("spouse", ""))
+
+    def spouse_points_to(person: dict[str, Any], target: dict[str, Any]) -> bool:
+        spouse = slugify(person.get("spouse", ""))
+        return not spouse or spouse == slugify(target.get("name", ""))
+
     if partner_id and partner_id in by_id and partner_id != member["id"]:
-        return partner_id
+        partner = by_id[partner_id]
+        reciprocal_partner = partner.get("partner_id") == member["id"]
+        spouse_consistent = spouse_points_to(member, partner) and spouse_points_to(partner, member)
+        if reciprocal_partner and spouse_consistent:
+            return partner_id
+
+    if spouse_key:
+        for candidate in by_id.values():
+            if candidate["id"] == member["id"]:
+                continue
+            if slugify(candidate.get("name", "")) == spouse_key and slugify(candidate.get("spouse", "")) == member_name_key:
+                return candidate["id"]
     return ""
 
 
@@ -464,13 +482,13 @@ def build_family_links(members: list[dict[str, Any]]) -> dict[str, dict[str, Any
                 child_ids_by_parent.setdefault(parent_id, []).append(child["id"])
     links = {}
     for member in members:
-        partner_id = member.get("partner_id", "")
+        partner_id = valid_partner_id(member, by_id)
         family_people = [member]
         if partner_id in by_id and partner_id != member["id"]:
             family_people.append(by_id[partner_id])
         editor_id = sort_members(family_people)[0]["id"]
         links[member["id"]] = {
-            "partner_id": member.get("partner_id", ""),
+            "partner_id": partner_id,
             "child_ids": child_ids_by_parent.get(member["id"], []),
             "editor_id": editor_id,
             "editor_name": by_id.get(editor_id, member).get("name", member.get("name", "")),
@@ -497,22 +515,47 @@ def build_family_tree(members: list[dict[str, Any]]) -> list[dict[str, Any]]:
     children_by_unit: dict[tuple[str, ...], dict[tuple[str, ...], str]] = {}
     root_units: set[tuple[str, ...]] = set(units)
 
-    for member in tree_members:
-        parent_ids = [parent_id for parent_id in member.get("parent_ids", []) if parent_id in by_id and parent_id != member["id"]]
+    def unit_sort_key(key: tuple[str, ...]) -> tuple[int, int, str]:
+        people = sort_members([by_id[person_id] for person_id in key if person_id in by_id])
+        first = people[0] if people else {"sort_order": 999, "name": ""}
+        return (as_int(first.get("sort_order"), 999), generation_rank(first), str(first.get("name", "")).lower())
+
+    def parent_unit_for(member: dict[str, Any]) -> tuple[str, ...] | None:
+        child_unit = unit_by_person.get(member["id"])
+        parent_ids = []
+        for parent_id in member.get("parent_ids", []):
+            if parent_id in by_id and parent_id != member["id"] and parent_id not in parent_ids:
+                parent_ids.append(parent_id)
         if not parent_ids:
-            continue
-        parent_unit = unit_by_person.get(parent_ids[0])
+            return None
+
+        parent_set = set(parent_ids)
+        candidates = []
+        for parent_id in parent_ids:
+            unit = unit_by_person.get(parent_id)
+            if not unit or unit == child_unit:
+                continue
+            unit_set = set(unit)
+            match_count = len(parent_set & unit_set)
+            contains_all = int(parent_set.issubset(unit_set))
+            has_partner_pair = int(any(valid_partner_id(by_id[parent], by_id) in unit_set for parent in parent_set if parent in by_id))
+            nearest_generation = max((generation_rank(by_id[parent]) for parent in parent_set & unit_set), default=-1)
+            candidates.append((contains_all, has_partner_pair, match_count, nearest_generation, unit))
+
+        if not candidates:
+            return None
+
+        candidates.sort(key=lambda candidate: (-candidate[0], -candidate[2], -candidate[3], -candidate[1], unit_sort_key(candidate[4])))
+        return candidates[0][4]
+
+    for member in tree_members:
+        parent_unit = parent_unit_for(member)
         child_unit = unit_by_person.get(member["id"])
         if not parent_unit or not child_unit or parent_unit == child_unit:
             continue
         children_by_unit.setdefault(parent_unit, {})
         children_by_unit[parent_unit].setdefault(child_unit, member["id"])
         root_units.discard(child_unit)
-
-    def unit_sort_key(key: tuple[str, ...]) -> tuple[int, int, str]:
-        people = sort_members([by_id[person_id] for person_id in key if person_id in by_id])
-        first = people[0] if people else {"sort_order": 999, "name": ""}
-        return (as_int(first.get("sort_order"), 999), generation_rank(first), str(first.get("name", "")).lower())
 
     def line_position(people: list[dict[str, Any]], link_member_id: str | None) -> str:
         if not link_member_id or len(people) < 2:
@@ -543,7 +586,25 @@ def build_family_tree(members: list[dict[str, Any]]) -> list[dict[str, Any]]:
             "line_position": line_position(people, link_member_id),
         }
 
-    roots = sorted(root_units or set(units), key=unit_sort_key)
+    roots = sorted(root_units, key=unit_sort_key)
+    reachable_roots = set()
+
+    def collect_reachable(key: tuple[str, ...], seen: set[tuple[str, ...]] | None = None) -> None:
+        seen = seen or set()
+        if key in seen:
+            return
+        seen.add(key)
+        reachable_roots.add(key)
+        for child_key in children_by_unit.get(key, {}):
+            collect_reachable(child_key, seen)
+
+    for root in roots:
+        collect_reachable(root)
+
+    for key in sorted(set(units) - reachable_roots, key=unit_sort_key):
+        roots.append(key)
+        collect_reachable(key)
+
     return [branch(root, set()) for root in roots]
 
 
@@ -783,6 +844,40 @@ def member_from_form(existing: dict[str, Any] | None, index: int) -> dict[str, A
     return member
 
 
+def update_member_fields_from_sources(member: dict[str, Any], index: int, form, files, prefix: str = "") -> dict[str, Any]:
+    updated = dict(member)
+    updated["name"] = form.get(f"{prefix}name", "").strip() or "Novo Velkaris"
+    updated["slug"] = form.get(f"{prefix}slug", "").strip() or slugify(updated["name"])
+    updated["title"] = form.get(f"{prefix}title", "").strip() or "Retrato reservado"
+    updated["generation"] = form.get(f"{prefix}generation", GENERATION_OPTIONS[0]).strip() or GENERATION_OPTIONS[0]
+    updated["description"] = form.get(f"{prefix}description", "").strip() or "Registro aguardando confirmação dos arquivos da Casa."
+    updated["status"] = normalize_status(form.get(f"{prefix}status"))
+    updated["death_cause"] = form.get(f"{prefix}death_cause", "").strip() if updated["status"] == "Morto" else ""
+    updated["branch"] = form.get(f"{prefix}branch", "").strip() or "Ramo principal"
+    updated["territory"] = form.get(f"{prefix}territory", "").strip()
+    updated["birth_year"] = form.get(f"{prefix}birth_year", "").strip()
+    updated["spouse"] = form.get(f"{prefix}spouse", "").strip()
+    updated["partner_id"] = form.get(f"{prefix}partner_id", updated.get("partner_id", "")).strip()
+    if updated["partner_id"] == updated["id"]:
+        updated["partner_id"] = ""
+    updated["epithet"] = form.get(f"{prefix}epithet", "").strip()
+    updated["quote"] = form.get(f"{prefix}quote", "").strip()
+    updated["biography"] = form.get(f"{prefix}biography", "").strip() or updated["description"]
+    updated["traits"] = form.get(f"{prefix}traits", "").strip()
+    updated["sort_order"] = as_int(form.get(f"{prefix}sort_order"), index + 1)
+    updated["featured"] = f"{prefix}featured" in form
+    updated["in_tree"] = f"{prefix}in_tree" in form
+    updated["parent_ids"] = [
+        parent_id
+        for parent_id in (form.get(f"{prefix}parent_1"), form.get(f"{prefix}parent_2"))
+        if parent_id and parent_id != updated["id"]
+    ]
+    image_path = save_upload(files.get(f"{prefix}portrait"), "member")
+    if image_path:
+        updated["image"] = image_path
+    return updated
+
+
 def update_member_tree_fields_from_sources(member: dict[str, Any], index: int, form, files, prefix: str = "") -> dict[str, Any]:
     updated = dict(member)
     updated["generation"] = form.get(f"{prefix}generation", updated.get("generation", GENERATION_OPTIONS[0])).strip() or GENERATION_OPTIONS[0]
@@ -819,12 +914,14 @@ def sync_partner_links(members: list[dict[str, Any]], member_id: str, partner_id
     for other in members:
         if other["id"] != partner_id and other.get("partner_id") == member_id:
             other["partner_id"] = ""
+            other["spouse"] = ""
 
     previous_partner_id = member.get("partner_id", "")
     if previous_partner_id and previous_partner_id != partner_id and previous_partner_id in by_id:
         previous_partner = by_id[previous_partner_id]
         if previous_partner.get("partner_id") == member_id:
             previous_partner["partner_id"] = ""
+            previous_partner["spouse"] = ""
 
     member["partner_id"] = partner_id
     if partner_id:
@@ -832,11 +929,12 @@ def sync_partner_links(members: list[dict[str, Any]], member_id: str, partner_id
         old_partner_id = partner.get("partner_id", "")
         if old_partner_id and old_partner_id != member_id and old_partner_id in by_id:
             by_id[old_partner_id]["partner_id"] = ""
+            by_id[old_partner_id]["spouse"] = ""
         partner["partner_id"] = member_id
-        if not member.get("spouse"):
-            member["spouse"] = partner.get("name", "")
-        if not partner.get("spouse"):
-            partner["spouse"] = member.get("name", "")
+        member["spouse"] = partner.get("name", "")
+        partner["spouse"] = member.get("name", "")
+    else:
+        member["spouse"] = ""
 
 
 def sync_family_children(members: list[dict[str, Any]], parent_id: str, partner_id: str, child_ids: list[str]) -> None:
@@ -881,6 +979,33 @@ def update_member(member_id: str):
             flash(f"Registro de {members[index]['name']} atualizado.", "success")
             return redirect(url_for("admin", _anchor="membros"))
     abort(404)
+
+
+@app.post("/admin/members/bulk")
+@admin_required
+def bulk_update_members():
+    validate_csrf()
+    members = load_members()
+    member_ids = [member_id for member_id in request.form.getlist("member_ids") if member_id]
+    index_by_id = {member["id"]: index for index, member in enumerate(members)}
+    updated_count = 0
+
+    for member_id in member_ids:
+        if member_id not in index_by_id:
+            continue
+        index = index_by_id[member_id]
+        prefix = f"{member_id}__"
+        members[index] = update_member_fields_from_sources(members[index], index, request.form, request.files, prefix)
+        updated_count += 1
+
+    for member_id in member_ids:
+        if member_id in index_by_id:
+            member = members[index_by_id[member_id]]
+            sync_partner_links(members, member_id, member.get("partner_id", ""))
+
+    write_json(MEMBERS_FILE, sort_members(members))
+    flash(f"{updated_count} familiares foram salvos de uma vez.", "success")
+    return {"redirect": url_for("admin", _anchor="editar-familiares")}
 
 
 @app.post("/admin/members/<member_id>/tree")
