@@ -150,10 +150,11 @@
           <button type="button" data-tree-collapse>Selar</button>
         </div>
       </div>
-      <div class="genealogy" data-tree>
+      <div class="genealogy pedigree-board" data-tree data-pedigree>
+        <svg class="pedigree-lines" data-pedigree-lines aria-hidden="true"></svg>
         {% macro render_branch(branch) %}
-          <li class="tree-branch" style="--branch-line-x: {{ branch.line_position }};">
-            <div class="tree-couple {% if branch.members|length > 1 %}has-partner{% endif %}">
+          <li class="tree-branch pedigree-family" data-pedigree-family>
+            <div class="tree-couple pedigree-couple {% if branch.members|length > 1 %}has-partner{% endif %}" data-pedigree-couple>
               {% for tree_member in branch.members %}
                 <button class="tree-node is-open status-{{ tree_member.status|lower }} {% if branch.link_member_id == tree_member.id %}is-line-anchor{% endif %}" type="button" data-tree-toggle>
                   <img src="{{ media_url(tree_member.image) }}" alt="">
@@ -164,7 +165,7 @@
               {% endfor %}
             </div>
             {% if branch.children %}
-              <ul class="{% if branch.children|length == 1 %}is-single-child{% endif %}">
+              <ul class="pedigree-children {% if branch.children|length == 1 %}is-single-child{% endif %}" data-pedigree-children>
                 {% for child in branch.children %}
                   {{ render_branch(child) }}
                 {% endfor %}
