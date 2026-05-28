@@ -78,10 +78,33 @@ HOUSE_DEFAULTS = {
     "territory_map": "assets/territory-map.png",
 }
 
+MAP_MARKER_TYPES = [
+    "Castelo",
+    "Cidade",
+    "Vila",
+    "Ruína",
+    "Porto",
+    "Floresta",
+    "Território aliado",
+    "Território inimigo",
+    "Local misterioso",
+]
+
+MAP_MARKER_COLORS = [
+    "#d7b46a",
+    "#8ea6c7",
+    "#b85656",
+    "#78a978",
+    "#9d82c9",
+    "#d08a4c",
+]
+
+MAP_MARKER_ICONS = ["crown", "castle", "city", "village", "ruin", "port", "forest", "ally", "enemy", "mystery"]
+
 COLLECTION_FIELDS = {
     "about": ("text",),
     "symbols": ("name", "meaning"),
-    "territories": ("name", "type", "description", "lore", "coord_x", "coord_y", "status"),
+    "territories": ("name", "type", "description", "lore", "coord_x", "coord_y", "status", "color", "icon"),
     "archives": ("date", "title", "summary"),
     "timeline": ("date", "era", "title", "summary"),
     "eras": ("name", "period", "description"),
@@ -205,6 +228,14 @@ def as_int(value: Any, fallback: int = 0) -> int:
         return fallback
 
 
+def clamp_number(value: Any, fallback: float = 0, minimum: float = 0, maximum: float = 100) -> float:
+    try:
+        number = float(str(value).replace(",", "."))
+    except (TypeError, ValueError):
+        number = fallback
+    return min(maximum, max(minimum, number))
+
+
 def normalize_status(value: Any) -> str:
     clean = str(value or "").strip().lower()
     status_map = {
@@ -295,6 +326,12 @@ def ensure_collection_item(collection: str, item: Any, index: int) -> dict[str, 
     normalized = {"id": item.get("id") or item_id(collection)}
     for field in COLLECTION_FIELDS[collection]:
         normalized[field] = item.get(field, "")
+    if collection == "territories":
+        normalized["type"] = normalized.get("type") or MAP_MARKER_TYPES[0]
+        normalized["coord_x"] = str(clamp_number(normalized.get("coord_x"), 50, 0, 100))
+        normalized["coord_y"] = str(clamp_number(normalized.get("coord_y"), 50, 0, 100))
+        normalized["color"] = normalized.get("color") or MAP_MARKER_COLORS[index % len(MAP_MARKER_COLORS)]
+        normalized["icon"] = normalized.get("icon") or "crown"
     if collection == "gallery":
         normalized["image"] = item.get("image") or ["assets/gallery-castle.png", "assets/territory-map.png", "assets/gallery-fortress.png"][index % 3]
     return normalized
@@ -308,6 +345,16 @@ def normalize_house(house: dict[str, Any]) -> dict[str, Any]:
             items = []
         normalized[collection] = [ensure_collection_item(collection, item, index) for index, item in enumerate(items)]
     return normalized
+
+
+def sanitize_map_marker(item: dict[str, Any]) -> dict[str, Any]:
+    item["coord_x"] = f"{clamp_number(item.get('coord_x'), 50, 0, 100):.2f}".rstrip("0").rstrip(".")
+    item["coord_y"] = f"{clamp_number(item.get('coord_y'), 50, 0, 100):.2f}".rstrip("0").rstrip(".")
+    item["type"] = item.get("type") if item.get("type") in MAP_MARKER_TYPES else (item.get("type") or MAP_MARKER_TYPES[0])
+    color = str(item.get("color") or "").strip()
+    item["color"] = color if re.fullmatch(r"#[0-9a-fA-F]{6}", color) else MAP_MARKER_COLORS[0]
+    item["icon"] = item.get("icon") if item.get("icon") in MAP_MARKER_ICONS else "crown"
+    return item
 
 
 def load_house() -> dict[str, Any]:
@@ -794,6 +841,9 @@ def admin():
         placeholders=PLACEHOLDERS,
         generation_options=GENERATION_OPTIONS,
         status_options=STATUS_OPTIONS,
+        map_marker_types=MAP_MARKER_TYPES,
+        map_marker_colors=MAP_MARKER_COLORS,
+        map_marker_icons=MAP_MARKER_ICONS,
         family_links=build_family_links(members),
     )
 
@@ -832,6 +882,21 @@ def update_house_identity():
     return redirect(url_for("admin", _anchor="conteudo"))
 
 
+@app.post("/admin/map/upload")
+@admin_required
+def update_interactive_map_image():
+    validate_csrf()
+    house = load_house()
+    uploaded = save_upload(request.files.get("interactive_map"), "interactive-map")
+    if uploaded:
+        house["territory_map"] = uploaded
+        write_json(HOUSE_FILE, house)
+        flash("Mapa interativo atualizado.", "success")
+    else:
+        flash("Envie uma imagem PNG, JPG, JPEG ou WEBP para trocar o mapa.", "error")
+    return redirect(url_for("admin", _anchor="mapa-interativo"))
+
+
 @app.post("/admin/house/<collection>")
 @admin_required
 def create_collection_item(collection: str):
@@ -842,6 +907,8 @@ def create_collection_item(collection: str):
     item = {"id": item_id(collection)}
     for field in COLLECTION_FIELDS[collection]:
         item[field] = request.form.get(field, "").strip()
+    if collection == "territories":
+        sanitize_map_marker(item)
     if collection == "gallery":
         item["image"] = save_upload(request.files.get("image"), "gallery") or "assets/gallery-castle.png"
     house[collection].append(item)
@@ -862,6 +929,8 @@ def update_collection_item(collection: str, entry_id: str):
         abort(404)
     for field in COLLECTION_FIELDS[collection]:
         item[field] = request.form.get(field, "").strip()
+    if collection == "territories":
+        sanitize_map_marker(item)
     if collection == "gallery":
         uploaded = save_upload(request.files.get("image"), "gallery")
         if uploaded:

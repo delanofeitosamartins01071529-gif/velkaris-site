@@ -53,7 +53,9 @@
       "lore": "O trono azul, a torre dos escribas e a sala dos pactos ficam sob vigília constante.",
       "coord_x": "42",
       "coord_y": "38",
-      "status": "Capital juramentada"
+      "status": "Capital juramentada",
+      "color": "#d7b46a",
+      "icon": "castle"
     },
     {
       "id": "territories-dd8e2c0c33",
@@ -63,7 +65,9 @@
       "lore": "Suas muralhas foram acesas durante a Era das Cinzas e nunca caíram diante de cerco.",
       "coord_x": "62",
       "coord_y": "24",
-      "status": "Fronteira militar"
+      "status": "Fronteira militar",
+      "color": "#b85656",
+      "icon": "ruin"
     },
     {
       "id": "territories-a81f5c6395",
@@ -73,7 +77,9 @@
       "lore": "O vale guarda funerais, coroações menores e jardins onde alianças são seladas.",
       "coord_x": "30",
       "coord_y": "62",
-      "status": "Domínio interno"
+      "status": "Domínio interno",
+      "color": "#78a978",
+      "icon": "forest"
     },
     {
       "id": "territories-22b36f323c",
@@ -83,7 +89,9 @@
       "lore": "Pelos cais de prata chegam tratados, reféns nobres e notícias de cortes distantes.",
       "coord_x": "72",
       "coord_y": "70",
-      "status": "Rota diplomática"
+      "status": "Rota diplomática",
+      "color": "#8ea6c7",
+      "icon": "port"
     }
   ],
   "archives": [

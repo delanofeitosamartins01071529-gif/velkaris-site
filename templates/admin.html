@@ -31,6 +31,7 @@
       <a href="#ordenacao">Ordenação</a>
       <a href="#arvore">Árvore</a>
       <a href="#symbols">Símbolos</a>
+      <a href="#mapa-interativo">Mapa</a>
       <a href="#territories">Territórios</a>
       <a href="#timeline">Crônicas</a>
       <a href="#eras-admin">Eras</a>
@@ -97,10 +98,6 @@
           Imagem do castelo/hero
           <input type="file" name="hero_image" accept=".png,.jpg,.jpeg,.webp" data-preview-input="hero_image">
         </label>
-        <label>
-          Mapa dos territórios
-          <input type="file" name="territory_map" accept=".png,.jpg,.jpeg,.webp" data-preview-input="territory_map">
-        </label>
         <div class="admin-media-strip span-2">
           <figure>
             <img src="{{ media_url(house.crest_image) }}" alt="" data-preview-target="crest_image">
@@ -109,10 +106,6 @@
           <figure>
             <img src="{{ media_url(house.hero_image) }}" alt="" data-preview-target="hero_image">
             <figcaption>Hero</figcaption>
-          </figure>
-          <figure>
-            <img src="{{ media_url(house.territory_map) }}" alt="" data-preview-target="territory_map">
-            <figcaption>Mapa</figcaption>
           </figure>
         </div>
         <button class="primary-cta" type="submit">Salvar conteúdo principal</button>
@@ -567,21 +560,112 @@
       </form>
     </section>
 
+    <section class="admin-card reveal is-visible" id="mapa-interativo">
+      <div class="admin-section-title">
+        <p class="section-kicker">Mapa interativo</p>
+        <h2>Imagem base e marcadores</h2>
+        <p class="admin-help">Troque apenas a imagem do mapa aqui. Clique na prévia para preencher a posição de um novo marcador.</p>
+      </div>
+      <div class="map-admin-grid">
+        <div>
+          <form class="admin-form map-upload-form" method="post" action="{{ url_for('update_interactive_map_image') }}" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label>
+              Nova imagem do mapa interativo
+              <input type="file" name="interactive_map" accept=".png,.jpg,.jpeg,.webp" data-preview-input="interactive_map">
+            </label>
+            <button class="primary-cta" type="submit">Salvar novo mapa</button>
+          </form>
+          <div class="admin-wide-preview map-admin-preview" data-map-admin-preview>
+            <img src="{{ media_url(house.territory_map) }}" alt="Mapa interativo atual" data-preview-target="interactive_map">
+            {% for territory in house.territories %}
+              <button
+                class="map-marker map-marker-{{ territory.icon or 'crown' }}"
+                type="button"
+                style="--x: {{ territory.coord_x or 50 }}%; --y: {{ territory.coord_y or 50 }}%; --marker-color: {{ territory.color or '#d7b46a' }};"
+                data-map-admin-marker="{{ territory.id }}"
+                aria-label="{{ territory.name }}"
+              >
+                <span aria-hidden="true"></span>
+              </button>
+            {% endfor %}
+          </div>
+        </div>
+        <form class="admin-form admin-form-grid admin-add-form" method="post" action="{{ url_for('create_collection_item', collection='territories') }}" data-map-marker-create>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <label>Nome do local <input type="text" name="name" required></label>
+          <label>
+            Tipo do local
+            <select name="type">
+              {% for marker_type in map_marker_types %}
+                <option>{{ marker_type }}</option>
+              {% endfor %}
+            </select>
+          </label>
+          <label>Status <input type="text" name="status" placeholder="Domínio ativo, fronteira, ameaça..."></label>
+          <label>
+            Ícone
+            <select name="icon">
+              {% for marker_icon in map_marker_icons %}
+                <option value="{{ marker_icon }}">{{ marker_icon|capitalize }}</option>
+              {% endfor %}
+            </select>
+          </label>
+          <label>
+            Cor do marcador
+            <select name="color" data-map-color-select>
+              {% for marker_color in map_marker_colors %}
+                <option value="{{ marker_color }}">{{ marker_color }}</option>
+              {% endfor %}
+            </select>
+          </label>
+          <label>Posição X (%) <input type="number" step="0.01" name="coord_x" value="50" min="0" max="100" data-map-x></label>
+          <label>Posição Y (%) <input type="number" step="0.01" name="coord_y" value="50" min="0" max="100" data-map-y></label>
+          <label class="span-2">Descrição curta <textarea name="description" rows="3"></textarea></label>
+          <label class="span-2">Detalhes do local <textarea name="lore" rows="3"></textarea></label>
+          <button class="primary-cta" type="submit">Adicionar marcador</button>
+        </form>
+      </div>
+    </section>
+
     <section class="admin-card reveal is-visible" id="territories">
       <div class="admin-section-title">
-        <p class="section-kicker">Territórios</p>
-        <h2>Regiões, fortalezas e domínios</h2>
+        <p class="section-kicker">Marcadores salvos</p>
+        <h2>Editar pontos de interesse</h2>
       </div>
       <div class="admin-list two-col">
         {% for territory in house.territories %}
-          <article class="admin-list-card">
+          <article class="admin-list-card" data-territory-editor="{{ territory.id }}">
             <form class="admin-form" method="post" action="{{ url_for('update_collection_item', collection='territories', entry_id=territory.id) }}">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <label>Nome <input type="text" name="name" value="{{ territory.name }}"></label>
-              <label>Tipo <input type="text" name="type" value="{{ territory.type }}"></label>
+              <label>
+                Tipo
+                <select name="type">
+                  {% for marker_type in map_marker_types %}
+                    <option {% if territory.type == marker_type %}selected{% endif %}>{{ marker_type }}</option>
+                  {% endfor %}
+                </select>
+              </label>
               <label>Status <input type="text" name="status" value="{{ territory.status }}"></label>
-              <label>Posição X (%) <input type="number" name="coord_x" value="{{ territory.coord_x }}" min="0" max="100"></label>
-              <label>Posição Y (%) <input type="number" name="coord_y" value="{{ territory.coord_y }}" min="0" max="100"></label>
+              <label>Posição X (%) <input type="number" step="0.01" name="coord_x" value="{{ territory.coord_x }}" min="0" max="100"></label>
+              <label>Posição Y (%) <input type="number" step="0.01" name="coord_y" value="{{ territory.coord_y }}" min="0" max="100"></label>
+              <label>
+                Ícone
+                <select name="icon">
+                  {% for marker_icon in map_marker_icons %}
+                    <option value="{{ marker_icon }}" {% if territory.icon == marker_icon %}selected{% endif %}>{{ marker_icon|capitalize }}</option>
+                  {% endfor %}
+                </select>
+              </label>
+              <label>
+                Cor
+                <select name="color" data-map-color-select>
+                  {% for marker_color in map_marker_colors %}
+                    <option value="{{ marker_color }}" {% if territory.color == marker_color %}selected{% endif %}>{{ marker_color }}</option>
+                  {% endfor %}
+                </select>
+              </label>
               <label>Descrição <textarea name="description" rows="3">{{ territory.description }}</textarea></label>
               <label>Lore do mapa <textarea name="lore" rows="3">{{ territory.lore }}</textarea></label>
               <button class="primary-cta" type="submit">Salvar território</button>
@@ -593,17 +677,6 @@
           </article>
         {% endfor %}
       </div>
-      <form class="admin-form admin-form-grid admin-add-form" method="post" action="{{ url_for('create_collection_item', collection='territories') }}">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <label>Nome <input type="text" name="name"></label>
-        <label>Tipo <input type="text" name="type"></label>
-        <label>Status <input type="text" name="status"></label>
-        <label>Posição X (%) <input type="number" name="coord_x" value="50" min="0" max="100"></label>
-        <label>Posição Y (%) <input type="number" name="coord_y" value="50" min="0" max="100"></label>
-        <label class="span-2">Descrição <textarea name="description" rows="3"></textarea></label>
-        <label class="span-2">Lore do mapa <textarea name="lore" rows="3"></textarea></label>
-        <button class="primary-cta" type="submit">Adicionar território</button>
-      </form>
     </section>
 
     <section class="admin-card reveal is-visible" id="timeline">

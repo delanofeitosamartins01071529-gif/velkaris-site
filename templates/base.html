@@ -47,7 +47,7 @@
         <a href="{{ url_for('index') }}#galeria">Galeria</a>
       </nav>
       <div class="header-actions">
-        <button class="icon-button sound-toggle" type="button" data-sound-toggle aria-label="Ativar música ambiente">
+        <button class="icon-button sound-toggle" type="button" data-audio-panel-toggle aria-label="Abrir painel de áudio" aria-expanded="false">
           <span class="sound-icon" aria-hidden="true"></span>
         </button>
         {% if admin_logged_in %}
@@ -57,6 +57,28 @@
         {% endif %}
       </div>
     </header>
+
+    <aside class="audio-control-panel" data-audio-panel aria-label="Painel de controle de áudio" hidden>
+      <div class="audio-panel-head">
+        <div>
+          <p class="section-kicker">Áudio</p>
+          <strong>Ambientação da Casa</strong>
+        </div>
+        <button class="icon-button" type="button" data-audio-panel-close aria-label="Fechar painel de áudio">×</button>
+      </div>
+      <div class="audio-panel-actions">
+        <button class="audio-toggle" type="button" data-music-toggle>Ativar música</button>
+        <button class="audio-toggle" type="button" data-effects-toggle>Ativar efeitos</button>
+      </div>
+      <label>
+        Volume da música
+        <input type="range" min="0" max="100" value="42" data-music-volume>
+      </label>
+      <label>
+        Volume dos efeitos
+        <input type="range" min="0" max="100" value="28" data-effects-volume>
+      </label>
+    </aside>
 
     <a class="tree-jump-button" href="{{ url_for('index') }}#arvore" aria-label="Ir para a arvore genealogica">
       <span aria-hidden="true">♔</span>
@@ -84,8 +106,10 @@
       <a href="{{ url_for('admin_login_alias') }}">Login Administrativo</a>
     </footer>
 
+    <script src="{{ url_for('static', filename='js/audio-config.js', v=asset_version) }}"></script>
     <script src="{{ url_for('static', filename='js/main.js', v=asset_version) }}"></script>
-    <script src="{{ url_for('static', filename='js/pedigree-audio.js', v=asset_version) }}"></script>
+    <script src="{{ url_for('static', filename='js/use-audio-manager.js', v=asset_version) }}"></script>
+    <script src="{{ url_for('static', filename='js/interactive-map.js', v=asset_version) }}"></script>
     {% if request.endpoint == 'admin' %}
       <script src="{{ url_for('static', filename='js/admin-bulk-members.js', v=asset_version) }}"></script>
     {% endif %}

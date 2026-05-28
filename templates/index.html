@@ -210,18 +210,25 @@
         </div>
         <a class="text-link" href="#galeria">Ver mapa</a>
       </div>
-      <div class="territory-layout">
-        <div class="territory-map-wrap">
+      <div class="territory-layout" data-interactive-map>
+        <div class="territory-map-wrap" data-map-view>
           <img src="{{ media_url(house.territory_map) }}" alt="Mapa fictício dos territórios {{ house.name }}">
           {% for territory in house.territories %}
             <button
-              class="map-marker"
+              class="map-marker map-marker-{{ territory.icon or 'crown' }}"
               type="button"
-              style="--x: {{ territory.coord_x or 50 }}%; --y: {{ territory.coord_y or 50 }}%;"
+              style="--x: {{ territory.coord_x or 50 }}%; --y: {{ territory.coord_y or 50 }}%; --marker-color: {{ territory.color or '#d7b46a' }};"
               data-territory-target="{{ territory.id }}"
+              data-map-marker
+              data-title="{{ territory.name }}"
+              data-type="{{ territory.type }}"
+              data-description="{{ territory.description }}"
+              data-lore="{{ territory.lore }}"
+              data-status="{{ territory.status }}"
               aria-label="{{ territory.name }}"
             >
-              <span></span>
+              <span aria-hidden="true"></span>
+              <small>{{ territory.name }}</small>
             </button>
           {% endfor %}
         </div>
@@ -238,6 +245,15 @@
           {% endfor %}
         </div>
       </div>
+      <dialog class="map-marker-modal" data-map-marker-modal>
+        <div class="map-marker-modal-shell">
+          <button class="modal-close" type="button" data-map-modal-close aria-label="Fechar local">×</button>
+          <p class="section-kicker" data-map-modal-type></p>
+          <h3 data-map-modal-title></h3>
+          <p data-map-modal-description></p>
+          <small data-map-modal-lore></small>
+        </div>
+      </dialog>
     </section>
 
     <section class="panel eras-panel reveal" id="eras" data-reveal>
