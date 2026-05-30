@@ -3,6 +3,7 @@
 {% block content %}
   <section class="hero" id="inicio" data-hero>
     <img class="hero-art" src="{{ media_url(house.hero_image) }}" alt="Castelo ancestral da Casa {{ house.name }} envolto em névoa e luz azul">
+    <img class="hero-city" src="{{ url_for('static', filename='assets/hero-manor-bg.png') }}" alt="">
     <div class="hero-vignette"></div>
     <div class="hero-banner" aria-hidden="true"></div>
 
@@ -104,6 +105,7 @@
           </article>
         {% endfor %}
       </div>
+      </div>
       {% for member in members %}
         <dialog class="member-modal" data-member-modal="{{ member.id }}">
           <div class="member-modal-shell">
@@ -168,7 +170,6 @@
           </div>
         </dialog>
       {% endfor %}
-      </div>
     </section>
 
     <section class="panel tree-panel reveal" id="arvore" data-reveal>

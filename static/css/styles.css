@@ -43,6 +43,11 @@ body.modal-open {
   overflow: hidden;
 }
 
+html.custom-cursor-enabled,
+html.custom-cursor-enabled * {
+  cursor: none !important;
+}
+
 body::before {
   position: fixed;
   inset: 0;
@@ -174,16 +179,72 @@ body.is-loaded .loading-screen {
 
 .cursor-aura {
   position: fixed;
-  z-index: 80;
-  width: 34px;
-  height: 34px;
+  z-index: 2147483647;
+  top: 0;
+  left: 0;
+  width: 44px;
+  height: 44px;
   pointer-events: none;
-  border: 1px solid rgba(240, 208, 139, 0.46);
+  opacity: 0;
+  transform: translate3d(-100px, -100px, 0) translate(-50%, -50%);
+  transition:
+    width 0.2s ease,
+    height 0.2s ease,
+    opacity 0.18s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+  will-change: transform, width, height;
+}
+
+.cursor-aura::after {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  content: "";
+  border: 1px solid rgba(255, 221, 101, 0.34);
   border-radius: 50%;
-  box-shadow: 0 0 24px rgba(39, 88, 153, 0.22);
+  background:
+    radial-gradient(circle, rgba(255, 241, 168, 0.13) 0 12%, rgba(232, 174, 61, 0.08) 34%, transparent 68%),
+    radial-gradient(circle, rgba(18, 16, 13, 0.28), transparent 62%);
+  box-shadow:
+    0 0 20px rgba(246, 197, 91, 0.13),
+    inset 0 0 18px rgba(255, 234, 153, 0.1);
+  transition:
+    border-color 0.2s ease,
+    opacity 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+html.custom-cursor-enabled .cursor-aura.is-visible {
+  opacity: 0.94;
+}
+
+html.custom-cursor-enabled .cursor-aura.is-hovering {
+  width: 56px;
+  height: 56px;
+}
+
+html.custom-cursor-enabled .cursor-aura.is-hovering::after {
+  border-color: rgba(255, 234, 153, 0.38);
   opacity: 0.72;
-  mix-blend-mode: screen;
-  will-change: transform;
+  box-shadow:
+    0 0 26px rgba(246, 197, 91, 0.16),
+    inset 0 0 22px rgba(255, 234, 153, 0.12);
+}
+
+html.custom-cursor-enabled .cursor-aura.is-pressing {
+  width: 32px;
+  height: 32px;
+}
+
+html.custom-cursor-enabled .cursor-aura.is-pressing::after {
+  border-color: rgba(255, 247, 186, 0.48);
+}
+
+html.custom-cursor-enabled .cursor-aura.is-hidden {
+  opacity: 0;
 }
 
 .site-header {
@@ -334,24 +395,41 @@ body.is-loaded .loading-screen {
 
 .sound-icon {
   position: relative;
-  width: 18px;
-  height: 18px;
-  border: 1px solid currentColor;
-  border-radius: 50%;
+  width: 17px;
+  height: 22px;
+  border: 0;
 }
 
 .sound-icon::before,
 .sound-icon::after {
   position: absolute;
-  inset: 5px;
   content: "";
-  border-left: 1px solid currentColor;
-  border-right: 1px solid currentColor;
-  opacity: 0.78;
+}
+
+.sound-icon::before {
+  right: 3px;
+  top: 1px;
+  width: 7px;
+  height: 14px;
+  border-top: 2px solid currentColor;
+  border-right: 2px solid currentColor;
+  border-radius: 0 6px 0 0;
+  box-shadow: 0 0 12px rgba(240, 208, 139, 0.22);
+}
+
+.sound-icon::after {
+  left: 0;
+  bottom: 1px;
+  width: 11px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  transform: rotate(-18deg);
+  box-shadow: 8px -13px 0 -3px currentColor;
 }
 
 .sound-toggle.is-active .sound-icon {
-  box-shadow: 0 0 18px rgba(240, 208, 139, 0.55);
+  filter: drop-shadow(0 0 10px rgba(240, 208, 139, 0.52));
 }
 
 .audio-control-panel {
@@ -365,6 +443,10 @@ body.is-loaded .loading-screen {
   background: rgba(4, 8, 14, 0.94);
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42), inset 0 0 0 1px rgba(240, 208, 139, 0.06);
   backdrop-filter: blur(18px);
+}
+
+.audio-control-panel:not([hidden]) {
+  animation: panelUnseal 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .audio-panel-head,
@@ -461,12 +543,25 @@ body.is-loaded .loading-screen {
 .hero-art {
   position: absolute;
   inset: 0;
-  z-index: -4;
+  z-index: -5;
   width: 100%;
   height: 100%;
   object-fit: cover;
   transform: scale(1.05);
-  filter: saturate(0.92) contrast(1.08) brightness(0.86);
+  opacity: 0.14;
+  filter: saturate(0.7) contrast(1.05) brightness(0.3) blur(2px);
+}
+
+.hero-city {
+  position: absolute;
+  inset: 0;
+  z-index: -4;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.92;
+  transform: scale(1.04);
+  filter: saturate(0.92) contrast(1.06) brightness(0.78);
 }
 
 .hero-vignette {
@@ -474,9 +569,10 @@ body.is-loaded .loading-screen {
   inset: 0;
   z-index: -3;
   background:
-    linear-gradient(90deg, rgba(3, 5, 8, 0.82) 0%, rgba(3, 5, 8, 0.22) 48%, rgba(3, 5, 8, 0.84) 100%),
-    linear-gradient(0deg, #05070b 0%, transparent 34%),
-    radial-gradient(circle at 42% 44%, rgba(20, 64, 113, 0.18), transparent 30rem);
+    linear-gradient(90deg, rgba(3, 5, 8, 0.86) 0%, rgba(3, 5, 8, 0.34) 48%, rgba(3, 5, 8, 0.88) 100%),
+    linear-gradient(0deg, #05070b 0%, rgba(5, 7, 11, 0.62) 30%, transparent 62%),
+    radial-gradient(circle at 43% 43%, rgba(185, 148, 85, 0.14), transparent 19rem),
+    radial-gradient(circle at 56% 22%, rgba(20, 64, 113, 0.18), transparent 32rem);
 }
 
 .hero-banner {
@@ -930,6 +1026,10 @@ body.is-loaded .loading-screen {
   will-change: height, opacity, transform;
 }
 
+.portrait-gallery:not([hidden]) {
+  animation: panelUnseal 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 .portrait-gallery .filter-bar {
   margin-bottom: 1rem;
 }
@@ -1090,9 +1190,17 @@ body.is-loaded .loading-screen {
   box-shadow: 0 30px 110px rgba(0, 0, 0, 0.78), 0 0 50px rgba(185, 148, 85, 0.15);
 }
 
+.member-modal[open] {
+  animation: modalVeil 0.28s ease both;
+}
+
 .member-modal::backdrop {
   background: rgba(0, 0, 0, 0.76);
   backdrop-filter: blur(8px);
+}
+
+.member-modal[open]::backdrop {
+  animation: modalBackdrop 0.28s ease both;
 }
 
 .member-modal-shell {
@@ -1103,6 +1211,10 @@ body.is-loaded .loading-screen {
   background:
     linear-gradient(180deg, rgba(12, 20, 32, 0.78), rgba(4, 7, 11, 0.94)),
     radial-gradient(circle at 82% 14%, rgba(29, 70, 125, 0.2), transparent 18rem);
+}
+
+.member-modal[open] .member-modal-shell {
+  animation: panelUnseal 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .modal-close {
@@ -2676,6 +2788,39 @@ body.is-loaded .loading-screen {
   }
 }
 
+@keyframes panelUnseal {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+    filter: blur(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes modalVeil {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modalBackdrop {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(8px);
+  }
+}
+
 @keyframes drawLine {
   to {
     stroke-dashoffset: 0;
@@ -2836,6 +2981,11 @@ body.is-loaded .loading-screen {
 }
 
 @media (max-width: 640px) {
+  html.custom-cursor-enabled,
+  html.custom-cursor-enabled * {
+    cursor: auto !important;
+  }
+
   .cursor-aura {
     display: none;
   }

@@ -38,19 +38,83 @@ nav?.querySelectorAll("a").forEach((link) => {
 });
 
 const cursor = document.querySelector("[data-cursor]");
-let cursorFrame = 0;
-let cursorX = 0;
-let cursorY = 0;
-window.addEventListener("pointermove", (event) => {
-  if (!cursor) return;
-  cursorX = event.clientX;
-  cursorY = event.clientY;
-  if (cursorFrame) return;
-  cursorFrame = requestAnimationFrame(() => {
-    cursor.style.transform = `translate(${cursorX}px, ${cursorY}px) translate(-50%, -50%)`;
-    cursorFrame = 0;
+const finePointer = window.matchMedia("(pointer: fine)").matches;
+let syncCursorLayer = () => {};
+const cursorTargets = [
+  "a",
+  "button",
+  "summary",
+  "label",
+  "input",
+  "select",
+  "textarea",
+  "[role='button']",
+  "[data-member-open]",
+  "[data-territory-target]",
+  ".member-card",
+  ".mini-card",
+  ".gallery-grid figure",
+].join(",");
+
+if (cursor && finePointer) {
+  root.classList.add("custom-cursor-enabled");
+  const cursorDefaultParent = cursor.parentElement;
+  const cursorPosition = {
+    x: window.innerWidth / 2,
+    y: window.innerHeight / 2,
+    targetX: window.innerWidth / 2,
+    targetY: window.innerHeight / 2,
+  };
+  let cursorIsMoving = false;
+
+  syncCursorLayer = () => {
+    const openDialogs = [...document.querySelectorAll("dialog[open]")];
+    const topDialog = openDialogs.at(-1);
+    const host = topDialog || cursorDefaultParent || document.body;
+    if (cursor.parentElement !== host) host.appendChild(cursor);
+  };
+
+  const renderCursor = () => {
+    cursorPosition.x += (cursorPosition.targetX - cursorPosition.x) * 0.24;
+    cursorPosition.y += (cursorPosition.targetY - cursorPosition.y) * 0.24;
+    cursor.style.transform = `translate3d(${cursorPosition.x}px, ${cursorPosition.y}px, 0) translate(-50%, -50%)`;
+
+    if (
+      Math.abs(cursorPosition.targetX - cursorPosition.x) > 0.08 ||
+      Math.abs(cursorPosition.targetY - cursorPosition.y) > 0.08
+    ) {
+      requestAnimationFrame(renderCursor);
+      return;
+    }
+
+    cursorPosition.x = cursorPosition.targetX;
+    cursorPosition.y = cursorPosition.targetY;
+    cursor.style.transform = `translate3d(${cursorPosition.x}px, ${cursorPosition.y}px, 0) translate(-50%, -50%)`;
+    cursorIsMoving = false;
+  };
+
+  window.addEventListener("pointermove", (event) => {
+    cursorPosition.targetX = event.clientX;
+    cursorPosition.targetY = event.clientY;
+    cursor.classList.add("is-visible");
+    cursor.classList.toggle("is-hovering", Boolean(event.target.closest(cursorTargets)));
+    if (cursorIsMoving) return;
+    cursorIsMoving = true;
+    requestAnimationFrame(renderCursor);
   });
-});
+
+  window.addEventListener("pointerdown", () => cursor.classList.add("is-pressing"));
+  window.addEventListener("pointerup", () => cursor.classList.remove("is-pressing"));
+  document.addEventListener("pointerleave", () => cursor.classList.add("is-hidden"));
+  document.addEventListener("pointerenter", () => cursor.classList.remove("is-hidden"));
+  document.addEventListener("click", () => requestAnimationFrame(syncCursorLayer), true);
+  document.addEventListener("close", () => requestAnimationFrame(syncCursorLayer), true);
+  new MutationObserver(syncCursorLayer).observe(document.body, {
+    attributes: true,
+    subtree: true,
+    attributeFilter: ["open"],
+  });
+}
 
 const revealObserver = new IntersectionObserver(
   (entries) => {
@@ -108,6 +172,7 @@ const setPortraitsExpanded = (expanded, animate = true) => {
   if (!portraitsSection || !portraitsContent || !portraitsToggle) return;
   if (portraitsAnimation) portraitsAnimation.cancel();
   isPortraitsExpanded = expanded;
+  if (expanded) window.VelkarisAudio?.playPanelOpen?.();
   portraitsToggle.setAttribute("aria-expanded", String(expanded));
   portraitsToggleLabel && (portraitsToggleLabel.textContent = expanded ? "Recolher retratos" : "Expandir retratos");
   portraitsSection.classList.toggle("is-expanded", expanded);
@@ -167,6 +232,11 @@ const openMemberModal = (memberId) => {
     modal.setAttribute("open", "");
   }
   document.body.classList.add("modal-open");
+  window.VelkarisAudio?.playPanelOpen?.();
+  requestAnimationFrame(() => {
+    modal.scrollTop = 0;
+    syncCursorLayer?.();
+  });
 };
 
 const closeMemberModal = (modal) => {
