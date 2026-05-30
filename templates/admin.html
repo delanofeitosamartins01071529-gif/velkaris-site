@@ -1,5 +1,57 @@
 {% extends "base.html" %}
 
+{% macro strategic_collection(section_id, kicker, heading, collection, items, fields) %}
+  <section class="admin-card reveal is-visible" id="{{ section_id }}">
+    <div class="admin-section-title">
+      <p class="section-kicker">{{ kicker }}</p>
+      <h2>{{ heading }}</h2>
+    </div>
+    <div class="admin-list two-col">
+      {% for item in items %}
+        <article class="admin-list-card">
+          <form class="admin-form" method="post" action="{{ url_for('update_collection_item', collection=collection, entry_id=item.id) }}" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            {% if item.image %}
+              <div class="admin-wide-preview"><img src="{{ media_url(item.image) }}" alt="" data-preview-target></div>
+            {% endif %}
+            {% for field, label in fields %}
+              <label>
+                {{ label }}
+                {% if field == "description" %}
+                  <textarea name="{{ field }}" rows="3">{{ item[field] }}</textarea>
+                {% else %}
+                  <input type="text" name="{{ field }}" value="{{ item[field] }}">
+                {% endif %}
+              </label>
+            {% endfor %}
+            <label>Imagem <input type="file" name="image" accept=".png,.jpg,.jpeg,.webp" data-preview-input></label>
+            <button class="primary-cta" type="submit">Salvar registro</button>
+          </form>
+          <form method="post" action="{{ url_for('delete_collection_item', collection=collection, entry_id=item.id) }}" class="delete-form inline-delete">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit">Excluir</button>
+          </form>
+        </article>
+      {% endfor %}
+    </div>
+    <form class="admin-form admin-form-grid admin-add-form" method="post" action="{{ url_for('create_collection_item', collection=collection) }}" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {% for field, label in fields %}
+        <label class="{{ 'span-2' if field == 'description' else '' }}">
+          {{ label }}
+          {% if field == "description" %}
+            <textarea name="{{ field }}" rows="3"></textarea>
+          {% else %}
+            <input type="text" name="{{ field }}">
+          {% endif %}
+        </label>
+      {% endfor %}
+      <label>Imagem <input type="file" name="image" accept=".png,.jpg,.jpeg,.webp" data-preview-input></label>
+      <button class="primary-cta" type="submit">Adicionar registro</button>
+    </form>
+  </section>
+{% endmacro %}
+
 {% block title %}Admin | Casa {{ house.name }}{% endblock %}
 
 {% block content %}
@@ -11,7 +63,7 @@
         <p>Edite textos, imagens, familiares, árvore genealógica, territórios, arquivos e galeria pública.</p>
       </div>
       <div class="admin-head-actions">
-        <a class="ghost-cta" href="{{ url_for('index') }}">Ver site</a>
+        <a class="ghost-cta" href="{{ url_for('index', audio='silent') }}" target="_blank" rel="noopener">Ver site</a>
         <form method="post" action="{{ url_for('publish_site') }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button class="primary-cta" type="submit">Publicar alterações</button>
@@ -30,6 +82,7 @@
       <a href="#membros">Familiares</a>
       <a href="#ordenacao">Ordenação</a>
       <a href="#arvore">Árvore</a>
+      <a href="#cards">Cards</a>
       <a href="#symbols">Símbolos</a>
       <a href="#mapa-interativo">Mapa</a>
       <a href="#territories">Territórios</a>
@@ -37,6 +90,12 @@
       <a href="#eras-admin">Eras</a>
       <a href="#archives">Arquivos</a>
       <a href="#gallery">Galeria</a>
+      <a href="#leaders-admin">Hierarquia</a>
+      <a href="#fortifications-admin">Fortificações</a>
+      <a href="#conflicts-admin">Confrontos</a>
+      <a href="#aristocrats-admin">Aristocratas</a>
+      <a href="#allies-admin">Aliados</a>
+      <a href="#vassals-admin">Vassalos</a>
     </nav>
 
     <section class="admin-card reveal is-visible" id="conteudo">
@@ -294,10 +353,10 @@
       <div class="admin-section-title">
         <p class="section-kicker">Árvore genealógica</p>
         <h2>Montagem visual da linhagem</h2>
-        <p class="admin-help">Novo fluxo: escolha um par/conjuge, marque os filhos desse nucleo e salve. O sistema atualiza os ascendentes dos filhos automaticamente.</p>
+        <p class="admin-help">Novo fluxo: escolha um par/cônjuge, marque os filhos desse núcleo e salve. O sistema atualiza os ascendentes dos filhos automaticamente.</p>
         <div class="tree-bulk-actions">
           <input type="hidden" id="tree-bulk-csrf" value="{{ csrf_token() }}">
-          <button class="primary-cta" type="button" data-tree-bulk-save>Salvar toda a arvore</button>
+          <button class="primary-cta" type="button" data-tree-bulk-save>Salvar toda a árvore</button>
           <span data-tree-bulk-status></span>
         </div>
         <p class="admin-help">Aqui é o lugar principal para montar a árvore: envie a imagem usada no nó, marque quem aparece, escolha status, geração, ordem e até dois ascendentes para cada familiar. Quem fica sem ascendente vira raiz/fundador.</p>
@@ -319,7 +378,7 @@
                 <input type="file" name="portrait" accept=".png,.jpg,.jpeg,.webp" data-preview-input>
               </label>
               <label>
-                Titulo do card
+                Título do card
                 <input type="text" name="title" value="{{ member.title }}" placeholder="O Patriarca, A Matriarca, O Punho Forte...">
               </label>
               <label>
@@ -347,7 +406,7 @@
                 <input type="text" name="death_cause" value="{{ member.death_cause }}">
               </label>
               <label>
-                Conjuge / par na arvore
+                Cônjuge / par na árvore
                 <select name="partner_id">
                   <option value="">Sem par vinculado</option>
                   {% for possible_partner in members if possible_partner.id != member.id %}
@@ -376,8 +435,8 @@
               {% if family_links[member.id].editor_id == member.id %}
               <fieldset class="tree-children-field">
                 <input type="hidden" name="children_editor" value="1">
-                <legend>Filhos deste nucleo</legend>
-                <p>Marque os filhos do familiar ou do casal selecionado. Ao salvar, os ascendentes dos filhos serao vinculados automaticamente.</p>
+                <legend>Filhos deste núcleo</legend>
+                <p>Marque os filhos do familiar ou do casal selecionado. Ao salvar, os ascendentes dos filhos serão vinculados automaticamente.</p>
                 <div class="tree-child-options">
                   {% for possible_child in members if possible_child.id != member.id and possible_child.id != family_links[member.id].partner_id %}
                     <label class="tree-child-option">
@@ -390,7 +449,7 @@
               </fieldset>
               {% else %}
               <div class="tree-children-field tree-children-note">
-                Filhos deste casal sao editados no nucleo de {{ family_links[member.id].editor_name }}.
+                Filhos deste casal são editados no núcleo de {{ family_links[member.id].editor_name }}.
               </div>
               {% endif %}
               <div class="admin-checks tree-checks">
@@ -404,7 +463,7 @@
       </div>
     </section>
 
-    <section class="admin-member-grid">
+    <section class="admin-member-grid" id="cards">
       {% for member in members %}
         <article class="admin-member-card reveal is-visible">
           <div class="admin-preview">
@@ -469,7 +528,7 @@
               <input type="text" name="spouse" value="{{ member.spouse }}">
             </label>
             <label>
-              Par na arvore
+              Par na árvore
               <select name="partner_id">
                 <option value="">Sem par vinculado</option>
                 {% for possible_partner in members if possible_partner.id != member.id %}
@@ -805,5 +864,12 @@
         <button class="primary-cta" type="submit">Adicionar à galeria</button>
       </form>
     </section>
+
+    {{ strategic_collection("leaders-admin", "Hierarquia familiar", "Lideranças da Casa", "leaders", house.leaders, [("name", "Nome"), ("title", "Título"), ("period", "Período"), ("description", "Descrição")]) }}
+    {{ strategic_collection("fortifications-admin", "Defesas juramentadas", "Construções militares", "fortifications", house.fortifications, [("name", "Nome"), ("type", "Tipo"), ("responsible", "Responsável"), ("description", "Descrição")]) }}
+    {{ strategic_collection("conflicts-admin", "Memória de batalha", "Confrontos enfrentados", "conflicts", house.conflicts, [("name", "Nome"), ("period", "Período"), ("outcome", "Desfecho"), ("description", "Descrição")]) }}
+    {{ strategic_collection("aristocrats-admin", "Círculo da corte", "Aristocratas da família", "aristocrats", house.aristocrats, [("name", "Nome"), ("title", "Título"), ("role", "Papel"), ("description", "Descrição")]) }}
+    {{ strategic_collection("allies-admin", "Pactos e favores", "Aliados da Casa", "allies", house.allies, [("name", "Nome"), ("group", "Grupo social"), ("role", "Apoio prestado"), ("description", "Descrição")]) }}
+    {{ strategic_collection("vassals-admin", "Serviços juramentados", "Vassalos da Casa", "vassals", house.vassals, [("name", "Nome"), ("group", "Grupo social"), ("service", "Serviço prestado"), ("description", "Descrição")]) }}
   </section>
 {% endblock %}

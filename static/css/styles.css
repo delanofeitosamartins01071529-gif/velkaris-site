@@ -247,6 +247,102 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
   opacity: 0;
 }
 
+.page-transition {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483646;
+  pointer-events: none;
+  visibility: hidden;
+  overflow: hidden;
+  opacity: 0;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(185, 148, 85, 0.12), transparent 22rem),
+    linear-gradient(90deg, transparent, rgba(5, 8, 13, 0.48), transparent);
+}
+
+.page-transition.is-active {
+  visibility: visible;
+  animation: transitionVeil 0.76s ease both;
+}
+
+.transition-line,
+.transition-sigil,
+.transition-sparks {
+  position: absolute;
+  pointer-events: none;
+}
+
+.transition-line {
+  left: 50%;
+  width: min(82vw, 980px);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(240, 208, 139, 0.16), rgba(240, 208, 139, 0.74), rgba(240, 208, 139, 0.16), transparent);
+  box-shadow: 0 0 18px rgba(185, 148, 85, 0.28);
+  transform: translateX(-50%) scaleX(0);
+}
+
+.transition-line-top {
+  top: calc(50% - 54px);
+}
+
+.transition-line-bottom {
+  top: calc(50% + 54px);
+}
+
+.is-active .transition-line {
+  animation: transitionLine 0.62s 0.04s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.transition-sigil {
+  top: 50%;
+  left: 50%;
+  width: 94px;
+  height: 94px;
+  border: 1px solid rgba(240, 208, 139, 0.34);
+  border-radius: 50%;
+  box-shadow: 0 0 34px rgba(185, 148, 85, 0.16), inset 0 0 28px rgba(185, 148, 85, 0.1);
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.54) rotate(-36deg);
+}
+
+.transition-sigil::before,
+.transition-sigil::after {
+  position: absolute;
+  inset: 14px;
+  content: "";
+  border: 1px solid rgba(240, 208, 139, 0.24);
+  transform: rotate(45deg);
+}
+
+.transition-sigil::after {
+  inset: 28px;
+  background: rgba(240, 208, 139, 0.12);
+}
+
+.is-active .transition-sigil {
+  animation: transitionSigil 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.transition-sparks {
+  top: 50%;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  opacity: 0;
+  box-shadow:
+    -190px -38px 0 rgba(240, 208, 139, 0.7),
+    -136px 56px 0 rgba(185, 148, 85, 0.5),
+    -68px -74px 0 rgba(240, 208, 139, 0.58),
+    74px 72px 0 rgba(240, 208, 139, 0.64),
+    148px -48px 0 rgba(185, 148, 85, 0.56),
+    208px 22px 0 rgba(240, 208, 139, 0.68);
+}
+
+.is-active .transition-sparks {
+  animation: transitionSparks 0.7s 0.08s ease both;
+}
+
 .site-header {
   position: fixed;
   top: 0;
@@ -395,8 +491,8 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
 
 .sound-icon {
   position: relative;
-  width: 17px;
-  height: 22px;
+  width: 15px;
+  height: 19px;
   border: 0;
 }
 
@@ -407,25 +503,23 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
 }
 
 .sound-icon::before {
-  right: 3px;
-  top: 1px;
-  width: 7px;
+  right: 4px;
+  top: 0;
+  width: 1px;
   height: 14px;
-  border-top: 2px solid currentColor;
-  border-right: 2px solid currentColor;
-  border-radius: 0 6px 0 0;
-  box-shadow: 0 0 12px rgba(240, 208, 139, 0.22);
+  background: currentColor;
+  box-shadow: 0 0 8px rgba(240, 208, 139, 0.2);
 }
 
 .sound-icon::after {
-  left: 0;
-  bottom: 1px;
-  width: 11px;
-  height: 8px;
+  left: 1px;
+  bottom: 0;
+  width: 10px;
+  height: 7px;
   border-radius: 50%;
   background: currentColor;
-  transform: rotate(-18deg);
-  box-shadow: 8px -13px 0 -3px currentColor;
+  transform: rotate(-16deg);
+  box-shadow: 0 0 8px rgba(240, 208, 139, 0.2);
 }
 
 .sound-toggle.is-active .sound-icon {
@@ -438,6 +532,7 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
   right: clamp(1rem, 3vw, 2rem);
   z-index: 70;
   width: min(340px, calc(100vw - 2rem));
+  overflow: hidden;
   padding: 1rem;
   border: 1px solid rgba(185, 148, 85, 0.34);
   background: rgba(4, 8, 14, 0.94);
@@ -445,12 +540,42 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
   backdrop-filter: blur(18px);
 }
 
-.audio-control-panel:not([hidden]) {
-  animation: panelUnseal 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
+.audio-control-panel.is-opening {
+  animation: audioPanelOpen 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.audio-control-panel.is-closing {
+  animation: audioPanelClose 0.22s ease both;
+}
+
+.audio-control-panel.is-opening .modal-effects::before {
+  animation: memberAuraOpen 0.72s ease-out both;
+}
+
+.audio-control-panel.is-opening .modal-effects::after {
+  animation: memberEdgeSweep 0.74s 0.04s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.audio-control-panel.is-opening .modal-effects span {
+  animation: memberSparksOpen 0.68s 0.08s ease-out both;
+}
+
+.audio-control-panel.is-closing .modal-effects::before {
+  animation: memberAuraClose 0.22s ease both;
+}
+
+.audio-control-panel.is-closing .modal-effects::after {
+  animation: memberEdgeSweepClose 0.24s ease both;
+}
+
+.audio-control-panel.is-closing .modal-effects span {
+  animation: memberSparksClose 0.22s ease both;
 }
 
 .audio-panel-head,
 .audio-panel-actions {
+  position: relative;
+  z-index: 4;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -463,6 +588,8 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
 }
 
 .audio-control-panel label {
+  position: relative;
+  z-index: 4;
   display: grid;
   gap: 0.35rem;
   margin-top: 0.85rem;
@@ -543,13 +670,12 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
 .hero-art {
   position: absolute;
   inset: 0;
-  z-index: -5;
+  z-index: -4;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transform: scale(1.05);
-  opacity: 0.14;
-  filter: saturate(0.7) contrast(1.05) brightness(0.3) blur(2px);
+  opacity: 1;
+  filter: none;
 }
 
 .hero-city {
@@ -559,9 +685,7 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  opacity: 0.92;
-  transform: scale(1.04);
-  filter: saturate(0.92) contrast(1.06) brightness(0.78);
+  display: none;
 }
 
 .hero-vignette {
@@ -569,10 +693,8 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
   inset: 0;
   z-index: -3;
   background:
-    linear-gradient(90deg, rgba(3, 5, 8, 0.86) 0%, rgba(3, 5, 8, 0.34) 48%, rgba(3, 5, 8, 0.88) 100%),
-    linear-gradient(0deg, #05070b 0%, rgba(5, 7, 11, 0.62) 30%, transparent 62%),
-    radial-gradient(circle at 43% 43%, rgba(185, 148, 85, 0.14), transparent 19rem),
-    radial-gradient(circle at 56% 22%, rgba(20, 64, 113, 0.18), transparent 32rem);
+    linear-gradient(90deg, rgba(3, 5, 8, 0.52) 0%, rgba(3, 5, 8, 0.12) 48%, rgba(3, 5, 8, 0.56) 100%),
+    linear-gradient(0deg, rgba(5, 7, 11, 0.72) 0%, rgba(5, 7, 11, 0.24) 28%, transparent 60%);
 }
 
 .hero-banner {
@@ -641,12 +763,13 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
 
 .hero-crest-wrap::before {
   position: absolute;
-  inset: 14% 14% 10%;
+  inset: 4% 2% 0;
   z-index: -1;
   content: "";
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(185, 148, 85, 0.18), transparent 68%);
-  filter: blur(10px);
+  background: radial-gradient(circle, rgba(255, 221, 136, 0.32) 0%, rgba(185, 148, 85, 0.18) 38%, transparent 72%);
+  filter: blur(18px);
+  animation: crestAuraPulse 4.8s ease-in-out infinite;
 }
 
 .hero-crest {
@@ -883,6 +1006,28 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
   color: var(--old-gold);
   font-size: 1.3rem;
   box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.32);
+}
+
+.side-rail button {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--old-gold);
+  font: inherit;
+  cursor: pointer;
+  transition: color 180ms ease, border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+}
+
+.side-rail button:hover,
+.side-rail button:focus-visible {
+  border-color: rgba(240, 208, 139, 0.45);
+  background: rgba(185, 148, 85, 0.1);
+  color: var(--bright-gold);
+  box-shadow: 0 0 18px rgba(185, 148, 85, 0.16);
+  outline: 0;
 }
 
 .panel {
@@ -1181,8 +1326,9 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
 }
 
 .member-modal {
-  width: min(980px, calc(100vw - 2rem));
-  max-height: min(860px, calc(100svh - 2rem));
+  width: min(1120px, calc(100vw - 1rem));
+  max-height: calc(100svh - 2rem);
+  overflow: hidden;
   padding: 0;
   border: 1px solid rgba(240, 208, 139, 0.48);
   background: rgba(4, 7, 12, 0.96);
@@ -1191,7 +1337,7 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
 }
 
 .member-modal[open] {
-  animation: modalVeil 0.28s ease both;
+  animation: modalVeil 0.2s ease both;
 }
 
 .member-modal::backdrop {
@@ -1206,22 +1352,142 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
 .member-modal-shell {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(260px, 0.8fr) minmax(320px, 1.2fr);
-  min-height: 540px;
+  grid-template-columns: minmax(420px, 544px) minmax(540px, 1fr);
+  height: min(680px, calc(100svh - 2rem));
+  min-height: min(540px, calc(100svh - 2rem));
+  overflow: hidden;
   background:
     linear-gradient(180deg, rgba(12, 20, 32, 0.78), rgba(4, 7, 11, 0.94)),
     radial-gradient(circle at 82% 14%, rgba(29, 70, 125, 0.2), transparent 18rem);
 }
 
 .member-modal[open] .member-modal-shell {
-  animation: panelUnseal 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: memberRecordOpen 0.46s 0.08s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.modal-effects {
+  position: absolute;
+  z-index: 3;
+  inset: -1px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.modal-effects::before,
+.modal-effects::after {
+  position: absolute;
+  content: "";
+  pointer-events: none;
+}
+
+.modal-effects::before {
+  inset: -22px;
+  border: 1px solid rgba(240, 208, 139, 0.76);
+  box-shadow:
+    0 0 28px rgba(240, 208, 139, 0.42),
+    inset 0 0 24px rgba(185, 148, 85, 0.2);
+  opacity: 0;
+}
+
+.modal-effects::after {
+  top: -20%;
+  bottom: -20%;
+  left: -18%;
+  width: 14%;
+  background: linear-gradient(90deg, transparent, rgba(255, 229, 166, 0.38), transparent);
+  filter: blur(12px);
+  opacity: 0;
+  transform: skewX(-18deg);
+}
+
+.modal-effects span {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(255, 229, 166, 0.94);
+  opacity: 0;
+  box-shadow:
+    -56px 34px 0 rgba(185, 148, 85, 0.62),
+    74px -42px 0 rgba(255, 229, 166, 0.52),
+    128px 58px 0 rgba(185, 148, 85, 0.48);
+}
+
+.modal-effects span:nth-child(1) {
+  top: 12%;
+  left: 18%;
+}
+
+.modal-effects span:nth-child(2) {
+  right: 18%;
+  bottom: 18%;
+}
+
+.modal-effects span:nth-child(3) {
+  top: 52%;
+  right: 42%;
+}
+
+dialog[open] .modal-effects::before {
+  animation: memberAuraOpen 0.72s ease-out both;
+}
+
+dialog[open] .modal-effects::after {
+  animation: memberEdgeSweep 0.74s 0.04s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+dialog[open] .modal-effects span {
+  animation: memberSparksOpen 0.68s 0.08s ease-out both;
+}
+
+dialog.is-closing .modal-effects::before {
+  animation: memberAuraClose 0.22s ease both;
+}
+
+dialog.is-closing .modal-effects::after {
+  animation: memberEdgeSweepClose 0.24s ease both;
+}
+
+dialog.is-closing .modal-effects span {
+  animation: memberSparksClose 0.22s ease both;
+}
+
+.map-marker-modal[open],
+.gallery-modal[open],
+.strategic-modal[open] {
+  animation: modalVeil 0.2s ease both;
+}
+
+.map-marker-modal[open]::backdrop,
+.gallery-modal[open]::backdrop,
+.strategic-modal[open]::backdrop {
+  animation: modalBackdrop 0.28s ease both;
+}
+
+.map-marker-modal[open] > :not(.cursor-aura),
+.gallery-modal[open] > :not(.cursor-aura),
+.strategic-modal[open] > :not(.cursor-aura) {
+  animation: modalPanelArrive 0.38s 0.08s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+dialog.is-closing {
+  animation: modalVeilOut 0.24s ease both;
+}
+
+dialog.is-closing::backdrop {
+  animation: modalBackdropOut 0.24s ease both;
+}
+
+dialog.is-closing > :not(.cursor-aura),
+.member-modal.is-closing .member-modal-shell {
+  animation: modalPanelLeave 0.22s ease both;
 }
 
 .modal-close {
   position: absolute;
   top: 0.85rem;
   right: 0.85rem;
-  z-index: 2;
+  z-index: 4;
   width: 42px;
   height: 42px;
   border: 1px solid rgba(185, 148, 85, 0.42);
@@ -1233,20 +1499,26 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
 }
 
 .member-modal-portrait {
-  min-height: 540px;
+  position: relative;
+  min-height: 0;
   overflow: hidden;
   border-right: 1px solid rgba(185, 148, 85, 0.28);
   background: #05070b;
 }
 
 .member-modal-portrait img {
+  position: relative;
+  z-index: 1;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  display: block;
 }
 
 .member-modal-content {
-  overflow-y: auto;
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
   padding: clamp(1.2rem, 3vw, 2.3rem);
 }
 
@@ -1899,6 +2171,7 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
 
 .map-marker-modal {
   width: min(540px, calc(100vw - 2rem));
+  overflow: hidden;
   padding: 0;
   border: 1px solid rgba(185, 148, 85, 0.36);
   background: rgba(4, 8, 14, 0.96);
@@ -2062,6 +2335,7 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
   overflow: hidden;
   border: 1px solid rgba(185, 148, 85, 0.28);
   background: rgba(3, 6, 10, 0.58);
+  cursor: pointer;
 }
 
 .gallery-grid img {
@@ -2077,6 +2351,157 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
 
 .gallery-grid figcaption {
   padding: 0.8rem 0.9rem 1rem;
+}
+
+.gallery-modal {
+  width: min(1180px, calc(100vw - 2rem));
+  max-height: calc(100svh - 2rem);
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid rgba(240, 208, 139, 0.42);
+  background: rgba(3, 5, 9, 0.96);
+  color: var(--bright-gold);
+  box-shadow: 0 30px 110px rgba(0, 0, 0, 0.82), 0 0 52px rgba(185, 148, 85, 0.14);
+}
+
+.gallery-modal::backdrop {
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(9px);
+}
+
+.gallery-modal-shell {
+  position: relative;
+  padding: 0.7rem;
+}
+
+.gallery-modal img {
+  width: 100%;
+  max-height: calc(100svh - 7rem);
+  object-fit: contain;
+}
+
+.gallery-modal p {
+  margin: 0;
+  padding: 0.8rem 0.4rem 0.35rem;
+  color: var(--bright-gold);
+  font-family: var(--font-display);
+  text-align: center;
+}
+
+.strategic-modal {
+  width: min(1020px, calc(100vw - 2rem));
+  max-height: calc(100svh - 2rem);
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid rgba(240, 208, 139, 0.42);
+  background: rgba(3, 5, 9, 0.97);
+  color: var(--text);
+  box-shadow: 0 30px 110px rgba(0, 0, 0, 0.82), 0 0 52px rgba(185, 148, 85, 0.14);
+}
+
+.strategic-modal::backdrop {
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(9px);
+}
+
+.strategic-modal-shell {
+  position: relative;
+  min-height: min(680px, calc(100svh - 2rem));
+  padding: 2rem;
+  overflow: auto;
+  scrollbar-width: none;
+  background:
+    linear-gradient(180deg, rgba(12, 20, 32, 0.72), rgba(4, 7, 11, 0.96)),
+    radial-gradient(circle at 82% 14%, rgba(185, 148, 85, 0.1), transparent 22rem);
+}
+
+.strategic-modal-shell::-webkit-scrollbar {
+  display: none;
+}
+
+.strategic-modal-heading {
+  max-width: 680px;
+  padding-right: 3rem;
+}
+
+.strategic-modal-heading h2 {
+  margin: 0.22rem 0 0.45rem;
+  color: var(--bright-gold);
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  font-weight: 500;
+}
+
+.strategic-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.42rem;
+  margin: 1.6rem 0 1.35rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid rgba(185, 148, 85, 0.24);
+}
+
+.strategic-tabs button {
+  padding: 0.58rem 0.75rem;
+  border: 1px solid rgba(185, 148, 85, 0.22);
+  background: rgba(4, 7, 11, 0.7);
+  color: var(--muted);
+  cursor: pointer;
+  font-family: var(--font-display);
+  transition: color 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.strategic-tabs button:hover,
+.strategic-tabs button.is-active {
+  border-color: rgba(240, 208, 139, 0.48);
+  background: rgba(185, 148, 85, 0.12);
+  color: var(--bright-gold);
+}
+
+.strategic-modal-content > section.is-active {
+  animation: panelUnseal 0.48s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.strategic-entry-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.8rem;
+}
+
+.strategic-entry {
+  min-height: 180px;
+  padding: 1rem;
+  border: 1px solid rgba(185, 148, 85, 0.22);
+  background: rgba(6, 10, 16, 0.72);
+}
+
+.strategic-entry img {
+  width: 100%;
+  height: 150px;
+  margin-bottom: 0.85rem;
+  border: 1px solid rgba(185, 148, 85, 0.22);
+  object-fit: cover;
+}
+
+.strategic-entry span,
+.strategic-entry strong {
+  display: block;
+  color: var(--old-gold);
+  font-size: 0.75rem;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.strategic-entry h3 {
+  margin: 0.5rem 0 0.32rem;
+  color: var(--bright-gold);
+  font-family: var(--font-display);
+}
+
+.strategic-entry p {
+  margin: 0.72rem 0 0;
+  color: var(--muted);
+  line-height: 1.65;
 }
 
 .reveal {
@@ -2801,6 +3226,181 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
   }
 }
 
+@keyframes modalPanelArrive {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.985);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes modalPanelLeave {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(10px) scale(0.992);
+  }
+}
+
+@keyframes modalVeilOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes modalBackdropOut {
+  from {
+    opacity: 1;
+    backdrop-filter: blur(8px);
+  }
+  to {
+    opacity: 0;
+    backdrop-filter: blur(0);
+  }
+}
+
+@keyframes audioPanelOpen {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.985);
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes audioPanelClose {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.99);
+  }
+}
+
+@keyframes memberRecordOpen {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.988);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes memberAuraOpen {
+  0% {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  42% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.18;
+    transform: scale(1);
+  }
+}
+
+@keyframes memberAuraClose {
+  from {
+    opacity: 0.18;
+    transform: scale(1);
+  }
+  58% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+@keyframes memberEdgeSweep {
+  0% {
+    left: -18%;
+    opacity: 0;
+  }
+  24% {
+    opacity: 0.82;
+  }
+  100% {
+    left: 108%;
+    opacity: 0;
+  }
+}
+
+@keyframes memberEdgeSweepClose {
+  0% {
+    left: 108%;
+    opacity: 0;
+  }
+  24% {
+    opacity: 0.82;
+  }
+  100% {
+    left: -18%;
+    opacity: 0;
+  }
+}
+
+@keyframes memberSparksOpen {
+  0% {
+    opacity: 0;
+    transform: translateY(16px) scale(0.5);
+  }
+  32% {
+    opacity: 0.92;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-24px) scale(1.12);
+  }
+}
+
+@keyframes memberSparksClose {
+  from {
+    opacity: 0;
+    transform: translateY(-24px) scale(1.12);
+  }
+  58% {
+    opacity: 0.92;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(16px) scale(0.5);
+  }
+}
+
+@keyframes crestAuraPulse {
+  0%,
+  100% {
+    opacity: 0.72;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+}
+
 @keyframes modalVeil {
   from {
     opacity: 0;
@@ -2818,6 +3418,58 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
   to {
     opacity: 1;
     backdrop-filter: blur(8px);
+  }
+}
+
+@keyframes transitionVeil {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  28%,
+  62% {
+    opacity: 1;
+  }
+}
+
+@keyframes transitionLine {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) scaleX(0);
+  }
+  42%,
+  68% {
+    opacity: 1;
+    transform: translateX(-50%) scaleX(1);
+  }
+}
+
+@keyframes transitionSigil {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.54) rotate(-36deg);
+  }
+  42% {
+    opacity: 0.78;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.26) rotate(22deg);
+  }
+}
+
+@keyframes transitionSparks {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.54);
+  }
+  36% {
+    opacity: 0.82;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.38);
   }
 }
 

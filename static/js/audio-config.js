@@ -1,11 +1,12 @@
 window.VelkarisAudioConfig = {
   storageKey: "velkaris.audio.preferences.v4",
   musicSrc: "/static/audio/villains-symphony.mp3",
+  windSrc: "/static/audio/wind-magic.mp3",
   defaults: {
     musicEnabled: true,
     effectsEnabled: true,
     musicVolume: 0.32,
-    effectsVolume: 0.22,
+    windVolume: 0.18,
   },
   hoverCooldownMs: 0,
   hoverSelectors: [

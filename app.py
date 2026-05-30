@@ -76,6 +76,12 @@ HOUSE_DEFAULTS = {
     "crest_image": "assets/Velkaris.png",
     "hero_image": "assets/hero-castle.png",
     "territory_map": "assets/territory-map.png",
+    "leaders": [],
+    "fortifications": [],
+    "conflicts": [],
+    "aristocrats": [],
+    "allies": [],
+    "vassals": [],
 }
 
 MAP_MARKER_TYPES = [
@@ -109,7 +115,14 @@ COLLECTION_FIELDS = {
     "timeline": ("date", "era", "title", "summary"),
     "eras": ("name", "period", "description"),
     "gallery": ("title",),
+    "leaders": ("name", "title", "period", "description"),
+    "fortifications": ("name", "type", "responsible", "description"),
+    "conflicts": ("name", "period", "outcome", "description"),
+    "aristocrats": ("name", "title", "role", "description"),
+    "allies": ("name", "group", "role", "description"),
+    "vassals": ("name", "group", "service", "description"),
 }
+STRATEGIC_COLLECTIONS = {"leaders", "fortifications", "conflicts", "aristocrats", "allies", "vassals"}
 
 
 app = Flask(__name__)
@@ -334,6 +347,8 @@ def ensure_collection_item(collection: str, item: Any, index: int) -> dict[str, 
         normalized["icon"] = normalized.get("icon") or "crown"
     if collection == "gallery":
         normalized["image"] = item.get("image") or ["assets/gallery-castle.png", "assets/territory-map.png", "assets/gallery-fortress.png"][index % 3]
+    if collection in STRATEGIC_COLLECTIONS:
+        normalized["image"] = item.get("image", "")
     return normalized
 
 
@@ -810,7 +825,7 @@ def admin_login():
             LOGIN_ATTEMPTS.pop(key, None)
             session["is_admin"] = True
             flash("Acesso concedido ao arquivo interno.", "success")
-            return redirect(request.args.get("next") or url_for("admin"))
+            return redirect(request.args.get("next") or url_for("admin", audio=request.args.get("audio")))
         record_failed_login(key)
         flash("Credenciais inválidas.", "error")
     return render_template("admin_login.html")
@@ -911,6 +926,8 @@ def create_collection_item(collection: str):
         sanitize_map_marker(item)
     if collection == "gallery":
         item["image"] = save_upload(request.files.get("image"), "gallery") or "assets/gallery-castle.png"
+    if collection in STRATEGIC_COLLECTIONS:
+        item["image"] = save_upload(request.files.get("image"), collection) or ""
     house[collection].append(item)
     write_json(HOUSE_FILE, house)
     flash("Novo item adicionado ao site.", "success")
@@ -933,6 +950,10 @@ def update_collection_item(collection: str, entry_id: str):
         sanitize_map_marker(item)
     if collection == "gallery":
         uploaded = save_upload(request.files.get("image"), "gallery")
+        if uploaded:
+            item["image"] = uploaded
+    if collection in STRATEGIC_COLLECTIONS:
+        uploaded = save_upload(request.files.get("image"), collection)
         if uploaded:
             item["image"] = uploaded
     write_json(HOUSE_FILE, house)

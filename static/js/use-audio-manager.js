@@ -2,12 +2,14 @@
   const config = window.VelkarisAudioConfig || {};
   const defaults = config.defaults || {};
   const storageKey = config.storageKey || "velkaris.audio.preferences.v1";
+  const playbackStorageKey = `${storageKey}.playback`;
+  const silentNavigation = new URLSearchParams(window.location.search).get("audio") === "silent";
   const clamp = (value, min = 0, max = 1) => Math.min(max, Math.max(min, Number(value) || 0));
   const state = {
     musicEnabled: false,
     effectsEnabled: true,
     musicVolume: 0.42,
-    effectsVolume: 0.28,
+    windVolume: 0.18,
     ...defaults,
   };
 
@@ -17,34 +19,76 @@
     // Preferences are optional.
   }
   state.musicVolume = clamp(state.musicVolume);
-  state.effectsVolume = clamp(state.effectsVolume);
+  state.windVolume = clamp(state.windVolume ?? state.effectsVolume ?? 0.18);
+  if (silentNavigation) state.musicEnabled = false;
 
   let audioContext;
   let musicGain;
   let effectsGain;
   let roomGain;
-  let musicElement;
+  let musicElement = document.querySelector("[data-background-music]");
   let musicNodes = [];
   let pulseTimer = 0;
   let lastHoverAt = 0;
   let lastClickAt = 0;
   let phraseIndex = 0;
+  let playbackTimer = 0;
+  let musicElementReady = false;
+  let fadeFrame = 0;
+  let isFadingMusic = false;
+  const windPlayers = [];
+  let windPlayerIndex = 0;
 
   const panel = document.querySelector("[data-audio-panel]");
   const panelToggle = document.querySelector("[data-audio-panel-toggle]");
   const panelClose = document.querySelector("[data-audio-panel-close]");
   const musicToggle = document.querySelector("[data-music-toggle]");
-  const effectsToggle = document.querySelector("[data-effects-toggle]");
   const musicVolume = document.querySelector("[data-music-volume]");
-  const effectsVolume = document.querySelector("[data-effects-volume]");
+  const windVolume = document.querySelector("[data-wind-volume]");
 
   const save = () => {
     localStorage.setItem(storageKey, JSON.stringify({
       musicEnabled: state.musicEnabled,
       effectsEnabled: state.effectsEnabled,
       musicVolume: state.musicVolume,
-      effectsVolume: state.effectsVolume,
+      windVolume: state.windVolume,
     }));
+  };
+
+  const persistMusicPosition = () => {
+    if (!musicElement || !Number.isFinite(musicElement.currentTime)) return;
+    localStorage.setItem(playbackStorageKey, JSON.stringify({
+      currentTime: musicElement.currentTime,
+      savedAt: Date.now(),
+      playing: state.musicEnabled && !musicElement.paused,
+    }));
+  };
+
+  const restoreMusicPosition = () => {
+    if (!musicElement) return;
+    try {
+      const saved = JSON.parse(localStorage.getItem(playbackStorageKey) || "{}");
+      const elapsed = saved.playing && state.musicEnabled ? (Date.now() - Number(saved.savedAt || Date.now())) / 1000 : 0;
+      const target = Math.max(0, Number(saved.currentTime || 0) + elapsed);
+      musicElement.currentTime = musicElement.duration ? target % musicElement.duration : target;
+    } catch (error) {
+      // Playback continuity is a progressive enhancement.
+    }
+  };
+
+  const ensureMusicElement = () => {
+    if (!musicElement) {
+      if (!config.musicSrc) return null;
+      musicElement = new Audio(config.musicSrc);
+    }
+    if (musicElementReady) return musicElement;
+    musicElement.loop = true;
+    musicElement.preload = "auto";
+    musicElement.addEventListener("loadedmetadata", restoreMusicPosition, { once: true });
+    restoreMusicPosition();
+    playbackTimer = window.setInterval(persistMusicPosition, 1000);
+    musicElementReady = true;
+    return musicElement;
   };
 
   const ensureAudio = async () => {
@@ -73,7 +117,7 @@
     }
     if (!effectsGain) {
       effectsGain = audioContext.createGain();
-      effectsGain.gain.value = state.effectsVolume;
+      effectsGain.gain.value = state.windVolume;
       effectsGain.connect(audioContext.destination);
     }
     if (audioContext.state !== "running") await audioContext.resume();
@@ -87,27 +131,25 @@
       musicToggle.textContent = state.musicEnabled ? "Desativar música" : "Ativar música";
       musicToggle.classList.toggle("is-active", state.musicEnabled);
     }
-    if (effectsToggle) {
-      effectsToggle.textContent = state.effectsEnabled ? "Desativar efeitos" : "Ativar efeitos";
-      effectsToggle.classList.toggle("is-active", state.effectsEnabled);
-    }
     if (musicVolume) musicVolume.value = String(Math.round(state.musicVolume * 100));
-    if (effectsVolume) effectsVolume.value = String(Math.round(state.effectsVolume * 100));
-    if (musicElement) musicElement.volume = state.musicEnabled ? state.musicVolume : 0;
+    if (windVolume) windVolume.value = String(Math.round(state.windVolume * 100));
+    if (musicElement && !isFadingMusic) musicElement.volume = state.musicEnabled ? state.musicVolume : 0;
     if (musicGain && audioContext) {
       musicGain.gain.setTargetAtTime(state.musicEnabled ? state.musicVolume : 0.0001, audioContext.currentTime, 0.2);
     }
     if (effectsGain && audioContext) {
-      effectsGain.gain.setTargetAtTime(state.effectsEnabled ? state.effectsVolume : 0.0001, audioContext.currentTime, 0.08);
+      effectsGain.gain.setTargetAtTime(state.effectsEnabled ? state.windVolume : 0.0001, audioContext.currentTime, 0.08);
     }
   };
 
   const stopMusic = () => {
+    window.cancelAnimationFrame(fadeFrame);
+    isFadingMusic = false;
     clearTimeout(pulseTimer);
     pulseTimer = 0;
     if (musicElement) {
+      persistMusicPosition();
       musicElement.pause();
-      musicElement.currentTime = 0;
     }
     if (!audioContext) return;
     const now = audioContext.currentTime;
@@ -121,6 +163,26 @@
       node.disconnect?.();
     });
     musicNodes = [];
+  };
+
+  const fadeInMusic = (duration = 3000) => {
+    if (!musicElement || !state.musicEnabled) return;
+    window.cancelAnimationFrame(fadeFrame);
+    const startedAt = performance.now();
+    const targetVolume = state.musicVolume;
+    isFadingMusic = true;
+    musicElement.volume = 0;
+    const tick = (now) => {
+      const progress = Math.min(1, (now - startedAt) / duration);
+      musicElement.volume = targetVolume * progress;
+      if (progress < 1 && state.musicEnabled && !musicElement.paused) {
+        fadeFrame = window.requestAnimationFrame(tick);
+        return;
+      }
+      isFadingMusic = false;
+      musicElement.volume = state.musicEnabled ? state.musicVolume : 0;
+    };
+    fadeFrame = window.requestAnimationFrame(tick);
   };
 
   const playStringVoice = ({
@@ -248,17 +310,26 @@
     pulseTimer = window.setTimeout(schedulePhrase, 9900);
   };
 
-  const startMusic = async () => {
+  const startMusic = async ({ fadeIn = false } = {}) => {
     if (config.musicSrc) {
-      musicElement = musicElement || new Audio(config.musicSrc);
-      musicElement.loop = true;
-      musicElement.preload = "auto";
-      musicElement.volume = state.musicVolume;
+      ensureMusicElement();
       state.musicEnabled = true;
+      isFadingMusic = fadeIn;
+      musicElement.volume = fadeIn ? 0 : state.musicVolume;
       updateUi();
       save();
-      if (!musicElement.paused) return;
-      await musicElement.play();
+      if (!musicElement.paused) {
+        if (fadeIn) fadeInMusic();
+        return;
+      }
+      try {
+        await musicElement.play();
+        if (fadeIn) fadeInMusic();
+      } catch (error) {
+        isFadingMusic = false;
+        musicElement.volume = 0;
+        throw error;
+      }
       return;
     }
     await ensureAudio();
@@ -292,96 +363,118 @@
       noise[index] = (Math.random() * 2 - 1) * envelope;
     }
     const scrape = audioContext.createBufferSource();
-    const brightFilter = audioContext.createBiquadFilter();
-    const narrowFilter = audioContext.createBiquadFilter();
-    const scrapeGain = audioContext.createGain();
-    const ring = audioContext.createOscillator();
-    const ringGain = audioContext.createGain();
+    const roughFilter = audioContext.createBiquadFilter();
+    const steelFilter = audioContext.createBiquadFilter();
+    const roughGain = audioContext.createGain();
+    const steelGain = audioContext.createGain();
+    const resonance = audioContext.createOscillator();
+    const resonanceGain = audioContext.createGain();
     const panner = audioContext.createStereoPanner();
 
-    const frequencies = [523.25, 587.33, 659.25, 698.46, 783.99];
+    const frequencies = [293.66, 329.63, 349.23, 392, 440];
     const frequency = frequencies[Math.abs(variant) % frequencies.length];
-    const startBand = mode === "click" ? 3100 : 620;
-    const endBand = mode === "click" ? 620 : 3100;
-    const startRing = mode === "click" ? frequency * 1.35 : frequency * 0.72;
-    const endRing = mode === "click" ? frequency * 0.72 : frequency * 1.35;
+    const startBand = mode === "click" ? 2850 : 960;
+    const endBand = mode === "click" ? 960 : 2850;
+    const startSteel = mode === "click" ? 4200 : 1900;
+    const endSteel = mode === "click" ? 1900 : 4200;
 
     scrape.buffer = noiseBuffer;
-    brightFilter.type = "highpass";
-    brightFilter.frequency.setValueAtTime(420, now);
-    brightFilter.Q.value = 0.7;
-    narrowFilter.type = "bandpass";
-    narrowFilter.frequency.setValueAtTime(startBand, now);
-    narrowFilter.frequency.exponentialRampToValueAtTime(endBand, now + duration);
-    narrowFilter.Q.value = 7.5;
-    scrapeGain.gain.setValueAtTime(0.0001, now);
+    roughFilter.type = "bandpass";
+    roughFilter.frequency.setValueAtTime(startBand, now);
+    roughFilter.frequency.exponentialRampToValueAtTime(endBand, now + duration);
+    roughFilter.Q.value = 2.8;
+    steelFilter.type = "bandpass";
+    steelFilter.frequency.setValueAtTime(startSteel, now);
+    steelFilter.frequency.exponentialRampToValueAtTime(endSteel, now + duration);
+    steelFilter.Q.value = 8.6;
+    roughGain.gain.setValueAtTime(0.0001, now);
+    steelGain.gain.setValueAtTime(0.0001, now);
     if (mode === "click") {
-      scrapeGain.gain.exponentialRampToValueAtTime(0.024, now + 0.16);
-      scrapeGain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+      roughGain.gain.exponentialRampToValueAtTime(0.02, now + 0.14);
+      steelGain.gain.exponentialRampToValueAtTime(0.014, now + 0.12);
     } else {
-      scrapeGain.gain.exponentialRampToValueAtTime(0.026, now + 0.025);
-      scrapeGain.gain.setTargetAtTime(0.015, now + 0.08, 0.16);
-      scrapeGain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+      roughGain.gain.exponentialRampToValueAtTime(0.02, now + 0.035);
+      steelGain.gain.exponentialRampToValueAtTime(0.016, now + 0.05);
     }
+    roughGain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+    steelGain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
 
-    ring.type = "sine";
-    ring.frequency.setValueAtTime(startRing, now);
-    ring.frequency.exponentialRampToValueAtTime(endRing, now + duration * 0.72);
-    ringGain.gain.setValueAtTime(0.0001, now);
-    ringGain.gain.exponentialRampToValueAtTime(mode === "click" ? 0.018 : 0.014, now + (mode === "click" ? 0.12 : 0.03));
-    ringGain.gain.exponentialRampToValueAtTime(0.0001, now + duration + 0.12);
+    resonance.type = "sine";
+    resonance.frequency.setValueAtTime(frequency, now);
+    resonance.frequency.exponentialRampToValueAtTime(frequency * (mode === "click" ? 0.92 : 1.06), now + duration);
+    resonanceGain.gain.setValueAtTime(0.0001, now);
+    resonanceGain.gain.exponentialRampToValueAtTime(0.008, now + 0.04);
+    resonanceGain.gain.exponentialRampToValueAtTime(0.0001, now + duration + 0.1);
     panner.pan.value = ((variant % 3) - 1) * 0.16;
 
-    scrape.connect(brightFilter);
-    brightFilter.connect(narrowFilter);
-    narrowFilter.connect(scrapeGain);
-    scrapeGain.connect(effectsGain);
-    ring.connect(ringGain);
-    ringGain.connect(panner);
+    scrape.connect(roughFilter);
+    scrape.connect(steelFilter);
+    roughFilter.connect(roughGain);
+    steelFilter.connect(steelGain);
+    roughGain.connect(panner);
+    steelGain.connect(panner);
+    resonance.connect(resonanceGain);
+    resonanceGain.connect(panner);
     panner.connect(effectsGain);
 
     scrape.start(now);
-    ring.start(now);
+    resonance.start(now);
     scrape.stop(now + duration);
-    ring.stop(now + duration + 0.08);
+    resonance.stop(now + duration + 0.1);
   };
 
   const playHover = (variant = 0) => playSwordSheen(variant, "hover");
   const playClick = (variant = 0) => playSwordSheen(variant, "click");
-  const playPanelOpen = async () => {
-    if (!state.effectsEnabled) return;
-    await ensureAudio();
-    const now = audioContext.currentTime;
-    [392, 523.25, 659.25].forEach((frequency, index) => {
-      const oscillator = audioContext.createOscillator();
-      const gain = audioContext.createGain();
-      const filter = audioContext.createBiquadFilter();
-      oscillator.type = "sine";
-      oscillator.frequency.setValueAtTime(frequency, now + index * 0.035);
-      filter.type = "bandpass";
-      filter.frequency.value = frequency * 1.8;
-      filter.Q.value = 2.4;
-      gain.gain.setValueAtTime(0.0001, now + index * 0.035);
-      gain.gain.exponentialRampToValueAtTime(0.018, now + index * 0.035 + 0.04);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.54 + index * 0.03);
-      oscillator.connect(filter);
-      filter.connect(gain);
-      gain.connect(effectsGain);
-      oscillator.start(now + index * 0.035);
-      oscillator.stop(now + 0.62 + index * 0.03);
-    });
+  const playWindWhisper = async () => {
+    if (!state.effectsEnabled || state.windVolume <= 0) return;
+    const nowMs = performance.now();
+    if (nowMs - lastClickAt < 90) return;
+    lastClickAt = nowMs;
+    if (!config.windSrc) return;
+    if (!windPlayers.length) {
+      for (let index = 0; index < 3; index += 1) {
+        const player = new Audio(config.windSrc);
+        player.preload = "auto";
+        windPlayers.push(player);
+      }
+    }
+    const player = windPlayers[windPlayerIndex % windPlayers.length];
+    windPlayerIndex += 1;
+    player.pause();
+    player.currentTime = 0;
+    player.volume = state.windVolume * 0.3;
+    await player.play().catch(() => {});
   };
+  const playPanelOpen = () => playWindWhisper();
 
   panelToggle?.addEventListener("click", () => {
     if (!panel) return;
     const willOpen = panel.hidden;
-    panel.hidden = !panel.hidden;
-    if (willOpen) playPanelOpen();
+    if (willOpen) {
+      panel.hidden = false;
+      panel.classList.remove("is-closing");
+      panel.classList.add("is-opening");
+      window.setTimeout(() => panel.classList.remove("is-opening"), 360);
+      playPanelOpen();
+    } else {
+      panel.classList.remove("is-opening");
+      panel.classList.add("is-closing");
+      window.setTimeout(() => {
+        panel.hidden = true;
+        panel.classList.remove("is-closing");
+        updateUi();
+      }, 220);
+    }
     updateUi();
   });
   panelClose?.addEventListener("click", () => {
-    if (panel) panel.hidden = true;
-    updateUi();
+    if (!panel || panel.hidden) return;
+    panel.classList.add("is-closing");
+    window.setTimeout(() => {
+      panel.hidden = true;
+      panel.classList.remove("is-closing");
+      updateUi();
+    }, 220);
   });
   musicToggle?.addEventListener("click", async () => {
     if (state.musicEnabled) {
@@ -393,51 +486,39 @@
       await startMusic();
     }
   });
-  effectsToggle?.addEventListener("click", () => {
-    state.effectsEnabled = !state.effectsEnabled;
-    updateUi();
-    save();
-  });
   musicVolume?.addEventListener("input", () => {
     state.musicVolume = clamp(Number(musicVolume.value) / 100);
     updateUi();
     save();
   });
-  effectsVolume?.addEventListener("input", () => {
-    state.effectsVolume = clamp(Number(effectsVolume.value) / 100);
+  windVolume?.addEventListener("input", () => {
+    state.windVolume = clamp(Number(windVolume.value) / 100);
     updateUi();
     save();
   });
 
-  document.addEventListener("pointerenter", (event) => {
-    const selectors = config.hoverSelectors || [];
-    const target = selectors.length ? event.target.closest?.(selectors.join(",")) : null;
-    if (!target) return;
-    playHover([...document.querySelectorAll(selectors.join(","))].indexOf(target));
-  }, true);
-
   document.addEventListener("click", (event) => {
-    const selectors = config.hoverSelectors || [];
-    const target = selectors.length ? event.target.closest?.(selectors.join(",")) : null;
-    if (!target) return;
-    playClick([...document.querySelectorAll(selectors.join(","))].indexOf(target));
+    if (!event.target.closest("a, button, summary, [role='button'], input[type='range']")) return;
+    playWindWhisper();
   }, true);
 
   document.addEventListener("pointerdown", () => {
-    if (state.musicEnabled && musicElement?.paused) musicElement.play().catch(() => {});
+    if (state.musicEnabled && musicElement?.paused) startMusic({ fadeIn: true }).catch(() => {});
   }, true);
   document.addEventListener("visibilitychange", () => {
-    if (!document.hidden && state.musicEnabled && musicElement?.paused) musicElement.play().catch(() => {});
+    if (!document.hidden && state.musicEnabled && musicElement?.paused) startMusic({ fadeIn: true }).catch(() => {});
   });
+  window.addEventListener("pagehide", persistMusicPosition);
 
-  window.VelkarisAudio = { playHover, playClick, playPanelOpen, state };
+  window.VelkarisAudio = { playPanelOpen, playWindWhisper, state };
   updateUi();
 
   if (state.musicEnabled) {
+    startMusic({ fadeIn: true }).catch(() => {});
     const startOnGesture = async () => {
       window.removeEventListener("pointerdown", startOnGesture);
       window.removeEventListener("keydown", startOnGesture);
-      if (!musicNodes.length) await startMusic();
+      if (!musicNodes.length && musicElement?.paused) await startMusic({ fadeIn: true });
     };
     window.addEventListener("pointerdown", startOnGesture, { once: true });
     window.addEventListener("keydown", startOnGesture, { once: true });

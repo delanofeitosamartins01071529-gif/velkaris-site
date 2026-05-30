@@ -2,8 +2,7 @@
 
 {% block content %}
   <section class="hero" id="inicio" data-hero>
-    <img class="hero-art" src="{{ media_url(house.hero_image) }}" alt="Castelo ancestral da Casa {{ house.name }} envolto em névoa e luz azul">
-    <img class="hero-city" src="{{ url_for('static', filename='assets/hero-manor-bg.png') }}" alt="">
+    <img class="hero-art" src="{{ media_url(house.hero_image) }}" alt="Imagem de fundo da Casa {{ house.name }}">
     <div class="hero-vignette"></div>
     <div class="hero-banner" aria-hidden="true"></div>
 
@@ -42,13 +41,126 @@
   </section>
 
   <section class="codex-grid" aria-label="Arquivo principal">
-    <aside class="side-rail" aria-hidden="true">
-      <span>♔</span>
-      <span>♜</span>
-      <span>⚔</span>
-      <span>✦</span>
-      <span>◆</span>
+    <aside class="side-rail" aria-label="Arquivo estratégico">
+      <button type="button" data-strategic-open="leaders" aria-label="Abrir hierarquia familiar" title="Hierarquia familiar">♔</button>
+      <button type="button" data-strategic-open="fortifications" aria-label="Abrir construções militares" title="Construções militares">♜</button>
+      <button type="button" data-strategic-open="conflicts" aria-label="Abrir confrontos" title="Confrontos">⚔</button>
+      <button type="button" data-strategic-open="aristocrats" aria-label="Abrir aristocratas" title="Aristocratas">✦</button>
+      <button type="button" data-strategic-open="allies" aria-label="Abrir aliados" title="Aliados">◆</button>
+      <button type="button" data-strategic-open="vassals" aria-label="Abrir vassalos" title="Vassalos">♣</button>
     </aside>
+
+    <dialog class="strategic-modal" data-strategic-modal>
+      <div class="strategic-modal-shell">
+        <div class="modal-effects" aria-hidden="true"><span></span><span></span><span></span></div>
+        <button class="modal-close" type="button" data-strategic-close aria-label="Fechar arquivo">×</button>
+        <div class="strategic-modal-heading">
+          <p class="section-kicker" data-strategic-kicker>Arquivo reservado</p>
+          <h2 data-strategic-title>Hierarquia familiar</h2>
+          <p data-strategic-description>Registros internos da Casa {{ house.name }}.</p>
+        </div>
+        <div class="strategic-tabs" role="tablist" aria-label="Seções do arquivo estratégico">
+          <button type="button" role="tab" data-strategic-tab="leaders">Hierarquia</button>
+          <button type="button" role="tab" data-strategic-tab="fortifications">Fortificações</button>
+          <button type="button" role="tab" data-strategic-tab="conflicts">Confrontos</button>
+          <button type="button" role="tab" data-strategic-tab="aristocrats">Aristocratas</button>
+          <button type="button" role="tab" data-strategic-tab="allies">Aliados</button>
+          <button type="button" role="tab" data-strategic-tab="vassals">Vassalos</button>
+        </div>
+        <div class="strategic-modal-content">
+          <section data-strategic-panel="leaders">
+            <div class="strategic-entry-grid">
+              {% for item in house.leaders %}
+                <article class="strategic-entry">
+                  {% if item.image %}<img src="{{ media_url(item.image) }}" alt="Imagem de {{ item.name }}">{% endif %}
+                  <span>{{ item.period }}</span>
+                  <h3>{{ item.name }}</h3>
+                  <strong>{{ item.title }}</strong>
+                  <p>{{ item.description }}</p>
+                </article>
+              {% else %}
+                <p class="empty-state">Nenhuma liderança registrada.</p>
+              {% endfor %}
+            </div>
+          </section>
+          <section data-strategic-panel="fortifications" hidden>
+            <div class="strategic-entry-grid">
+              {% for item in house.fortifications %}
+                <article class="strategic-entry">
+                  {% if item.image %}<img src="{{ media_url(item.image) }}" alt="Imagem de {{ item.name }}">{% endif %}
+                  <span>{{ item.type }}</span>
+                  <h3>{{ item.name }}</h3>
+                  <strong>Responsável: {{ item.responsible }}</strong>
+                  <p>{{ item.description }}</p>
+                </article>
+              {% else %}
+                <p class="empty-state">Nenhuma construcao militar registrada.</p>
+              {% endfor %}
+            </div>
+          </section>
+          <section data-strategic-panel="conflicts" hidden>
+            <div class="strategic-entry-grid">
+              {% for item in house.conflicts %}
+                <article class="strategic-entry">
+                  {% if item.image %}<img src="{{ media_url(item.image) }}" alt="Imagem de {{ item.name }}">{% endif %}
+                  <span>{{ item.period }}</span>
+                  <h3>{{ item.name }}</h3>
+                  <strong>{{ item.outcome }}</strong>
+                  <p>{{ item.description }}</p>
+                </article>
+              {% else %}
+                <p class="empty-state">Nenhum confronto registrado.</p>
+              {% endfor %}
+            </div>
+          </section>
+          <section data-strategic-panel="aristocrats" hidden>
+            <div class="strategic-entry-grid">
+              {% for item in house.aristocrats %}
+                <article class="strategic-entry">
+                  {% if item.image %}<img src="{{ media_url(item.image) }}" alt="Imagem de {{ item.name }}">{% endif %}
+                  <span>{{ item.role }}</span>
+                  <h3>{{ item.name }}</h3>
+                  <strong>{{ item.title }}</strong>
+                  <p>{{ item.description }}</p>
+                </article>
+              {% else %}
+                <p class="empty-state">Nenhum aristocrata registrado.</p>
+              {% endfor %}
+            </div>
+          </section>
+          <section data-strategic-panel="allies" hidden>
+            <div class="strategic-entry-grid">
+              {% for item in house.allies %}
+                <article class="strategic-entry">
+                  {% if item.image %}<img src="{{ media_url(item.image) }}" alt="Imagem de {{ item.name }}">{% endif %}
+                  <span>{{ item.group }}</span>
+                  <h3>{{ item.name }}</h3>
+                  <strong>{{ item.role }}</strong>
+                  <p>{{ item.description }}</p>
+                </article>
+              {% else %}
+                <p class="empty-state">Nenhum aliado registrado.</p>
+              {% endfor %}
+            </div>
+          </section>
+          <section data-strategic-panel="vassals" hidden>
+            <div class="strategic-entry-grid">
+              {% for item in house.vassals %}
+                <article class="strategic-entry">
+                  {% if item.image %}<img src="{{ media_url(item.image) }}" alt="Imagem de {{ item.name }}">{% endif %}
+                  <span>{{ item.group }}</span>
+                  <h3>{{ item.name }}</h3>
+                  <strong>{{ item.service }}</strong>
+                  <p>{{ item.description }}</p>
+                </article>
+              {% else %}
+                <p class="empty-state">Nenhum vassalo registrado.</p>
+              {% endfor %}
+            </div>
+          </section>
+        </div>
+      </div>
+    </dialog>
 
     <section class="panel about-panel reveal" id="familia" data-reveal>
       <div class="panel-heading">
@@ -109,6 +221,11 @@
       {% for member in members %}
         <dialog class="member-modal" data-member-modal="{{ member.id }}">
           <div class="member-modal-shell">
+            <div class="modal-effects member-modal-effects" aria-hidden="true">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
             <button class="modal-close" type="button" data-member-close aria-label="Fechar registro">×</button>
             <div class="member-modal-portrait">
               <img src="{{ media_url(member.image) }}" alt="Retrato de {{ member.name }}">
@@ -126,7 +243,7 @@
               <dl class="member-facts">
                 <div><dt>Status</dt><dd>{{ member.status }}</dd></div>
                 {% if member.status == "Morto" and member.death_cause %}<div><dt>Causa da morte</dt><dd>{{ member.death_cause }}</dd></div>{% endif %}
-                <div><dt>Posicao</dt><dd>{{ member.generation }}</dd></div>
+                <div><dt>Posição</dt><dd>{{ member.generation }}</dd></div>
                 <div><dt>Ramo</dt><dd>{{ member.branch }}</dd></div>
                 {% if member.territory %}<div><dt>Domínio</dt><dd>{{ member.territory }}</dd></div>{% endif %}
                 {% if member.birth_year %}<div><dt>Nascimento</dt><dd>{{ member.birth_year }}</dd></div>{% endif %}
@@ -144,8 +261,8 @@
                   </p>
                 </div>
                 <div>
-                  <span>Conjuge</span>
-                  <p>{{ member.spouse or "Sem alianca registrada" }}</p>
+                  <span>Cônjuge</span>
+                  <p>{{ member.spouse or "Sem aliança registrada" }}</p>
                 </div>
                 <div>
                   <span>Filhos</span>
@@ -165,7 +282,7 @@
                   <p>{{ member.traits }}</p>
                 </div>
               {% endif %}
-              <a class="member-more modal-profile-link" href="{{ url_for('member_detail', slug=member.slug) }}">Abrir pagina completa</a>
+              <a class="member-more modal-profile-link" href="{{ url_for('member_detail', slug=member.slug) }}">Abrir página completa</a>
             </div>
           </div>
         </dialog>
@@ -178,11 +295,11 @@
           <p class="section-kicker">Árvore Genealógica</p>
           <h2>{{ house.tree_heading }}</h2>
         </div>
-        <div class="tree-controls" aria-label="Controles da arvore">
+        <div class="tree-controls" aria-label="Controles da árvore">
           <button type="button" data-tree-zoom-out aria-label="Diminuir zoom">-</button>
           <button type="button" data-tree-zoom-reset aria-label="Restaurar zoom">100%</button>
           <button type="button" data-tree-zoom-in aria-label="Aumentar zoom">+</button>
-          <button type="button" data-tree-center>Centralizar arvore</button>
+          <button type="button" data-tree-center>Centralizar árvore</button>
           <button type="button" data-tree-expand>Expandir</button>
           <button type="button" data-tree-collapse>Selar</button>
         </div>
@@ -248,6 +365,7 @@
       </div>
       <dialog class="map-marker-modal" data-map-marker-modal>
         <div class="map-marker-modal-shell">
+          <div class="modal-effects" aria-hidden="true"><span></span><span></span><span></span></div>
           <button class="modal-close" type="button" data-map-modal-close aria-label="Fechar local">×</button>
           <p class="section-kicker" data-map-modal-type></p>
           <h3 data-map-modal-title></h3>
@@ -317,12 +435,20 @@
       </div>
       <div class="gallery-grid">
         {% for item in house.gallery %}
-          <figure>
+          <figure role="button" tabindex="0" data-gallery-open>
             <img src="{{ media_url(item.image) }}" alt="{{ item.title }}">
             <figcaption>{{ item.title }}</figcaption>
           </figure>
         {% endfor %}
       </div>
+      <dialog class="gallery-modal" data-gallery-modal>
+        <div class="gallery-modal-shell">
+          <div class="modal-effects" aria-hidden="true"><span></span><span></span><span></span></div>
+          <button class="modal-close" type="button" data-gallery-close aria-label="Fechar imagem">×</button>
+          <img src="" alt="" data-gallery-modal-image>
+          <p data-gallery-modal-caption></p>
+        </div>
+      </dialog>
     </section>
   </section>
 {% endblock %}

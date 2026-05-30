@@ -2,6 +2,17 @@ const root = document.documentElement;
 root.classList.add("js");
 
 const loader = document.querySelector("[data-loader]");
+const pageTransition = document.querySelector("[data-page-transition]");
+let transitionTimer = 0;
+const playPageTransition = (duration = 760) => {
+  if (!pageTransition || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  window.clearTimeout(transitionTimer);
+  pageTransition.classList.remove("is-active");
+  pageTransition.offsetHeight;
+  pageTransition.classList.add("is-active");
+  transitionTimer = window.setTimeout(() => pageTransition.classList.remove("is-active"), duration);
+};
+window.VelkarisTransition = { play: playPageTransition };
 let introFinished = false;
 const finishIntro = () => {
   if (introFinished) return;
@@ -71,7 +82,10 @@ if (cursor && finePointer) {
     const openDialogs = [...document.querySelectorAll("dialog[open]")];
     const topDialog = openDialogs.at(-1);
     const host = topDialog || cursorDefaultParent || document.body;
-    if (cursor.parentElement !== host) host.appendChild(cursor);
+    if (cursor.parentElement !== host) {
+      host.appendChild(cursor);
+      cursor.style.transform = `translate3d(${cursorPosition.x}px, ${cursorPosition.y}px, 0) translate(-50%, -50%)`;
+    }
   };
 
   const renderCursor = () => {
@@ -115,6 +129,42 @@ if (cursor && finePointer) {
     attributeFilter: ["open"],
   });
 }
+
+const openDialogWithMotion = (dialog) => {
+  if (!dialog) return;
+  dialog.classList.remove("is-closing");
+  if (!dialog.open) {
+    if (typeof dialog.showModal === "function") dialog.showModal();
+    else dialog.setAttribute("open", "");
+  }
+  dialog.classList.remove("is-opening");
+  dialog.offsetHeight;
+  dialog.classList.add("is-opening");
+  window.setTimeout(() => dialog.classList.remove("is-opening"), 520);
+  document.body.classList.add("modal-open");
+  requestAnimationFrame(syncCursorLayer);
+};
+
+const closeDialogWithMotion = (dialog) => {
+  if (!dialog || !dialog.open || dialog.classList.contains("is-closing")) return;
+  dialog.classList.remove("is-opening");
+  dialog.classList.add("is-closing");
+  window.setTimeout(() => {
+    if (typeof dialog.close === "function") dialog.close();
+    else dialog.removeAttribute("open");
+    dialog.classList.remove("is-closing");
+    document.body.classList.remove("modal-open");
+    requestAnimationFrame(syncCursorLayer);
+  }, 240);
+};
+
+window.VelkarisModalMotion = { open: openDialogWithMotion, close: closeDialogWithMotion };
+document.querySelectorAll("dialog").forEach((dialog) => {
+  dialog.addEventListener("cancel", (event) => {
+    event.preventDefault();
+    closeDialogWithMotion(dialog);
+  });
+});
 
 const revealObserver = new IntersectionObserver(
   (entries) => {
@@ -172,7 +222,9 @@ const setPortraitsExpanded = (expanded, animate = true) => {
   if (!portraitsSection || !portraitsContent || !portraitsToggle) return;
   if (portraitsAnimation) portraitsAnimation.cancel();
   isPortraitsExpanded = expanded;
-  if (expanded) window.VelkarisAudio?.playPanelOpen?.();
+  if (expanded) {
+    window.VelkarisAudio?.playPanelOpen?.();
+  }
   portraitsToggle.setAttribute("aria-expanded", String(expanded));
   portraitsToggleLabel && (portraitsToggleLabel.textContent = expanded ? "Recolher retratos" : "Expandir retratos");
   portraitsSection.classList.toggle("is-expanded", expanded);
@@ -226,12 +278,7 @@ const openMemberModal = (memberId) => {
   const escapedId = window.CSS?.escape ? CSS.escape(memberId) : memberId.replace(/"/g, '\\"');
   const modal = document.querySelector(`[data-member-modal="${escapedId}"]`);
   if (!modal) return;
-  if (typeof modal.showModal === "function") {
-    modal.showModal();
-  } else {
-    modal.setAttribute("open", "");
-  }
-  document.body.classList.add("modal-open");
+  openDialogWithMotion(modal);
   window.VelkarisAudio?.playPanelOpen?.();
   requestAnimationFrame(() => {
     modal.scrollTop = 0;
@@ -240,13 +287,7 @@ const openMemberModal = (memberId) => {
 };
 
 const closeMemberModal = (modal) => {
-  if (!modal) return;
-  if (typeof modal.close === "function") {
-    modal.close();
-  } else {
-    modal.removeAttribute("open");
-  }
-  document.body.classList.remove("modal-open");
+  closeDialogWithMotion(modal);
 };
 
 document.addEventListener("click", (event) => {
@@ -278,6 +319,96 @@ document.querySelectorAll(".member-modal").forEach((modal) => {
   });
   modal.addEventListener("close", () => document.body.classList.remove("modal-open"));
 });
+
+const galleryModal = document.querySelector("[data-gallery-modal]");
+const closeGalleryModal = () => {
+  closeDialogWithMotion(galleryModal);
+};
+const openGalleryModal = (figure) => {
+  if (!galleryModal || !figure) return;
+  const source = figure.querySelector("img");
+  const image = galleryModal.querySelector("[data-gallery-modal-image]");
+  const caption = galleryModal.querySelector("[data-gallery-modal-caption]");
+  if (!source || !image || !caption) return;
+  image.src = source.src;
+  image.alt = source.alt;
+  caption.textContent = figure.querySelector("figcaption")?.textContent || source.alt;
+  openDialogWithMotion(galleryModal);
+  window.VelkarisAudio?.playPanelOpen?.();
+};
+document.querySelectorAll("[data-gallery-open]").forEach((figure) => {
+  figure.addEventListener("click", () => openGalleryModal(figure));
+  figure.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    openGalleryModal(figure);
+  });
+});
+document.querySelector("[data-gallery-close]")?.addEventListener("click", closeGalleryModal);
+galleryModal?.addEventListener("click", (event) => {
+  if (event.target === galleryModal) closeGalleryModal();
+});
+galleryModal?.addEventListener("close", () => document.body.classList.remove("modal-open"));
+
+const strategicModal = document.querySelector("[data-strategic-modal]");
+const strategicPanels = [...document.querySelectorAll("[data-strategic-panel]")];
+const strategicTabs = [...document.querySelectorAll("[data-strategic-tab]")];
+const strategicSections = {
+  leaders: ["Arquivo de comando", "Hierarquia familiar", "A sucessão de lideranças que conduziram a Casa."],
+  fortifications: ["Defesas juramentadas", "Construções militares", "Fortalezas, postos de vigia e seus responsáveis."],
+  conflicts: ["Memória de batalha", "Confrontos", "Campanhas, cercos e disputas enfrentadas pela família."],
+  aristocrats: ["Círculo da corte", "Aristocratas", "Membros da linhagem presentes nos salões de poder."],
+  allies: ["Pactos e favores", "Aliados da Casa", "Apoios diretos e indiretos que sustentam o legado."],
+  vassals: ["Serviços juramentados", "Vassalos da Casa", "Servos, camponeses e trabalhadores ligados aos domínios da família."],
+};
+
+const setStrategicPanel = (key, animate = false) => {
+  const section = strategicSections[key] || strategicSections.leaders;
+  strategicPanels.forEach((panel) => {
+    const isActive = panel.dataset.strategicPanel === key;
+    panel.hidden = !isActive;
+    panel.classList.toggle("is-active", isActive);
+  });
+  strategicTabs.forEach((tab) => {
+    const isActive = tab.dataset.strategicTab === key;
+    tab.classList.toggle("is-active", isActive);
+    tab.setAttribute("aria-selected", String(isActive));
+  });
+  const kicker = strategicModal?.querySelector("[data-strategic-kicker]");
+  const title = strategicModal?.querySelector("[data-strategic-title]");
+  const description = strategicModal?.querySelector("[data-strategic-description]");
+  if (kicker) kicker.textContent = section[0];
+  if (title) title.textContent = section[1];
+  if (description) description.textContent = section[2];
+  if (animate) {
+    window.VelkarisAudio?.playPanelOpen?.();
+  }
+};
+
+const closeStrategicModal = () => {
+  closeDialogWithMotion(strategicModal);
+};
+
+const openStrategicModal = (key) => {
+  if (!strategicModal) return;
+  setStrategicPanel(key);
+  if (!strategicModal.open) {
+    openDialogWithMotion(strategicModal);
+  }
+  window.VelkarisAudio?.playPanelOpen?.();
+};
+
+document.querySelectorAll("[data-strategic-open]").forEach((button) => {
+  button.addEventListener("click", () => openStrategicModal(button.dataset.strategicOpen));
+});
+strategicTabs.forEach((tab) => {
+  tab.addEventListener("click", () => setStrategicPanel(tab.dataset.strategicTab, true));
+});
+document.querySelector("[data-strategic-close]")?.addEventListener("click", closeStrategicModal);
+strategicModal?.addEventListener("click", (event) => {
+  if (event.target === strategicModal) closeStrategicModal();
+});
+strategicModal?.addEventListener("close", () => document.body.classList.remove("modal-open"));
 
 document.querySelectorAll(".member-card, .mini-card").forEach((card) => {
   card.addEventListener("pointermove", (event) => {
@@ -793,7 +924,7 @@ bulkTreeButton?.addEventListener("click", async () => {
   });
 
   bulkTreeButton.disabled = true;
-  if (status) status.textContent = "Salvando toda a arvore...";
+  if (status) status.textContent = "Salvando toda a árvore...";
   try {
     const response = await fetch("/admin/tree/bulk", {
       method: "POST",
@@ -806,7 +937,7 @@ bulkTreeButton?.addEventListener("click", async () => {
     window.location.href = result.redirect || "/admin#arvore";
   } catch (error) {
     bulkTreeButton.disabled = false;
-    if (status) status.textContent = "Nao foi possivel salvar tudo. Tente novamente.";
+    if (status) status.textContent = "Não foi possível salvar tudo. Tente novamente.";
   }
 });
 
@@ -853,7 +984,7 @@ bulkMemberButton?.addEventListener("click", async () => {
     window.location.href = result.redirect || "/admin#editar-familiares";
   } catch (error) {
     bulkMemberButton.disabled = false;
-    if (status) status.textContent = "Nao foi possivel salvar os familiares. Tente novamente.";
+    if (status) status.textContent = "Não foi possível salvar os familiares. Tente novamente.";
   }
 });
 
@@ -1024,10 +1155,6 @@ soundButton?.addEventListener("click", () => {
   } else {
     startAmbient();
   }
-});
-
-document.querySelectorAll(".member-card, .mini-card, .tree-node, .territory-list article, .gallery-grid figure").forEach((element, index) => {
-  element.addEventListener("pointerenter", () => playHoverTone(index), { passive: true });
 });
 
 const canvas = document.querySelector("[data-particles]");
