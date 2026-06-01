@@ -26,11 +26,6 @@ Acesse `http://127.0.0.1:5000`.
 
 O acesso administrativo fica em `/velkaris-admin`.
 
-Credenciais locais padrão:
-
-- Usuário: `admin`
-- Senha: `velkaris-ascende`
-
 Configure uma senha forte em produção:
 
 ```bash
