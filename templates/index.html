@@ -4,8 +4,6 @@
   <section class="hero" id="inicio" data-hero>
     <img class="hero-art" src="{{ media_url(house.hero_image) }}" alt="Imagem de fundo da Casa {{ house.name }}">
     <div class="hero-vignette"></div>
-    <div class="hero-banner" aria-hidden="true"></div>
-
     <div class="hero-content">
       <div class="hero-identity">
         <div class="hero-title-block">
@@ -18,10 +16,6 @@
       </div>
       <p class="house-motto">{{ house.motto }}</p>
       <p class="hero-copy">{{ house.subtitle }}</p>
-      <div class="hero-actions">
-        <a class="primary-cta" href="#linhagem">Conheça a Linhagem</a>
-        <a class="ghost-cta" href="#arquivos">Abrir Arquivos</a>
-      </div>
     </div>
 
     <aside class="ancestral-rail" aria-label="Ancestrais da Casa">
@@ -199,7 +193,7 @@
           {% endfor %}
         </div>
       <div class="member-grid">
-        {% for member in members %}
+        {% for member in portrait_members %}
           <article class="member-card" role="button" tabindex="0" data-member-card data-member-open="{{ member.id }}" data-generation="{{ member.generation }}">
             <div class="portrait-frame">
               <img src="{{ media_url(member.image) }}" alt="Retrato de {{ member.name }}">
@@ -207,9 +201,6 @@
             </div>
             <div class="member-body">
               <h3>{{ member.name }}</h3>
-              {% if member.epithet %}
-                <p class="member-epithet">{{ member.epithet }}</p>
-              {% endif %}
               <p class="member-title">{{ member.title }}</p>
               <p>{{ member.description }}</p>
               <a class="member-more" href="{{ url_for('member_detail', slug=member.slug) }}" data-stop-modal>Ver registro completo</a>
@@ -233,9 +224,6 @@
             <div class="member-modal-content">
               <p class="section-kicker">{{ member.generation }}</p>
               <h3>{{ member.name }}</h3>
-              {% if member.epithet %}
-                <p class="modal-epithet">{{ member.epithet }}</p>
-              {% endif %}
               <p class="modal-title">{{ member.title }}</p>
               {% if member.quote %}
                 <blockquote>{{ member.quote }}</blockquote>
@@ -343,6 +331,7 @@
               data-description="{{ territory.description }}"
               data-lore="{{ territory.lore }}"
               data-status="{{ territory.status }}"
+              data-images='{{ territory.images | tojson }}'
               aria-label="{{ territory.name }}"
             >
               <span aria-hidden="true"></span>
@@ -371,6 +360,7 @@
           <h3 data-map-modal-title></h3>
           <p data-map-modal-description></p>
           <small data-map-modal-lore></small>
+          <div class="map-marker-modal-gallery" data-map-modal-gallery></div>
         </div>
       </dialog>
     </section>
@@ -398,16 +388,36 @@
       </div>
       <div class="timeline-list">
         {% for event in house.timeline %}
-          <article class="timeline-item">
+          <article class="timeline-item" role="button" tabindex="0" data-timeline-open="{{ event.id }}" aria-label="Abrir detalhes de {{ event.title }}">
             <time>{{ event.date }}</time>
-            <div>
-              <span>{{ event.era }}</span>
+            <div class="timeline-item-title">
               <h3>{{ event.title }}</h3>
-              <p>{{ event.summary }}</p>
             </div>
+            <span class="timeline-expand" aria-hidden="true"><b>+</b></span>
           </article>
         {% endfor %}
       </div>
+      {% for event in house.timeline %}
+        <dialog class="timeline-modal" data-timeline-modal="{{ event.id }}">
+          <div class="timeline-modal-shell">
+            <div class="modal-effects" aria-hidden="true"><span></span><span></span><span></span></div>
+            <button class="modal-close" type="button" data-timeline-close aria-label="Fechar crônica">×</button>
+            <p class="section-kicker">{{ event.date }} · {{ event.era }}</p>
+            <h2>{{ event.title }}</h2>
+            <p class="timeline-modal-summary">{{ event.summary }}</p>
+            {% if event.details %}
+              <p class="timeline-modal-details">{{ event.details }}</p>
+            {% endif %}
+            {% if event.images %}
+              <div class="timeline-modal-gallery">
+                {% for image in event.images %}
+                  <img src="{{ media_url(image) }}" alt="Registro visual de {{ event.title }}">
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+        </dialog>
+      {% endfor %}
     </section>
 
     <section class="panel archives-panel reveal" id="arquivos" data-reveal>

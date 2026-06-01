@@ -63,7 +63,7 @@
         <p>Edite textos, imagens, familiares, árvore genealógica, territórios, arquivos e galeria pública.</p>
       </div>
       <div class="admin-head-actions">
-        <a class="ghost-cta" href="{{ url_for('index', audio='silent') }}" target="_blank" rel="noopener">Ver site</a>
+        <a class="ghost-cta" href="{{ url_for('index', audio='silent') }}">Ver site</a>
         <form method="post" action="{{ url_for('publish_site') }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button class="primary-cta" type="submit">Publicar alterações</button>
@@ -76,11 +76,12 @@
     </div>
 
     <nav class="admin-tabs" aria-label="Seções do admin">
-      <a href="#conteudo">Conteúdo</a>
       <a href="#preview">Prévia</a>
-      <a href="#sobre">Sobre</a>
-      <a href="#membros">Familiares</a>
+      <a href="#conteudo">Cabeçalho</a>
+      <a href="#sobre">Sobre a Casa</a>
       <a href="#ordenacao">Ordenação</a>
+      <a href="#ancestrais">Ancestrais</a>
+      <a href="#membros">Familiares</a>
       <a href="#arvore">Árvore</a>
       <a href="#cards">Cards</a>
       <a href="#symbols">Símbolos</a>
@@ -220,7 +221,7 @@
         <p class="section-kicker">Familiares</p>
         <h2>Cards, retratos e árvore genealógica</h2>
       </div>
-      <form class="admin-form admin-form-grid" method="post" action="{{ url_for('create_member') }}" enctype="multipart/form-data">
+      <form class="admin-form admin-form-grid" id="novo-familiar" method="post" action="{{ url_for('create_member') }}" enctype="multipart/form-data">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <label>
           Nome
@@ -233,10 +234,6 @@
         <label>
           Título
           <input type="text" name="title" placeholder="Herdeiro, matriarca, guardião...">
-        </label>
-        <label>
-          Epíteto
-          <input type="text" name="epithet" placeholder="Ex: A Dama da Lua Azul">
         </label>
         <label>
           Status
@@ -264,7 +261,10 @@
         </label>
         <label>
           Ramo da família
-          <input type="text" name="branch" placeholder="Ramo principal, ramo norte...">
+          <select name="branch">
+            <option>Ramo principal</option>
+            <option>Ramo secundário</option>
+          </select>
         </label>
         <label>
           Domínio / território
@@ -301,7 +301,6 @@
           <input type="file" name="portrait" accept=".png,.jpg,.jpeg,.webp" data-preview-input>
         </label>
         <div class="admin-checks">
-          <label><input type="checkbox" name="featured" checked> Destacar no topo</label>
           <label><input type="checkbox" name="in_tree" checked> Mostrar na árvore</label>
         </div>
         <label class="span-2">
@@ -328,7 +327,7 @@
       <div class="admin-section-title">
         <p class="section-kicker">Drag-and-drop</p>
         <h2>Ordem visual dos familiares</h2>
-        <p class="admin-help">Arraste os registros para mudar a ordem dos cards públicos, ancestrais e árvore. Depois salve a ordem.</p>
+        <p class="admin-help">Arraste os registros para mudar a ordem geral dos cards públicos e da árvore. A ordem dos ancestrais da tela inicial possui uma configuração separada.</p>
       </div>
       <form class="admin-form" method="post" action="{{ url_for('reorder_members') }}" data-reorder-form>
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -349,6 +348,29 @@
       </form>
     </section>
 
+    <section class="admin-card reveal is-visible" id="ancestrais">
+      <div class="admin-section-title">
+        <p class="section-kicker">Tela inicial</p>
+        <h2>Ordem exclusiva dos ancestrais da Casa</h2>
+        <p class="admin-help">Escolha os quatro familiares exibidos em Ancestrais da Casa. Esta configuração não altera a árvore, os cards nem a ordem geral dos membros.</p>
+      </div>
+      <form class="admin-form admin-form-grid" method="post" action="{{ url_for('update_ancestor_order') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        {% for slot in range(4) %}
+          <label>
+            Posição {{ slot + 1 }}
+            <select name="ancestor_ids">
+              <option value="">Selecionar familiar</option>
+              {% for member in members %}
+                <option value="{{ member.id }}" {% if ancestor_members|length > slot and ancestor_members[slot].id == member.id %}selected{% endif %}>{{ member.name }} · {{ member.title }}</option>
+              {% endfor %}
+            </select>
+          </label>
+        {% endfor %}
+        <button class="primary-cta" type="submit">Salvar ancestrais da Casa</button>
+      </form>
+    </section>
+
     <section class="admin-card reveal is-visible" id="arvore">
       <div class="admin-section-title">
         <p class="section-kicker">Árvore genealógica</p>
@@ -357,8 +379,10 @@
         <div class="tree-bulk-actions">
           <input type="hidden" id="tree-bulk-csrf" value="{{ csrf_token() }}">
           <button class="primary-cta" type="button" data-tree-bulk-save>Salvar toda a árvore</button>
+          <a class="ghost-cta" href="#novo-familiar" data-new-family-member>Adicionar novo familiar</a>
           <span data-tree-bulk-status></span>
         </div>
+        <p class="admin-help">Novos familiares cadastrados serão incluídos automaticamente na árvore, na ordenação visual e na aba de cards.</p>
         <p class="admin-help">Aqui é o lugar principal para montar a árvore: envie a imagem usada no nó, marque quem aparece, escolha status, geração, ordem e até dois ascendentes para cada familiar. Quem fica sem ascendente vira raiz/fundador.</p>
       </div>
       <div class="tree-editor-list">
@@ -454,7 +478,6 @@
               {% endif %}
               <div class="admin-checks tree-checks">
                 <label><input type="checkbox" name="in_tree" {% if member.in_tree %}checked{% endif %}> Mostrar na árvore</label>
-                <label><input type="checkbox" name="featured" {% if member.featured %}checked{% endif %}> Destacar no topo</label>
               </div>
               <button class="primary-cta" type="submit">Salvar árvore</button>
             </form>
@@ -484,10 +507,6 @@
               <input type="text" name="title" value="{{ member.title }}">
             </label>
             <label>
-              Epíteto
-              <input type="text" name="epithet" value="{{ member.epithet }}">
-            </label>
-            <label>
               Status
               <select name="status" data-status-select>
                 {% for status in status_options %}
@@ -513,7 +532,13 @@
             </label>
             <label>
               Ramo
-              <input type="text" name="branch" value="{{ member.branch }}">
+              <select name="branch">
+                {% if member.branch not in ["Ramo principal", "Ramo secundário"] %}
+                  <option selected>{{ member.branch }}</option>
+                {% endif %}
+                <option {% if member.branch == "Ramo principal" %}selected{% endif %}>Ramo principal</option>
+                <option {% if member.branch == "Ramo secundário" %}selected{% endif %}>Ramo secundário</option>
+              </select>
             </label>
             <label>
               Domínio / território
@@ -559,7 +584,6 @@
               <input type="file" name="portrait" accept=".png,.jpg,.jpeg,.webp" data-preview-input>
             </label>
             <div class="admin-checks">
-              <label><input type="checkbox" name="featured" {% if member.featured %}checked{% endif %}> Destaque</label>
               <label><input type="checkbox" name="in_tree" {% if member.in_tree %}checked{% endif %}> Árvore</label>
             </div>
             <label>
@@ -650,7 +674,7 @@
             {% endfor %}
           </div>
         </div>
-        <form class="admin-form admin-form-grid admin-add-form" method="post" action="{{ url_for('create_collection_item', collection='territories') }}" data-map-marker-create>
+        <form class="admin-form admin-form-grid admin-add-form" method="post" enctype="multipart/form-data" action="{{ url_for('create_collection_item', collection='territories') }}" data-map-marker-create>
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <label>Nome do local <input type="text" name="name" required></label>
           <label>
@@ -682,6 +706,7 @@
           <label>Posição Y (%) <input type="number" step="0.01" name="coord_y" value="50" min="0" max="100" data-map-y></label>
           <label class="span-2">Descrição curta <textarea name="description" rows="3"></textarea></label>
           <label class="span-2">Detalhes do local <textarea name="lore" rows="3"></textarea></label>
+          <label class="span-2">Fotos do local <input type="file" name="images" accept="image/*" multiple></label>
           <button class="primary-cta" type="submit">Adicionar marcador</button>
         </form>
       </div>
@@ -695,7 +720,7 @@
       <div class="admin-list two-col">
         {% for territory in house.territories %}
           <article class="admin-list-card" data-territory-editor="{{ territory.id }}">
-            <form class="admin-form" method="post" action="{{ url_for('update_collection_item', collection='territories', entry_id=territory.id) }}">
+            <form class="admin-form" method="post" enctype="multipart/form-data" action="{{ url_for('update_collection_item', collection='territories', entry_id=territory.id) }}">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <label>Nome <input type="text" name="name" value="{{ territory.name }}"></label>
               <label>
@@ -727,6 +752,17 @@
               </label>
               <label>Descrição <textarea name="description" rows="3">{{ territory.description }}</textarea></label>
               <label>Lore do mapa <textarea name="lore" rows="3">{{ territory.lore }}</textarea></label>
+              {% if territory.images %}
+                <div class="admin-media-strip">
+                  {% for image in territory.images %}
+                    <label>
+                      <img src="{{ media_url(image) }}" alt="">
+                      <span><input type="checkbox" name="remove_images" value="{{ image }}"> Remover foto</span>
+                    </label>
+                  {% endfor %}
+                </div>
+              {% endif %}
+              <label>Adicionar fotos <input type="file" name="images" accept="image/*" multiple></label>
               <button class="primary-cta" type="submit">Salvar território</button>
             </form>
             <form method="post" action="{{ url_for('delete_collection_item', collection='territories', entry_id=territory.id) }}" class="delete-form inline-delete">
@@ -742,16 +778,33 @@
       <div class="admin-section-title">
         <p class="section-kicker">Crônicas</p>
         <h2>Linha do tempo histórica</h2>
+        <p class="admin-help">Edite quantas crônicas quiser e salve todas de uma vez.</p>
+        <div class="member-bulk-actions">
+          <button class="primary-cta" type="button" data-timeline-bulk-save>Salvar todas as crônicas</button>
+          <span data-timeline-bulk-status></span>
+        </div>
       </div>
       <div class="admin-list two-col">
         {% for event in house.timeline %}
           <article class="admin-list-card">
-            <form class="admin-form" method="post" action="{{ url_for('update_collection_item', collection='timeline', entry_id=event.id) }}">
+            <form class="admin-form" method="post" enctype="multipart/form-data" action="{{ url_for('update_collection_item', collection='timeline', entry_id=event.id) }}" data-timeline-editor-form>
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <label>Data <input type="text" name="date" value="{{ event.date }}"></label>
               <label>Era <input type="text" name="era" value="{{ event.era }}"></label>
               <label>Título <input type="text" name="title" value="{{ event.title }}"></label>
               <label>Resumo <textarea name="summary" rows="3">{{ event.summary }}</textarea></label>
+              <label>História detalhada <textarea name="details" rows="6">{{ event.details }}</textarea></label>
+              {% if event.images %}
+                <div class="admin-media-strip">
+                  {% for image in event.images %}
+                    <label>
+                      <img src="{{ media_url(image) }}" alt="">
+                      <span><input type="checkbox" name="remove_images" value="{{ image }}"> Remover foto</span>
+                    </label>
+                  {% endfor %}
+                </div>
+              {% endif %}
+              <label>Adicionar fotos <input type="file" name="images" accept="image/*" multiple></label>
               <button class="primary-cta" type="submit">Salvar crônica</button>
             </form>
             <form method="post" action="{{ url_for('delete_collection_item', collection='timeline', entry_id=event.id) }}" class="delete-form inline-delete">
@@ -761,12 +814,14 @@
           </article>
         {% endfor %}
       </div>
-      <form class="admin-form admin-form-grid admin-add-form" method="post" action="{{ url_for('create_collection_item', collection='timeline') }}">
+      <form class="admin-form admin-form-grid admin-add-form" method="post" enctype="multipart/form-data" action="{{ url_for('create_collection_item', collection='timeline') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <label>Data <input type="text" name="date" placeholder="Ano 742"></label>
         <label>Era <input type="text" name="era" placeholder="Era do Juramento Velkaris"></label>
         <label>Título <input type="text" name="title"></label>
         <label class="span-2">Resumo <textarea name="summary" rows="3"></textarea></label>
+        <label class="span-2">História detalhada <textarea name="details" rows="6"></textarea></label>
+        <label class="span-2">Fotos <input type="file" name="images" accept="image/*" multiple></label>
         <button class="primary-cta" type="submit">Adicionar crônica</button>
       </form>
     </section>

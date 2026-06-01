@@ -21,6 +21,27 @@
       modal.querySelector("[data-map-modal-type]").textContent = [marker.dataset.type, marker.dataset.status].filter(Boolean).join(" · ");
       modal.querySelector("[data-map-modal-description]").textContent = marker.dataset.description || "";
       modal.querySelector("[data-map-modal-lore]").textContent = marker.dataset.lore || "";
+      const gallery = modal.querySelector("[data-map-modal-gallery]");
+      if (gallery) {
+        gallery.replaceChildren();
+        let images = [];
+        try {
+          images = JSON.parse(marker.dataset.images || "[]");
+        } catch {
+          images = [];
+        }
+        images.forEach((src) => {
+          const image = document.createElement("img");
+          image.src = src.startsWith("http") || src.startsWith("/")
+            ? src
+            : src.startsWith("uploads/")
+              ? `/${src}`
+              : `/static/${src}`;
+          image.alt = `Registro visual de ${marker.dataset.title || "território"}`;
+          gallery.appendChild(image);
+        });
+        gallery.hidden = images.length === 0;
+      }
       if (window.VelkarisModalMotion) window.VelkarisModalMotion.open(modal);
       else if (typeof modal.showModal === "function") modal.showModal();
       else modal.setAttribute("open", "");

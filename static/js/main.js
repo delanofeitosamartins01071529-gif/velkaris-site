@@ -26,28 +26,6 @@ if (document.readyState === "complete") {
   window.addEventListener("load", finishIntro, { once: true });
 }
 
-const header = document.querySelector("[data-header]");
-const onScrollHeader = () => {
-  header?.classList.toggle("is-scrolled", window.scrollY > 32);
-};
-onScrollHeader();
-window.addEventListener("scroll", onScrollHeader, { passive: true });
-
-const navToggle = document.querySelector("[data-nav-toggle]");
-const nav = document.querySelector("[data-nav]");
-navToggle?.addEventListener("click", () => {
-  const open = !nav?.classList.contains("is-open");
-  nav?.classList.toggle("is-open", open);
-  navToggle.setAttribute("aria-expanded", String(open));
-});
-
-nav?.querySelectorAll("a").forEach((link) => {
-  link.addEventListener("click", () => {
-    nav.classList.remove("is-open");
-    navToggle?.setAttribute("aria-expanded", "false");
-  });
-});
-
 const cursor = document.querySelector("[data-cursor]");
 const finePointer = window.matchMedia("(pointer: fine)").matches;
 let syncCursorLayer = () => {};
@@ -73,10 +51,7 @@ if (cursor && finePointer) {
   const cursorPosition = {
     x: window.innerWidth / 2,
     y: window.innerHeight / 2,
-    targetX: window.innerWidth / 2,
-    targetY: window.innerHeight / 2,
   };
-  let cursorIsMoving = false;
 
   syncCursorLayer = () => {
     const openDialogs = [...document.querySelectorAll("dialog[open]")];
@@ -88,40 +63,28 @@ if (cursor && finePointer) {
     }
   };
 
-  const renderCursor = () => {
-    cursorPosition.x += (cursorPosition.targetX - cursorPosition.x) * 0.24;
-    cursorPosition.y += (cursorPosition.targetY - cursorPosition.y) * 0.24;
-    cursor.style.transform = `translate3d(${cursorPosition.x}px, ${cursorPosition.y}px, 0) translate(-50%, -50%)`;
-
-    if (
-      Math.abs(cursorPosition.targetX - cursorPosition.x) > 0.08 ||
-      Math.abs(cursorPosition.targetY - cursorPosition.y) > 0.08
-    ) {
-      requestAnimationFrame(renderCursor);
-      return;
-    }
-
-    cursorPosition.x = cursorPosition.targetX;
-    cursorPosition.y = cursorPosition.targetY;
-    cursor.style.transform = `translate3d(${cursorPosition.x}px, ${cursorPosition.y}px, 0) translate(-50%, -50%)`;
-    cursorIsMoving = false;
-  };
-
   window.addEventListener("pointermove", (event) => {
-    cursorPosition.targetX = event.clientX;
-    cursorPosition.targetY = event.clientY;
+    cursorPosition.x = event.clientX;
+    cursorPosition.y = event.clientY;
+    cursor.style.transform = `translate3d(${cursorPosition.x}px, ${cursorPosition.y}px, 0) translate(-50%, -50%)`;
     cursor.classList.add("is-visible");
     cursor.classList.toggle("is-hovering", Boolean(event.target.closest(cursorTargets)));
-    if (cursorIsMoving) return;
-    cursorIsMoving = true;
-    requestAnimationFrame(renderCursor);
   });
 
   window.addEventListener("pointerdown", () => cursor.classList.add("is-pressing"));
   window.addEventListener("pointerup", () => cursor.classList.remove("is-pressing"));
   document.addEventListener("pointerleave", () => cursor.classList.add("is-hidden"));
   document.addEventListener("pointerenter", () => cursor.classList.remove("is-hidden"));
-  document.addEventListener("click", () => requestAnimationFrame(syncCursorLayer), true);
+  document.addEventListener("click", (event) => {
+    const burst = document.createElement("span");
+    burst.className = "cursor-click-burst";
+    burst.style.left = `${event.clientX}px`;
+    burst.style.top = `${event.clientY}px`;
+    (cursor.parentElement || document.body).appendChild(burst);
+    burst.addEventListener("animationend", () => burst.remove(), { once: true });
+    window.setTimeout(() => burst.remove(), 900);
+    requestAnimationFrame(syncCursorLayer);
+  }, true);
   document.addEventListener("close", () => requestAnimationFrame(syncCursorLayer), true);
   new MutationObserver(syncCursorLayer).observe(document.body, {
     attributes: true,
@@ -163,43 +126,6 @@ document.querySelectorAll("dialog").forEach((dialog) => {
   dialog.addEventListener("cancel", (event) => {
     event.preventDefault();
     closeDialogWithMotion(dialog);
-  });
-});
-
-const revealObserver = new IntersectionObserver(
-  (entries) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add("is-visible");
-        revealObserver.unobserve(entry.target);
-      }
-    });
-  },
-  { threshold: 0.12, rootMargin: "0px 0px -8% 0px" }
-);
-document.querySelectorAll("[data-reveal]").forEach((element) => revealObserver.observe(element));
-
-const hero = document.querySelector("[data-hero]");
-const heroArt = document.querySelector(".hero-art");
-window.addEventListener(
-  "scroll",
-  () => {
-    if (!hero || !heroArt) return;
-    const progress = Math.min(window.scrollY / Math.max(hero.offsetHeight, 1), 1);
-    heroArt.style.transform = `translate3d(0, ${progress * 34}px, 0) scale(${1.05 + progress * 0.04})`;
-  },
-  { passive: true }
-);
-
-document.querySelectorAll("[data-filter]").forEach((button) => {
-  button.addEventListener("click", () => {
-    const filter = button.dataset.filter;
-    document.querySelectorAll("[data-filter]").forEach((item) => item.classList.remove("is-active"));
-    button.classList.add("is-active");
-    document.querySelectorAll("[data-member-card]").forEach((card) => {
-      const visible = filter === "all" || card.dataset.generation === filter;
-      card.classList.toggle("is-filtered", !visible);
-    });
   });
 });
 
@@ -350,6 +276,31 @@ galleryModal?.addEventListener("click", (event) => {
 });
 galleryModal?.addEventListener("close", () => document.body.classList.remove("modal-open"));
 
+const openTimelineModal = (id) => {
+  const escapedId = typeof CSS !== "undefined" && CSS.escape ? CSS.escape(id) : id;
+  const modal = document.querySelector(`[data-timeline-modal="${escapedId}"]`);
+  if (!modal) return;
+  openDialogWithMotion(modal);
+  window.VelkarisAudio?.playPanelOpen?.();
+};
+document.querySelectorAll("[data-timeline-open]").forEach((item) => {
+  item.addEventListener("click", () => openTimelineModal(item.dataset.timelineOpen));
+  item.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    openTimelineModal(item.dataset.timelineOpen);
+  });
+});
+document.querySelectorAll("[data-timeline-close]").forEach((button) => {
+  button.addEventListener("click", () => closeDialogWithMotion(button.closest("dialog")));
+});
+document.querySelectorAll(".timeline-modal").forEach((modal) => {
+  modal.addEventListener("click", (event) => {
+    if (event.target === modal) closeDialogWithMotion(modal);
+  });
+  modal.addEventListener("close", () => document.body.classList.remove("modal-open"));
+});
+
 const strategicModal = document.querySelector("[data-strategic-modal]");
 const strategicPanels = [...document.querySelectorAll("[data-strategic-panel]")];
 const strategicTabs = [...document.querySelectorAll("[data-strategic-tab]")];
@@ -449,17 +400,18 @@ const familyTreeStage = document.querySelector("[data-family-stage]");
 const familyTreeNodes = document.querySelector("[data-family-nodes]");
 const familyTreeLines = document.querySelector("[data-family-lines]");
 const familyTreeDataElement = document.querySelector("#family-tree-data");
-const TREE_VIEW_KEY = "velkaris.familyTree.view.v3";
+const TREE_VIEW_KEY = "velkaris.familyTree.view.v4";
 const TREE_MIN_SCALE = 0.24;
 const TREE_MAX_SCALE = 1.32;
 const TREE_NODE_WIDTH = 142;
 const TREE_NODE_HEIGHT = 174;
-const TREE_MEMBER_GAP = 16;
+const TREE_MEMBER_GAP = 24;
 const TREE_UNIT_PAD = 14;
-const TREE_LEVEL_GAP = 118;
+const TREE_LEVEL_GAP = 236;
 const TREE_SIBLING_GAP = 64;
 const TREE_ROOT_GAP = 96;
 const TREE_MARGIN = 96;
+const TREE_CHILD_JUNCTION_GAP = 72;
 let familyTreeData = [];
 let familyTreeLayouts = [];
 let familyTreePlaced = [];
@@ -566,6 +518,22 @@ const memberCenter = (placed, memberId, fallbackRatio = 0.5, yRatio = 0.5) => {
   };
 };
 
+const familyDescentAnchor = (placed) => {
+  const members = placed.branch.members || [];
+  if (members.length > 1) {
+    const first = memberCenter(placed, members[0].id, 0, 0.43);
+    const last = memberCenter(placed, members[members.length - 1].id, 1, 0.43);
+    return {
+      x: (first.x + last.x) / 2,
+      y: (first.y + last.y) / 2,
+    };
+  }
+  return {
+    x: placed.unitX + placed.unitWidth / 2,
+    y: placed.unitY + TREE_NODE_HEIGHT,
+  };
+};
+
 const drawFamilyTreeLines = () => {
   if (!familyTreeLines) return;
   familyTreeLines.setAttribute("viewBox", `0 0 ${familyTreeSize.width} ${familyTreeSize.height}`);
@@ -586,15 +554,16 @@ const drawFamilyTreeLines = () => {
     if (members.length > 1) {
       const first = memberCenter(placed, members[0].id, 0, 0.43);
       const last = memberCenter(placed, members[members.length - 1].id, 1, 0.43);
-      makePath("spouse-line", `M ${first.x + TREE_NODE_WIDTH * 0.38} ${first.y} L ${last.x - TREE_NODE_WIDTH * 0.38} ${last.y}`);
+      makePath("spouse-line", `M ${first.x + TREE_NODE_WIDTH * 0.5} ${first.y} L ${last.x - TREE_NODE_WIDTH * 0.5} ${last.y}`);
     }
 
     const children = placed.children || [];
     if (!children.length) return;
-    const parent = { x: placed.unitX + placed.unitWidth / 2, y: placed.unitY + TREE_NODE_HEIGHT };
+    const parent = familyDescentAnchor(placed);
     const childTops = children.map((child) => memberCenter(child, child.branch.linkMemberId, 0.5, 0));
     const minChildY = Math.min(...childTops.map((child) => child.y));
-    const junctionY = parent.y + Math.max(40, Math.min(76, (minChildY - parent.y) * 0.48));
+    const parentBottom = placed.unitY + TREE_NODE_HEIGHT;
+    const junctionY = Math.min(minChildY - 36, Math.max(parentBottom + 36, minChildY - TREE_CHILD_JUNCTION_GAP));
     makePath("descent-line", `M ${parent.x} ${parent.y} L ${parent.x} ${junctionY}`);
     if (childTops.length > 1) {
       makePath("descent-line", `M ${Math.min(...childTops.map((child) => child.x))} ${junctionY} L ${Math.max(...childTops.map((child) => child.x))} ${junctionY}`);
@@ -607,13 +576,10 @@ const drawFamilyTreeLines = () => {
       const parentPlaced = placedById.get(link.parentUnitId);
       if (!parentPlaced || !link.memberId) return;
       if (collapsedTreeBranches.has(parentPlaced.branch.id)) return;
-      const parent = {
-        x: parentPlaced.unitX + parentPlaced.unitWidth / 2,
-        y: parentPlaced.unitY + TREE_NODE_HEIGHT,
-      };
+      const parent = familyDescentAnchor(parentPlaced);
       const child = memberCenter(placed, link.memberId, 0.5, 0);
-      const verticalDistance = child.y - parent.y;
-      const junctionY = parent.y + (verticalDistance > 86 ? Math.min(92, verticalDistance * 0.5) : 62);
+      const parentBottom = parentPlaced.unitY + TREE_NODE_HEIGHT;
+      const junctionY = Math.min(child.y - 36, Math.max(parentBottom + 36, child.y - TREE_CHILD_JUNCTION_GAP));
       makePath("secondary-descent-line", `M ${parent.x} ${parent.y} L ${parent.x} ${junctionY} L ${child.x} ${junctionY} L ${child.x} ${child.y}`);
     });
   });
@@ -1002,6 +968,9 @@ document.querySelectorAll("[data-territory-target]").forEach((marker) => {
 
 const reorderList = document.querySelector("[data-reorder-list]");
 const reorderValue = document.querySelector("[data-reorder-value]");
+document.querySelector("[data-new-family-member]")?.addEventListener("click", () => {
+  requestAnimationFrame(() => document.querySelector("#novo-familiar input[name='name']")?.focus());
+});
 const syncReorderValue = () => {
   if (!reorderList || !reorderValue) return;
   reorderValue.value = [...reorderList.querySelectorAll("[data-member-id]")].map((item) => item.dataset.memberId).join(",");

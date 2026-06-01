@@ -11,8 +11,20 @@
   "eras_heading": "Eras da Casa",
   "gallery_heading": "Pinturas e banners",
   "crest_image": "assets/Velkaris.png",
-  "hero_image": "assets/hero-castle.png",
-  "territory_map": "assets/territory-map.png",
+  "hero_image": "uploads/hero-05a9ac722810.png",
+  "territory_map": "uploads/interactive-map-7f419a86a6d7.jpg",
+  "ancestor_order": [
+    "velkaris-04",
+    "velkaris-05",
+    "velkaris-06",
+    "velkaris-07"
+  ],
+  "leaders": [],
+  "fortifications": [],
+  "conflicts": [],
+  "aristocrats": [],
+  "allies": [],
+  "vassals": [],
   "about": [
     {
       "id": "about-7f61039860",
@@ -46,52 +58,34 @@
   ],
   "territories": [
     {
-      "id": "territories-889f7642f4",
-      "name": "Auralis Sombria",
-      "type": "Capital",
-      "description": "Castelo principal erguido sobre penhascos, onde os arquivos da Casa repousam.",
-      "lore": "O trono azul, a torre dos escribas e a sala dos pactos ficam sob vigília constante.",
-      "coord_x": "42",
-      "coord_y": "38",
-      "status": "Capital juramentada",
+      "id": "territories-2757bc066f",
+      "name": "Nazarik",
+      "type": "Cidade",
+      "description": "A Cidade de Nazarik.",
+      "lore": "A cidade capital da família Velkaris, a mais populosa entre as do seu domínio, liderada por Edward Velkaris, atual líder da família.",
+      "coord_x": "43.44",
+      "coord_y": "62.62",
+      "status": "Cidade Capital",
+      "color": "#d08a4c",
+      "icon": "city",
+      "images": [
+        "uploads/territory-9b2926ab28b7.jpg"
+      ]
+    },
+    {
+      "id": "territories-b882e73de8",
+      "name": "Estfall",
+      "type": "Porto",
+      "description": "Posto Avançado de Estfall",
+      "lore": "O posto de Estfall fica localizado ao Leste de Nazarik as margens do rio Nilo, onde ali de forma estratégica foi localizado para poder controlar as rotas comerciais Flúviais que passam por ali.",
+      "coord_x": "58.38",
+      "coord_y": "71.23",
+      "status": "Posto Avançado",
       "color": "#d7b46a",
-      "icon": "castle"
-    },
-    {
-      "id": "territories-dd8e2c0c33",
-      "name": "Fortaleza Noxmere",
-      "type": "Bastião",
-      "description": "Guarda a passagem norte e os estandartes de guerra da linhagem.",
-      "lore": "Suas muralhas foram acesas durante a Era das Cinzas e nunca caíram diante de cerco.",
-      "coord_x": "62",
-      "coord_y": "24",
-      "status": "Fronteira militar",
-      "color": "#b85656",
-      "icon": "ruin"
-    },
-    {
-      "id": "territories-a81f5c6395",
-      "name": "Vale de Ebonluz",
-      "type": "Domínio",
-      "description": "Terras de névoa azul, vinhedos frios e capelas antigas.",
-      "lore": "O vale guarda funerais, coroações menores e jardins onde alianças são seladas.",
-      "coord_x": "30",
-      "coord_y": "62",
-      "status": "Domínio interno",
-      "color": "#78a978",
-      "icon": "forest"
-    },
-    {
-      "id": "territories-22b36f323c",
-      "name": "Porto Argentum",
-      "type": "Aliança marítima",
-      "description": "Rota diplomática protegida por juramentos comerciais e navios escuros.",
-      "lore": "Pelos cais de prata chegam tratados, reféns nobres e notícias de cortes distantes.",
-      "coord_x": "72",
-      "coord_y": "70",
-      "status": "Rota diplomática",
-      "color": "#8ea6c7",
-      "icon": "port"
+      "icon": "port",
+      "images": [
+        "uploads/territory-4ef5519eb1df.jpg"
+      ]
     }
   ],
   "archives": [
@@ -117,31 +111,111 @@
   "timeline": [
     {
       "id": "timeline-fundacao",
-      "date": "Ano 0",
-      "era": "Era da Coroa Azul",
-      "title": "Fundação da Casa Velkaris",
-      "summary": "O primeiro juramento foi escrito sob lua azul, entre espada, coroa e dragão."
+      "date": "-340 R.E.",
+      "era": "Era 0",
+      "title": "O Êxodo Eldoriano",
+      "summary": "Por motivos que se perderam entre a história e a lenda, o povo de Eldoria abandona suas terras ancestrais e inicia uma grande migração para Sothoria.\r\n\r\nCidades são deixadas para trás, fortalezas são abandonadas e extensas regiões ficam sem governantes.\r\n\r\nO Reino de Eldoria entra em um longo período de silêncio.",
+      "details": "",
+      "images": []
     },
     {
       "id": "timeline-cinzas",
-      "date": "Ano 184",
-      "era": "Era das Cinzas",
-      "title": "Guerra dos Sete Estandartes",
-      "summary": "Fortaleza Noxmere segurou a fronteira norte enquanto a linhagem preservava seus arquivos."
+      "date": "-312 R.E.",
+      "era": "Era 0",
+      "title": "A Chegada dos Primeiros Velkaris",
+      "summary": "Vindos de terras distantes, os ancestrais da Casa Velkaris chegam às regiões centrais de Eldoria.\r\n\r\nEnquanto muitos enxergavam apenas ruínas e perigo, os Velkaris viram oportunidade.\r\n\r\nEles estabelecem os primeiros assentamentos permanentes próximos às antigas estradas eldorianas.",
+      "details": "",
+      "images": []
     },
     {
       "id": "timeline-argentum",
-      "date": "Ano 311",
-      "era": "Era do Juramento Velkaris",
-      "title": "Pacto do Porto Argentum",
-      "summary": "Casamentos políticos e tratados marítimos consolidaram a influência da Casa."
+      "date": "-295 R.E.",
+      "era": "Era 0",
+      "title": "Fundação de Nazarik",
+      "summary": "A família funda seu primeiro grande domínio.\r\n\r\nO assentamento, chamado Nazarik, torna-se o coração da família e a origem de seu sobrenome.\r\n\r\nPequenas aldeias passam a surgir sob a proteção dos Velkaris.",
+      "details": "",
+      "images": []
     },
     {
       "id": "timeline-atual",
-      "date": "Ano 742",
-      "era": "Era do Juramento Velkaris",
-      "title": "Reabertura dos Arquivos Internos",
-      "summary": "Retratos, linhagem e territórios passam a ser reorganizados pelos administradores da Casa."
+      "date": "-270 R.E.",
+      "era": "Era 0",
+      "title": "A Reconstrução das Estradas",
+      "summary": "Sob a liderança de Lorde Altair Velkaris, antigas rotas comerciais abandonadas são restauradas.\r\n\r\nO comércio entre os diversos assentamentos da região floresce pela primeira vez desde o êxodo eldoriano.\r\n\r\nA influência dos Velkaris começa a crescer.",
+      "details": "",
+      "images": []
+    },
+    {
+      "id": "timeline-42611fd8b9",
+      "date": "-248 R.E.",
+      "era": "Era 0",
+      "title": "O Juramento de Nazarik",
+      "summary": "Diversas comunidades e pequenos povoados da região juram lealdade à Casa Velkaris.\r\n\r\nEm troca, recebem proteção, justiça e auxílio em tempos difíceis.\r\n\r\nA influência dos Velkaris ultrapassa os limites de Nazarik pela primeira vez.",
+      "details": "",
+      "images": []
+    },
+    {
+      "id": "timeline-a1af218477",
+      "date": "-220 R.E.",
+      "era": "Era 0",
+      "title": "A Era da Prosperidade",
+      "summary": "Novas fazendas, moinhos, oficinas e mercados são construídos.\r\n\r\nA população cresce rapidamente.\r\n\r\nA Casa Velkaris passa a ser conhecida não apenas pela sua força, mas pela capacidade de transformar terras abandonadas em regiões prósperas.",
+      "details": "",
+      "images": []
+    },
+    {
+      "id": "timeline-11b43522c8",
+      "date": "-183 R.E.",
+      "era": "Era 0",
+      "title": "A Guerra das Ruínas",
+      "summary": "Saqueadores, mercenários e oportunistas disputam o controle das antigas fortalezas eldorianas.\r\n\r\nA Casa Velkaris lidera a defesa dos assentamentos da região.\r\n\r\nApós anos de conflito, a estabilidade é restaurada.\r\n\r\nPela primeira vez, os Velkaris conquistam fama militar em toda a região.",
+      "details": "",
+      "images": []
+    },
+    {
+      "id": "timeline-704b004d3a",
+      "date": "-150 R.E.",
+      "era": "Era 0",
+      "title": "O Legado de Altair",
+      "summary": "Altair Velkaris falece após décadas governando Nazarik.\r\n\r\nSeu legado torna-se a base de tudo aquilo que a família representaria nos séculos seguintes:\r\n\r\nPerseverança\r\nDever\r\nProsperidade\r\nLealdade\r\n\r\nSeu túmulo torna-se um local de respeito entre os membros da família.",
+      "details": "",
+      "images": []
+    },
+    {
+      "id": "timeline-30a3afd78a",
+      "date": "-149 R.E.",
+      "era": "Era 0",
+      "title": "O Grande Arquivo Velkaris",
+      "summary": "Os sucessores de Altair iniciam um projeto para preservar mapas, livros e registros encontrados nas ruínas eldorianas.\r\n\r\nA Casa Velkaris torna-se guardiã de parte da memória perdida de Eldoria.",
+      "details": "",
+      "images": []
+    },
+    {
+      "id": "timeline-89bd1f7f04",
+      "date": "-102 R.E.",
+      "era": "Era 0",
+      "title": "A Consolidação dos Domínios",
+      "summary": "Os diversos territórios administrados pela família são unificados sob uma única administração.\r\n\r\nA Casa Velkaris deixa de ser apenas uma família influente e passa a ser reconhecida como uma potência regional.",
+      "details": "",
+      "images": []
+    },
+    {
+      "id": "timeline-6c1c9139b8",
+      "date": "-41 R.E.",
+      "era": "Era 0",
+      "title": "Os Rumores do Retorno",
+      "summary": "Mercadores vindos de terras distantes trazem notícias surpreendentes.\r\n\r\nOs descendentes dos antigos eldorianos estariam preparando seu retorno.\r\n\r\nOs Velkaris iniciam preparativos para uma nova era.",
+      "details": "",
+      "images": []
+    },
+    {
+      "id": "timeline-a0337c38ab",
+      "date": "0",
+      "era": "Era 0",
+      "title": "O Retorno dos Eldorianos",
+      "summary": "Após séculos vivendo em Sothoria, o povo de Eldoria finalmente retorna à sua terra ancestral.\r\n\r\nAo chegarem, não encontram um reino morto.\r\n\r\nEncontram estradas reconstruídas.\r\n\r\nCampos cultivados.\r\n\r\nAssentamentos prósperos.\r\n\r\nE encontram Nazarik.\r\n\r\nA obra iniciada por Altair Velkaris havia sobrevivido ao tempo.\r\n\r\nEnquanto muitos reivindicavam Eldoria por direito de sangue, os Velkaris podiam reivindicá-la por algo diferente:\r\n\r\nForam eles que mantiveram viva a chama de Eldoria durante os séculos de abandono.",
+      "details": "",
+      "images": []
     }
   ],
   "eras": [
