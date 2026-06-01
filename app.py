@@ -52,7 +52,7 @@ SUPABASE_ENABLED = bool(SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY)
 
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
 MEMBER_PORTRAIT_SIZE = (960, 1200)
-GENERATION_OPTIONS = ["1ª Geração", "2ª Geração", "3ª Geração", "4ª Geração"]
+GENERATION_OPTIONS = ["1ª Geração", "2ª Geração", "3ª Geração", "4ª Geração", "5ª Geração"]
 STATUS_OPTIONS = ["Vivo", "Morto", "Desaparecido"]
 PLACEHOLDERS = [
     "assets/member-placeholder-1.png",
@@ -76,6 +76,13 @@ HOUSE_DEFAULTS = {
     "crest_image": "assets/Velkaris.png",
     "hero_image": "assets/hero-castle.png",
     "territory_map": "assets/territory-map.png",
+    "ancestor_order": [],
+    "leaders": [],
+    "fortifications": [],
+    "conflicts": [],
+    "aristocrats": [],
+    "allies": [],
+    "vassals": [],
 }
 
 MAP_MARKER_TYPES = [
@@ -106,10 +113,17 @@ COLLECTION_FIELDS = {
     "symbols": ("name", "meaning"),
     "territories": ("name", "type", "description", "lore", "coord_x", "coord_y", "status", "color", "icon"),
     "archives": ("date", "title", "summary"),
-    "timeline": ("date", "era", "title", "summary"),
+    "timeline": ("date", "era", "title", "summary", "details"),
     "eras": ("name", "period", "description"),
     "gallery": ("title",),
+    "leaders": ("name", "title", "period", "description"),
+    "fortifications": ("name", "type", "responsible", "description"),
+    "conflicts": ("name", "period", "outcome", "description"),
+    "aristocrats": ("name", "title", "role", "description"),
+    "allies": ("name", "group", "role", "description"),
+    "vassals": ("name", "group", "service", "description"),
 }
+STRATEGIC_COLLECTIONS = {"leaders", "fortifications", "conflicts", "aristocrats", "allies", "vassals"}
 
 
 app = Flask(__name__)
@@ -117,7 +131,7 @@ app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
 app.secret_key = os.environ.get("SECRET_KEY", "velkaris-dev-secret-change-me")
 
 ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
-ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "velkaris-ascende")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "velkaris")
 LOGIN_ATTEMPTS: dict[str, list[float]] = {}
 MAX_LOGIN_ATTEMPTS = 6
 LOGIN_WINDOW_SECONDS = 15 * 60
@@ -332,13 +346,30 @@ def ensure_collection_item(collection: str, item: Any, index: int) -> dict[str, 
         normalized["coord_y"] = str(clamp_number(normalized.get("coord_y"), 50, 0, 100))
         normalized["color"] = normalized.get("color") or MAP_MARKER_COLORS[index % len(MAP_MARKER_COLORS)]
         normalized["icon"] = normalized.get("icon") or "crown"
+        images = item.get("images", [])
+        normalized["images"] = (
+            [str(image) for image in images if image] if isinstance(images, list) else []
+        )
     if collection == "gallery":
         normalized["image"] = item.get("image") or ["assets/gallery-castle.png", "assets/territory-map.png", "assets/gallery-fortress.png"][index % 3]
+    if collection == "timeline":
+        images = item.get("images", [])
+        normalized["images"] = (
+            [str(image) for image in images if image] if isinstance(images, list) else []
+        )
+    if collection in STRATEGIC_COLLECTIONS:
+        normalized["image"] = item.get("image", "")
     return normalized
 
 
 def normalize_house(house: dict[str, Any]) -> dict[str, Any]:
     normalized = {**HOUSE_DEFAULTS, **(house or {})}
+    ancestor_order = normalized.get("ancestor_order", [])
+    normalized["ancestor_order"] = (
+        [str(member_id) for member_id in ancestor_order if member_id]
+        if isinstance(ancestor_order, list)
+        else []
+    )
     for collection in COLLECTION_FIELDS:
         items = normalized.get(collection, [])
         if not isinstance(items, list):
@@ -727,6 +758,37 @@ def build_family_tree_payload(branches: list[dict[str, Any]]) -> list[dict[str, 
     return [branch_payload(branch) for branch in branches]
 
 
+def members_in_tree_order(members: list[dict[str, Any]], branches: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    ordered: list[dict[str, Any]] = []
+    included_ids: set[str] = set()
+
+    def include_branch(branch: dict[str, Any]) -> None:
+        for member in branch.get("members", []):
+            member_id = member.get("id", "")
+            if member_id and member_id not in included_ids:
+                ordered.append(member)
+                included_ids.add(member_id)
+        for child in branch.get("children", []):
+            include_branch(child)
+
+    for branch in branches:
+        include_branch(branch)
+    ordered.extend(member for member in members if member.get("id") not in included_ids)
+    return ordered
+
+
+def ancestor_members_for_house(members: list[dict[str, Any]], house: dict[str, Any]) -> list[dict[str, Any]]:
+    by_id = {member["id"]: member for member in members}
+    selected: list[dict[str, Any]] = []
+    selected_ids: set[str] = set()
+    for member_id in house.get("ancestor_order", []):
+        if member_id in by_id and member_id not in selected_ids:
+            selected.append(by_id[member_id])
+            selected_ids.add(member_id)
+    selected.extend(member for member in members if member["id"] not in selected_ids)
+    return selected[:4]
+
+
 @app.context_processor
 def inject_globals() -> dict[str, Any]:
     try:
@@ -751,16 +813,13 @@ def uploaded_file(filename: str):
 def index():
     members = load_members()
     house = load_house()
-    featured_members = [member for member in members if member.get("featured")]
-    if len(featured_members) < 5:
-        featured_ids = {member["id"] for member in featured_members}
-        featured_members.extend([member for member in members if member["id"] not in featured_ids][: 5 - len(featured_members)])
     family_tree = build_family_tree(members)
     return render_template(
         "index.html",
         members=members,
         house=house,
-        featured_members=featured_members[:5],
+        featured_members=ancestor_members_for_house(members, house),
+        portrait_members=members_in_tree_order(members, family_tree),
         family_tree=family_tree,
         family_tree_payload=build_family_tree_payload(family_tree),
         generation_options=GENERATION_OPTIONS,
@@ -810,7 +869,7 @@ def admin_login():
             LOGIN_ATTEMPTS.pop(key, None)
             session["is_admin"] = True
             flash("Acesso concedido ao arquivo interno.", "success")
-            return redirect(request.args.get("next") or url_for("admin"))
+            return redirect(request.args.get("next") or url_for("admin", audio=request.args.get("audio")))
         record_failed_login(key)
         flash("Credenciais inválidas.", "error")
     return render_template("admin_login.html")
@@ -834,10 +893,12 @@ def admin_logout():
 @admin_required
 def admin():
     members = load_members()
+    house = load_house()
     return render_template(
         "admin.html",
         members=members,
-        house=load_house(),
+        house=house,
+        ancestor_members=ancestor_members_for_house(members, house),
         placeholders=PLACEHOLDERS,
         generation_options=GENERATION_OPTIONS,
         status_options=STATUS_OPTIONS,
@@ -846,6 +907,23 @@ def admin():
         map_marker_icons=MAP_MARKER_ICONS,
         family_links=build_family_links(members),
     )
+
+
+@app.post("/admin/ancestors")
+@admin_required
+def update_ancestor_order():
+    validate_csrf()
+    members = load_members()
+    valid_ids = {member["id"] for member in members}
+    ancestor_order = []
+    for member_id in request.form.getlist("ancestor_ids"):
+        if member_id in valid_ids and member_id not in ancestor_order:
+            ancestor_order.append(member_id)
+    house = load_house()
+    house["ancestor_order"] = ancestor_order[:4]
+    write_json(HOUSE_FILE, house)
+    flash("Ancestrais da Casa atualizados sem alterar a ordem dos demais familiares.", "success")
+    return redirect(url_for("admin", _anchor="ancestrais"))
 
 
 @app.post("/admin/house")
@@ -909,8 +987,21 @@ def create_collection_item(collection: str):
         item[field] = request.form.get(field, "").strip()
     if collection == "territories":
         sanitize_map_marker(item)
+        item["images"] = [
+            saved
+            for upload in request.files.getlist("images")
+            if (saved := save_upload(upload, "territory"))
+        ]
     if collection == "gallery":
         item["image"] = save_upload(request.files.get("image"), "gallery") or "assets/gallery-castle.png"
+    if collection == "timeline":
+        item["images"] = [
+            saved
+            for upload in request.files.getlist("images")
+            if (saved := save_upload(upload, "timeline"))
+        ]
+    if collection in STRATEGIC_COLLECTIONS:
+        item["image"] = save_upload(request.files.get("image"), collection) or ""
     house[collection].append(item)
     write_json(HOUSE_FILE, house)
     flash("Novo item adicionado ao site.", "success")
@@ -931,8 +1022,31 @@ def update_collection_item(collection: str, entry_id: str):
         item[field] = request.form.get(field, "").strip()
     if collection == "territories":
         sanitize_map_marker(item)
+        removed_images = set(request.form.getlist("remove_images"))
+        item["images"] = [
+            image for image in item.get("images", []) if image not in removed_images
+        ]
+        item["images"].extend(
+            saved
+            for upload in request.files.getlist("images")
+            if (saved := save_upload(upload, "territory"))
+        )
     if collection == "gallery":
         uploaded = save_upload(request.files.get("image"), "gallery")
+        if uploaded:
+            item["image"] = uploaded
+    if collection == "timeline":
+        removed_images = set(request.form.getlist("remove_images"))
+        item["images"] = [
+            image for image in item.get("images", []) if image not in removed_images
+        ]
+        item["images"].extend(
+            saved
+            for upload in request.files.getlist("images")
+            if (saved := save_upload(upload, "timeline"))
+        )
+    if collection in STRATEGIC_COLLECTIONS:
+        uploaded = save_upload(request.files.get("image"), collection)
         if uploaded:
             item["image"] = uploaded
     write_json(HOUSE_FILE, house)
@@ -970,12 +1084,12 @@ def member_from_form(existing: dict[str, Any] | None, index: int) -> dict[str, A
     member["partner_id"] = request.form.get("partner_id", member.get("partner_id", "")).strip()
     if member["partner_id"] == member["id"]:
         member["partner_id"] = ""
-    member["epithet"] = request.form.get("epithet", "").strip()
+    member.setdefault("epithet", "")
     member["quote"] = request.form.get("quote", "").strip()
     member["biography"] = request.form.get("biography", "").strip() or member["description"]
     member["traits"] = request.form.get("traits", "").strip()
     member["sort_order"] = as_int(request.form.get("sort_order"), index + 1)
-    member["featured"] = "featured" in request.form
+    member.setdefault("featured", False)
     member["in_tree"] = "in_tree" in request.form
     member["parent_ids"] = [parent_id for parent_id in (request.form.get("parent_1"), request.form.get("parent_2")) if parent_id and parent_id != member["id"]]
 
@@ -1003,12 +1117,12 @@ def update_member_fields_from_sources(member: dict[str, Any], index: int, form, 
     updated["partner_id"] = form.get(f"{prefix}partner_id", updated.get("partner_id", "")).strip()
     if updated["partner_id"] == updated["id"]:
         updated["partner_id"] = ""
-    updated["epithet"] = form.get(f"{prefix}epithet", "").strip()
+    updated.setdefault("epithet", "")
     updated["quote"] = form.get(f"{prefix}quote", "").strip()
     updated["biography"] = form.get(f"{prefix}biography", "").strip() or updated["description"]
     updated["traits"] = form.get(f"{prefix}traits", "").strip()
     updated["sort_order"] = as_int(form.get(f"{prefix}sort_order"), index + 1)
-    updated["featured"] = f"{prefix}featured" in form
+    updated.setdefault("featured", False)
     updated["in_tree"] = f"{prefix}in_tree" in form
     updated["parent_ids"] = [
         parent_id
@@ -1032,7 +1146,7 @@ def update_member_tree_fields_from_sources(member: dict[str, Any], index: int, f
     if updated["partner_id"] == updated["id"]:
         updated["partner_id"] = ""
     updated["in_tree"] = f"{prefix}in_tree" in form
-    updated["featured"] = f"{prefix}featured" in form
+    updated.setdefault("featured", False)
     updated["parent_ids"] = [
         parent_id
         for parent_id in (form.get(f"{prefix}parent_1"), form.get(f"{prefix}parent_2"))

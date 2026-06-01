@@ -2,9 +2,9 @@
   const modal = document.querySelector("[data-map-marker-modal]");
   const closeModal = () => {
     if (!modal) return;
-    if (typeof modal.close === "function") modal.close();
+    if (window.VelkarisModalMotion) window.VelkarisModalMotion.close(modal);
+    else if (typeof modal.close === "function") modal.close();
     else modal.removeAttribute("open");
-    document.body.classList.remove("modal-open");
   };
 
   document.querySelectorAll("[data-map-marker]").forEach((marker) => {
@@ -21,9 +21,31 @@
       modal.querySelector("[data-map-modal-type]").textContent = [marker.dataset.type, marker.dataset.status].filter(Boolean).join(" · ");
       modal.querySelector("[data-map-modal-description]").textContent = marker.dataset.description || "";
       modal.querySelector("[data-map-modal-lore]").textContent = marker.dataset.lore || "";
-      if (typeof modal.showModal === "function") modal.showModal();
+      const gallery = modal.querySelector("[data-map-modal-gallery]");
+      if (gallery) {
+        gallery.replaceChildren();
+        let images = [];
+        try {
+          images = JSON.parse(marker.dataset.images || "[]");
+        } catch {
+          images = [];
+        }
+        images.forEach((src) => {
+          const image = document.createElement("img");
+          image.src = src.startsWith("http") || src.startsWith("/")
+            ? src
+            : src.startsWith("uploads/")
+              ? `/${src}`
+              : `/static/${src}`;
+          image.alt = `Registro visual de ${marker.dataset.title || "território"}`;
+          gallery.appendChild(image);
+        });
+        gallery.hidden = images.length === 0;
+      }
+      if (window.VelkarisModalMotion) window.VelkarisModalMotion.open(modal);
+      else if (typeof modal.showModal === "function") modal.showModal();
       else modal.setAttribute("open", "");
-      document.body.classList.add("modal-open");
+      window.VelkarisAudio?.playPanelOpen?.();
     });
   });
 

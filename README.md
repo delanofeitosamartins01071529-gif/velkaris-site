@@ -22,9 +22,23 @@ python app.py
 
 Acesse `http://127.0.0.1:5000`.
 
+Para manutencao, consulte [`ARCHITECTURE.md`](ARCHITECTURE.md).
+
+Atalhos locais:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/check.ps1
+powershell -ExecutionPolicy Bypass -File scripts/run-local.ps1
+```
+
 ## Admin
 
 O acesso administrativo fica em `/velkaris-admin`.
+
+Credenciais locais padrão:
+
+- Usuário: `admin`
+- Senha: `velkaris`
 
 Configure uma senha forte em produção:
 

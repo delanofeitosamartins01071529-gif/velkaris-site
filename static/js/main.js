@@ -2,6 +2,17 @@ const root = document.documentElement;
 root.classList.add("js");
 
 const loader = document.querySelector("[data-loader]");
+const pageTransition = document.querySelector("[data-page-transition]");
+let transitionTimer = 0;
+const playPageTransition = (duration = 760) => {
+  if (!pageTransition || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  window.clearTimeout(transitionTimer);
+  pageTransition.classList.remove("is-active");
+  pageTransition.offsetHeight;
+  pageTransition.classList.add("is-active");
+  transitionTimer = window.setTimeout(() => pageTransition.classList.remove("is-active"), duration);
+};
+window.VelkarisTransition = { play: playPageTransition };
 let introFinished = false;
 const finishIntro = () => {
   if (introFinished) return;
@@ -15,77 +26,106 @@ if (document.readyState === "complete") {
   window.addEventListener("load", finishIntro, { once: true });
 }
 
-const header = document.querySelector("[data-header]");
-const onScrollHeader = () => {
-  header?.classList.toggle("is-scrolled", window.scrollY > 32);
-};
-onScrollHeader();
-window.addEventListener("scroll", onScrollHeader, { passive: true });
-
-const navToggle = document.querySelector("[data-nav-toggle]");
-const nav = document.querySelector("[data-nav]");
-navToggle?.addEventListener("click", () => {
-  const open = !nav?.classList.contains("is-open");
-  nav?.classList.toggle("is-open", open);
-  navToggle.setAttribute("aria-expanded", String(open));
-});
-
-nav?.querySelectorAll("a").forEach((link) => {
-  link.addEventListener("click", () => {
-    nav.classList.remove("is-open");
-    navToggle?.setAttribute("aria-expanded", "false");
-  });
-});
-
 const cursor = document.querySelector("[data-cursor]");
-let cursorFrame = 0;
-let cursorX = 0;
-let cursorY = 0;
-window.addEventListener("pointermove", (event) => {
-  if (!cursor) return;
-  cursorX = event.clientX;
-  cursorY = event.clientY;
-  if (cursorFrame) return;
-  cursorFrame = requestAnimationFrame(() => {
-    cursor.style.transform = `translate(${cursorX}px, ${cursorY}px) translate(-50%, -50%)`;
-    cursorFrame = 0;
+const finePointer = window.matchMedia("(pointer: fine)").matches;
+let syncCursorLayer = () => {};
+const cursorTargets = [
+  "a",
+  "button",
+  "summary",
+  "label",
+  "input",
+  "select",
+  "textarea",
+  "[role='button']",
+  "[data-member-open]",
+  "[data-territory-target]",
+  ".member-card",
+  ".mini-card",
+  ".gallery-grid figure",
+].join(",");
+
+if (cursor && finePointer) {
+  root.classList.add("custom-cursor-enabled");
+  const cursorDefaultParent = cursor.parentElement;
+  const cursorPosition = {
+    x: window.innerWidth / 2,
+    y: window.innerHeight / 2,
+  };
+
+  syncCursorLayer = () => {
+    const openDialogs = [...document.querySelectorAll("dialog[open]")];
+    const topDialog = openDialogs.at(-1);
+    const host = topDialog || cursorDefaultParent || document.body;
+    if (cursor.parentElement !== host) {
+      host.appendChild(cursor);
+      cursor.style.transform = `translate3d(${cursorPosition.x}px, ${cursorPosition.y}px, 0) translate(-50%, -50%)`;
+    }
+  };
+
+  window.addEventListener("pointermove", (event) => {
+    cursorPosition.x = event.clientX;
+    cursorPosition.y = event.clientY;
+    cursor.style.transform = `translate3d(${cursorPosition.x}px, ${cursorPosition.y}px, 0) translate(-50%, -50%)`;
+    cursor.classList.add("is-visible");
+    cursor.classList.toggle("is-hovering", Boolean(event.target.closest(cursorTargets)));
   });
-});
 
-const revealObserver = new IntersectionObserver(
-  (entries) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add("is-visible");
-        revealObserver.unobserve(entry.target);
-      }
-    });
-  },
-  { threshold: 0.12, rootMargin: "0px 0px -8% 0px" }
-);
-document.querySelectorAll("[data-reveal]").forEach((element) => revealObserver.observe(element));
+  window.addEventListener("pointerdown", () => cursor.classList.add("is-pressing"));
+  window.addEventListener("pointerup", () => cursor.classList.remove("is-pressing"));
+  document.addEventListener("pointerleave", () => cursor.classList.add("is-hidden"));
+  document.addEventListener("pointerenter", () => cursor.classList.remove("is-hidden"));
+  document.addEventListener("click", (event) => {
+    const burst = document.createElement("span");
+    burst.className = "cursor-click-burst";
+    burst.style.left = `${event.clientX}px`;
+    burst.style.top = `${event.clientY}px`;
+    (cursor.parentElement || document.body).appendChild(burst);
+    burst.addEventListener("animationend", () => burst.remove(), { once: true });
+    window.setTimeout(() => burst.remove(), 900);
+    requestAnimationFrame(syncCursorLayer);
+  }, true);
+  document.addEventListener("close", () => requestAnimationFrame(syncCursorLayer), true);
+  new MutationObserver(syncCursorLayer).observe(document.body, {
+    attributes: true,
+    subtree: true,
+    attributeFilter: ["open"],
+  });
+}
 
-const hero = document.querySelector("[data-hero]");
-const heroArt = document.querySelector(".hero-art");
-window.addEventListener(
-  "scroll",
-  () => {
-    if (!hero || !heroArt) return;
-    const progress = Math.min(window.scrollY / Math.max(hero.offsetHeight, 1), 1);
-    heroArt.style.transform = `translate3d(0, ${progress * 34}px, 0) scale(${1.05 + progress * 0.04})`;
-  },
-  { passive: true }
-);
+const openDialogWithMotion = (dialog) => {
+  if (!dialog) return;
+  dialog.classList.remove("is-closing");
+  if (!dialog.open) {
+    if (typeof dialog.showModal === "function") dialog.showModal();
+    else dialog.setAttribute("open", "");
+  }
+  dialog.classList.remove("is-opening");
+  dialog.offsetHeight;
+  dialog.classList.add("is-opening");
+  window.setTimeout(() => dialog.classList.remove("is-opening"), 520);
+  document.body.classList.add("modal-open");
+  requestAnimationFrame(syncCursorLayer);
+};
 
-document.querySelectorAll("[data-filter]").forEach((button) => {
-  button.addEventListener("click", () => {
-    const filter = button.dataset.filter;
-    document.querySelectorAll("[data-filter]").forEach((item) => item.classList.remove("is-active"));
-    button.classList.add("is-active");
-    document.querySelectorAll("[data-member-card]").forEach((card) => {
-      const visible = filter === "all" || card.dataset.generation === filter;
-      card.classList.toggle("is-filtered", !visible);
-    });
+const closeDialogWithMotion = (dialog) => {
+  if (!dialog || !dialog.open || dialog.classList.contains("is-closing")) return;
+  dialog.classList.remove("is-opening");
+  dialog.classList.add("is-closing");
+  window.setTimeout(() => {
+    if (typeof dialog.close === "function") dialog.close();
+    else dialog.removeAttribute("open");
+    dialog.classList.remove("is-closing");
+    document.body.classList.remove("modal-open");
+    requestAnimationFrame(syncCursorLayer);
+  }, 240);
+};
+
+window.VelkarisModalMotion = { open: openDialogWithMotion, close: closeDialogWithMotion };
+document.querySelectorAll("dialog").forEach((dialog) => {
+  dialog.addEventListener("cancel", (event) => {
+    event.preventDefault();
+    closeDialogWithMotion(dialog);
   });
 });
 
@@ -108,6 +148,9 @@ const setPortraitsExpanded = (expanded, animate = true) => {
   if (!portraitsSection || !portraitsContent || !portraitsToggle) return;
   if (portraitsAnimation) portraitsAnimation.cancel();
   isPortraitsExpanded = expanded;
+  if (expanded) {
+    window.VelkarisAudio?.playPanelOpen?.();
+  }
   portraitsToggle.setAttribute("aria-expanded", String(expanded));
   portraitsToggleLabel && (portraitsToggleLabel.textContent = expanded ? "Recolher retratos" : "Expandir retratos");
   portraitsSection.classList.toggle("is-expanded", expanded);
@@ -161,22 +204,16 @@ const openMemberModal = (memberId) => {
   const escapedId = window.CSS?.escape ? CSS.escape(memberId) : memberId.replace(/"/g, '\\"');
   const modal = document.querySelector(`[data-member-modal="${escapedId}"]`);
   if (!modal) return;
-  if (typeof modal.showModal === "function") {
-    modal.showModal();
-  } else {
-    modal.setAttribute("open", "");
-  }
-  document.body.classList.add("modal-open");
+  openDialogWithMotion(modal);
+  window.VelkarisAudio?.playPanelOpen?.();
+  requestAnimationFrame(() => {
+    modal.scrollTop = 0;
+    syncCursorLayer?.();
+  });
 };
 
 const closeMemberModal = (modal) => {
-  if (!modal) return;
-  if (typeof modal.close === "function") {
-    modal.close();
-  } else {
-    modal.removeAttribute("open");
-  }
-  document.body.classList.remove("modal-open");
+  closeDialogWithMotion(modal);
 };
 
 document.addEventListener("click", (event) => {
@@ -208,6 +245,121 @@ document.querySelectorAll(".member-modal").forEach((modal) => {
   });
   modal.addEventListener("close", () => document.body.classList.remove("modal-open"));
 });
+
+const galleryModal = document.querySelector("[data-gallery-modal]");
+const closeGalleryModal = () => {
+  closeDialogWithMotion(galleryModal);
+};
+const openGalleryModal = (figure) => {
+  if (!galleryModal || !figure) return;
+  const source = figure.querySelector("img");
+  const image = galleryModal.querySelector("[data-gallery-modal-image]");
+  const caption = galleryModal.querySelector("[data-gallery-modal-caption]");
+  if (!source || !image || !caption) return;
+  image.src = source.src;
+  image.alt = source.alt;
+  caption.textContent = figure.querySelector("figcaption")?.textContent || source.alt;
+  openDialogWithMotion(galleryModal);
+  window.VelkarisAudio?.playPanelOpen?.();
+};
+document.querySelectorAll("[data-gallery-open]").forEach((figure) => {
+  figure.addEventListener("click", () => openGalleryModal(figure));
+  figure.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    openGalleryModal(figure);
+  });
+});
+document.querySelector("[data-gallery-close]")?.addEventListener("click", closeGalleryModal);
+galleryModal?.addEventListener("click", (event) => {
+  if (event.target === galleryModal) closeGalleryModal();
+});
+galleryModal?.addEventListener("close", () => document.body.classList.remove("modal-open"));
+
+const openTimelineModal = (id) => {
+  const escapedId = typeof CSS !== "undefined" && CSS.escape ? CSS.escape(id) : id;
+  const modal = document.querySelector(`[data-timeline-modal="${escapedId}"]`);
+  if (!modal) return;
+  openDialogWithMotion(modal);
+  window.VelkarisAudio?.playPanelOpen?.();
+};
+document.querySelectorAll("[data-timeline-open]").forEach((item) => {
+  item.addEventListener("click", () => openTimelineModal(item.dataset.timelineOpen));
+  item.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    openTimelineModal(item.dataset.timelineOpen);
+  });
+});
+document.querySelectorAll("[data-timeline-close]").forEach((button) => {
+  button.addEventListener("click", () => closeDialogWithMotion(button.closest("dialog")));
+});
+document.querySelectorAll(".timeline-modal").forEach((modal) => {
+  modal.addEventListener("click", (event) => {
+    if (event.target === modal) closeDialogWithMotion(modal);
+  });
+  modal.addEventListener("close", () => document.body.classList.remove("modal-open"));
+});
+
+const strategicModal = document.querySelector("[data-strategic-modal]");
+const strategicPanels = [...document.querySelectorAll("[data-strategic-panel]")];
+const strategicTabs = [...document.querySelectorAll("[data-strategic-tab]")];
+const strategicSections = {
+  leaders: ["Arquivo de comando", "Hierarquia familiar", "A sucessão de lideranças que conduziram a Casa."],
+  fortifications: ["Defesas juramentadas", "Construções militares", "Fortalezas, postos de vigia e seus responsáveis."],
+  conflicts: ["Memória de batalha", "Confrontos", "Campanhas, cercos e disputas enfrentadas pela família."],
+  aristocrats: ["Círculo da corte", "Aristocratas", "Membros da linhagem presentes nos salões de poder."],
+  allies: ["Pactos e favores", "Aliados da Casa", "Apoios diretos e indiretos que sustentam o legado."],
+  vassals: ["Serviços juramentados", "Vassalos da Casa", "Servos, camponeses e trabalhadores ligados aos domínios da família."],
+};
+
+const setStrategicPanel = (key, animate = false) => {
+  const section = strategicSections[key] || strategicSections.leaders;
+  strategicPanels.forEach((panel) => {
+    const isActive = panel.dataset.strategicPanel === key;
+    panel.hidden = !isActive;
+    panel.classList.toggle("is-active", isActive);
+  });
+  strategicTabs.forEach((tab) => {
+    const isActive = tab.dataset.strategicTab === key;
+    tab.classList.toggle("is-active", isActive);
+    tab.setAttribute("aria-selected", String(isActive));
+  });
+  const kicker = strategicModal?.querySelector("[data-strategic-kicker]");
+  const title = strategicModal?.querySelector("[data-strategic-title]");
+  const description = strategicModal?.querySelector("[data-strategic-description]");
+  if (kicker) kicker.textContent = section[0];
+  if (title) title.textContent = section[1];
+  if (description) description.textContent = section[2];
+  if (animate) {
+    window.VelkarisAudio?.playPanelOpen?.();
+  }
+};
+
+const closeStrategicModal = () => {
+  closeDialogWithMotion(strategicModal);
+};
+
+const openStrategicModal = (key) => {
+  if (!strategicModal) return;
+  setStrategicPanel(key);
+  if (!strategicModal.open) {
+    openDialogWithMotion(strategicModal);
+  }
+  window.VelkarisAudio?.playPanelOpen?.();
+};
+
+document.querySelectorAll("[data-strategic-open]").forEach((button) => {
+  button.addEventListener("click", () => openStrategicModal(button.dataset.strategicOpen));
+});
+strategicTabs.forEach((tab) => {
+  tab.addEventListener("click", () => setStrategicPanel(tab.dataset.strategicTab, true));
+});
+document.querySelector("[data-strategic-close]")?.addEventListener("click", closeStrategicModal);
+strategicModal?.addEventListener("click", (event) => {
+  if (event.target === strategicModal) closeStrategicModal();
+});
+strategicModal?.addEventListener("close", () => document.body.classList.remove("modal-open"));
 
 document.querySelectorAll(".member-card, .mini-card").forEach((card) => {
   card.addEventListener("pointermove", (event) => {
@@ -248,17 +400,18 @@ const familyTreeStage = document.querySelector("[data-family-stage]");
 const familyTreeNodes = document.querySelector("[data-family-nodes]");
 const familyTreeLines = document.querySelector("[data-family-lines]");
 const familyTreeDataElement = document.querySelector("#family-tree-data");
-const TREE_VIEW_KEY = "velkaris.familyTree.view.v3";
+const TREE_VIEW_KEY = "velkaris.familyTree.view.v4";
 const TREE_MIN_SCALE = 0.24;
 const TREE_MAX_SCALE = 1.32;
 const TREE_NODE_WIDTH = 142;
 const TREE_NODE_HEIGHT = 174;
-const TREE_MEMBER_GAP = 16;
+const TREE_MEMBER_GAP = 24;
 const TREE_UNIT_PAD = 14;
-const TREE_LEVEL_GAP = 118;
+const TREE_LEVEL_GAP = 236;
 const TREE_SIBLING_GAP = 64;
 const TREE_ROOT_GAP = 96;
 const TREE_MARGIN = 96;
+const TREE_CHILD_JUNCTION_GAP = 72;
 let familyTreeData = [];
 let familyTreeLayouts = [];
 let familyTreePlaced = [];
@@ -365,6 +518,22 @@ const memberCenter = (placed, memberId, fallbackRatio = 0.5, yRatio = 0.5) => {
   };
 };
 
+const familyDescentAnchor = (placed) => {
+  const members = placed.branch.members || [];
+  if (members.length > 1) {
+    const first = memberCenter(placed, members[0].id, 0, 0.43);
+    const last = memberCenter(placed, members[members.length - 1].id, 1, 0.43);
+    return {
+      x: (first.x + last.x) / 2,
+      y: (first.y + last.y) / 2,
+    };
+  }
+  return {
+    x: placed.unitX + placed.unitWidth / 2,
+    y: placed.unitY + TREE_NODE_HEIGHT,
+  };
+};
+
 const drawFamilyTreeLines = () => {
   if (!familyTreeLines) return;
   familyTreeLines.setAttribute("viewBox", `0 0 ${familyTreeSize.width} ${familyTreeSize.height}`);
@@ -385,15 +554,16 @@ const drawFamilyTreeLines = () => {
     if (members.length > 1) {
       const first = memberCenter(placed, members[0].id, 0, 0.43);
       const last = memberCenter(placed, members[members.length - 1].id, 1, 0.43);
-      makePath("spouse-line", `M ${first.x + TREE_NODE_WIDTH * 0.38} ${first.y} L ${last.x - TREE_NODE_WIDTH * 0.38} ${last.y}`);
+      makePath("spouse-line", `M ${first.x + TREE_NODE_WIDTH * 0.5} ${first.y} L ${last.x - TREE_NODE_WIDTH * 0.5} ${last.y}`);
     }
 
     const children = placed.children || [];
     if (!children.length) return;
-    const parent = { x: placed.unitX + placed.unitWidth / 2, y: placed.unitY + TREE_NODE_HEIGHT };
+    const parent = familyDescentAnchor(placed);
     const childTops = children.map((child) => memberCenter(child, child.branch.linkMemberId, 0.5, 0));
     const minChildY = Math.min(...childTops.map((child) => child.y));
-    const junctionY = parent.y + Math.max(40, Math.min(76, (minChildY - parent.y) * 0.48));
+    const parentBottom = placed.unitY + TREE_NODE_HEIGHT;
+    const junctionY = Math.min(minChildY - 36, Math.max(parentBottom + 36, minChildY - TREE_CHILD_JUNCTION_GAP));
     makePath("descent-line", `M ${parent.x} ${parent.y} L ${parent.x} ${junctionY}`);
     if (childTops.length > 1) {
       makePath("descent-line", `M ${Math.min(...childTops.map((child) => child.x))} ${junctionY} L ${Math.max(...childTops.map((child) => child.x))} ${junctionY}`);
@@ -406,13 +576,10 @@ const drawFamilyTreeLines = () => {
       const parentPlaced = placedById.get(link.parentUnitId);
       if (!parentPlaced || !link.memberId) return;
       if (collapsedTreeBranches.has(parentPlaced.branch.id)) return;
-      const parent = {
-        x: parentPlaced.unitX + parentPlaced.unitWidth / 2,
-        y: parentPlaced.unitY + TREE_NODE_HEIGHT,
-      };
+      const parent = familyDescentAnchor(parentPlaced);
       const child = memberCenter(placed, link.memberId, 0.5, 0);
-      const verticalDistance = child.y - parent.y;
-      const junctionY = parent.y + (verticalDistance > 86 ? Math.min(92, verticalDistance * 0.5) : 62);
+      const parentBottom = parentPlaced.unitY + TREE_NODE_HEIGHT;
+      const junctionY = Math.min(child.y - 36, Math.max(parentBottom + 36, child.y - TREE_CHILD_JUNCTION_GAP));
       makePath("secondary-descent-line", `M ${parent.x} ${parent.y} L ${parent.x} ${junctionY} L ${child.x} ${junctionY} L ${child.x} ${child.y}`);
     });
   });
@@ -723,7 +890,7 @@ bulkTreeButton?.addEventListener("click", async () => {
   });
 
   bulkTreeButton.disabled = true;
-  if (status) status.textContent = "Salvando toda a arvore...";
+  if (status) status.textContent = "Salvando toda a árvore...";
   try {
     const response = await fetch("/admin/tree/bulk", {
       method: "POST",
@@ -736,7 +903,7 @@ bulkTreeButton?.addEventListener("click", async () => {
     window.location.href = result.redirect || "/admin#arvore";
   } catch (error) {
     bulkTreeButton.disabled = false;
-    if (status) status.textContent = "Nao foi possivel salvar tudo. Tente novamente.";
+    if (status) status.textContent = "Não foi possível salvar tudo. Tente novamente.";
   }
 });
 
@@ -783,7 +950,7 @@ bulkMemberButton?.addEventListener("click", async () => {
     window.location.href = result.redirect || "/admin#editar-familiares";
   } catch (error) {
     bulkMemberButton.disabled = false;
-    if (status) status.textContent = "Nao foi possivel salvar os familiares. Tente novamente.";
+    if (status) status.textContent = "Não foi possível salvar os familiares. Tente novamente.";
   }
 });
 
@@ -801,6 +968,9 @@ document.querySelectorAll("[data-territory-target]").forEach((marker) => {
 
 const reorderList = document.querySelector("[data-reorder-list]");
 const reorderValue = document.querySelector("[data-reorder-value]");
+document.querySelector("[data-new-family-member]")?.addEventListener("click", () => {
+  requestAnimationFrame(() => document.querySelector("#novo-familiar input[name='name']")?.focus());
+});
 const syncReorderValue = () => {
   if (!reorderList || !reorderValue) return;
   reorderValue.value = [...reorderList.querySelectorAll("[data-member-id]")].map((item) => item.dataset.memberId).join(",");
@@ -954,10 +1124,6 @@ soundButton?.addEventListener("click", () => {
   } else {
     startAmbient();
   }
-});
-
-document.querySelectorAll(".member-card, .mini-card, .tree-node, .territory-list article, .gallery-grid figure").forEach((element, index) => {
-  element.addEventListener("pointerenter", () => playHoverTone(index), { passive: true });
 });
 
 const canvas = document.querySelector("[data-particles]");
