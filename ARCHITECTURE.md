@@ -16,6 +16,7 @@ Nao sobrescrever, recriar ou normalizar manualmente estes arquivos sem uma solic
 - `app.py`: aplicacao Flask, normalizacao de dados, arvore familiar, uploads e rotas administrativas.
 - `scripts/check.ps1`: verificacao rapida de sintaxe e integridade do diff.
 - `scripts/run-local.ps1`: reinicia o servidor local e confirma `/healthz`.
+- `scripts/stage-referenced-uploads.ps1`: inclui no Git somente uploads usados pelos dados atuais.
 
 ## Interface publica
 
@@ -39,3 +40,4 @@ Nao sobrescrever, recriar ou normalizar manualmente estes arquivos sem uma solic
 - Alteracoes da arvore genealogica devem permanecer agrupadas no bloco `familyTree` de `static/js/main.js`.
 - Antes de entregar uma alteracao, executar `powershell -ExecutionPolicy Bypass -File scripts/check.ps1`.
 - Para disponibilizar a versao local, executar `powershell -ExecutionPolicy Bypass -File scripts/run-local.ps1`.
+- Antes de publicar dados atualizados, executar `powershell -ExecutionPolicy Bypass -File scripts/stage-referenced-uploads.ps1`.

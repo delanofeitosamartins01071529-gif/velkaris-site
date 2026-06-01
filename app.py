@@ -39,6 +39,7 @@ except ImportError:  # Pillow is listed in requirements; this keeps local fallba
 
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
+BUNDLED_UPLOAD_DIR = STATIC_DIR / "uploads"
 BUNDLED_DATA_DIR = BASE_DIR / "data"
 STORAGE_DIR = Path(os.environ.get("VELKARIS_STORAGE_DIR", BASE_DIR)).resolve()
 DATA_DIR = Path(os.environ.get("VELKARIS_DATA_DIR", STORAGE_DIR / "data" if "VELKARIS_STORAGE_DIR" in os.environ else BUNDLED_DATA_DIR)).resolve()
@@ -806,7 +807,13 @@ def inject_globals() -> dict[str, Any]:
 
 @app.get("/uploads/<path:filename>")
 def uploaded_file(filename: str):
-    return send_from_directory(UPLOAD_DIR, filename)
+    for directory in dict.fromkeys((UPLOAD_DIR, BUNDLED_UPLOAD_DIR)):
+        root = directory.resolve()
+        candidate = (root / filename).resolve()
+        if root not in candidate.parents or not candidate.is_file():
+            continue
+        return send_from_directory(root, filename)
+    abort(404)
 
 
 @app.get("/")
