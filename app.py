@@ -52,7 +52,7 @@ SUPABASE_BUCKET = os.environ.get("SUPABASE_STORAGE_BUCKET", "velkaris-media")
 SUPABASE_ENABLED = bool(SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY)
 
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
-MEMBER_PORTRAIT_SIZE = (960, 1200)
+MEMBER_PORTRAIT_SIZE = (2160, 2700)
 GENERATION_OPTIONS = ["1ª Geração", "2ª Geração", "3ª Geração", "4ª Geração", "5ª Geração"]
 STATUS_OPTIONS = ["Vivo", "Morto", "Desaparecido"]
 PLACEHOLDERS = [
@@ -69,10 +69,11 @@ HOUSE_DEFAULTS = {
     "about_heading": "Juramentos escritos em ouro antigo",
     "members_heading": "Retratos da linhagem",
     "tree_heading": "Linhagem Velkaris",
-    "territories_heading": "Domínios juramentados",
+    "territories_heading": "Domínios",
     "archives_heading": "Registros recentes",
     "timeline_heading": "Crônicas do sangue antigo",
     "eras_heading": "Eras da Casa",
+    "newspapers_heading": "Gazeta da Casa",
     "gallery_heading": "Pinturas e banners",
     "crest_image": "assets/Velkaris.png",
     "hero_image": "assets/hero-castle.png",
@@ -84,6 +85,7 @@ HOUSE_DEFAULTS = {
     "aristocrats": [],
     "allies": [],
     "vassals": [],
+    "newspapers": [],
 }
 
 MAP_MARKER_TYPES = [
@@ -116,6 +118,7 @@ COLLECTION_FIELDS = {
     "archives": ("date", "title", "summary"),
     "timeline": ("date", "era", "title", "summary", "details"),
     "eras": ("name", "period", "description"),
+    "newspapers": ("title", "edition", "date", "description"),
     "gallery": ("title",),
     "leaders": ("name", "title", "period", "description"),
     "fortifications": ("name", "type", "responsible", "description"),
@@ -351,7 +354,7 @@ def ensure_collection_item(collection: str, item: Any, index: int) -> dict[str, 
         normalized["images"] = (
             [str(image) for image in images if image] if isinstance(images, list) else []
         )
-    if collection == "gallery":
+    if collection in {"gallery", "newspapers"}:
         normalized["image"] = item.get("image") or ["assets/gallery-castle.png", "assets/territory-map.png", "assets/gallery-fortress.png"][index % 3]
     if collection == "timeline":
         images = item.get("images", [])
@@ -393,6 +396,11 @@ def load_house() -> dict[str, Any]:
     return normalize_house(read_json(HOUSE_FILE, {}))
 
 
+def timeline_sort_value(item: dict[str, Any]) -> tuple[int, str]:
+    match = re.search(r"-?\d+", str(item.get("date", "")))
+    return (int(match.group()) if match else 0, str(item.get("title", "")))
+
+
 def allowed_file(filename: str) -> bool:
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -424,7 +432,7 @@ def process_upload(file_storage, extension: str, prefix: str) -> tuple[bytes, st
             image = image.convert("RGB")
 
         output = BytesIO()
-        image.save(output, format="WEBP", quality=88, method=6)
+        image.save(output, format="WEBP", quality=96, method=6)
         return output.getvalue(), "webp", "image/webp"
     except (UnidentifiedImageError, OSError, ValueError):
         return raw_body, extension, fallback_type
@@ -825,6 +833,7 @@ def index():
         "index.html",
         members=members,
         house=house,
+        timeline_events=sorted(house["timeline"], key=timeline_sort_value),
         featured_members=ancestor_members_for_house(members, house),
         portrait_members=members_in_tree_order(members, family_tree),
         family_tree=family_tree,
@@ -949,6 +958,7 @@ def update_house_identity():
         "archives_heading",
         "timeline_heading",
         "eras_heading",
+        "newspapers_heading",
         "gallery_heading",
     ):
         house[field] = request.form.get(field, "").strip()
@@ -1001,6 +1011,11 @@ def create_collection_item(collection: str):
         ]
     if collection == "gallery":
         item["image"] = save_upload(request.files.get("image"), "gallery") or "assets/gallery-castle.png"
+    if collection == "newspapers":
+        item["image"] = save_upload(request.files.get("image"), "newspaper")
+        if not item["image"]:
+            flash("Envie uma imagem para publicar o jornal.", "error")
+            return redirect(url_for("admin", _anchor="newspapers"))
     if collection == "timeline":
         item["images"] = [
             saved
@@ -1040,6 +1055,10 @@ def update_collection_item(collection: str, entry_id: str):
         )
     if collection == "gallery":
         uploaded = save_upload(request.files.get("image"), "gallery")
+        if uploaded:
+            item["image"] = uploaded
+    if collection == "newspapers":
+        uploaded = save_upload(request.files.get("image"), "newspaper")
         if uploaded:
             item["image"] = uploaded
     if collection == "timeline":

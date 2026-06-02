@@ -5,10 +5,11 @@
   "about_heading": "Juramentos escritos em ouro antigo",
   "members_heading": "Retratos da linhagem",
   "tree_heading": "Linhagem Velkaris",
-  "territories_heading": "Domínios juramentados",
+  "territories_heading": "Domínios",
   "archives_heading": "Registros recentes",
   "timeline_heading": "Crônicas do sangue antigo",
   "eras_heading": "Eras da Casa",
+  "newspapers_heading": "Gazeta da Casa",
   "gallery_heading": "Pinturas e banners",
   "crest_image": "assets/Velkaris.png",
   "hero_image": "uploads/hero-05a9ac722810.png",
@@ -19,12 +20,72 @@
     "velkaris-06",
     "velkaris-07"
   ],
-  "leaders": [],
+  "leaders": [
+    {
+      "id": "leaders-cb4f5e87d8",
+      "name": "Olaf Velkaris",
+      "title": "o Punho Forte",
+      "period": "1250 à 1280",
+      "description": "Liderou de 1250 à 1280",
+      "image": "uploads/leaders-4f1cfaefb502.png"
+    },
+    {
+      "id": "leaders-e9374b844b",
+      "name": "Jhon Velkaris",
+      "title": "O Líder",
+      "period": "1280 à 1300",
+      "description": "Liderou entre 1280 e 1300",
+      "image": "uploads/leaders-8b0663fc5347.png"
+    },
+    {
+      "id": "leaders-29a18a1631",
+      "name": "Edward Velkaris",
+      "title": "O Herdeiro",
+      "period": "1300 até os dias de hoje",
+      "description": "Apesar de jovem lidera a família hoje aconselhado pelos avô alfredo e Olaf",
+      "image": "uploads/leaders-be14575b631d.png"
+    }
+  ],
   "fortifications": [],
   "conflicts": [],
   "aristocrats": [],
   "allies": [],
-  "vassals": [],
+  "vassals": [
+    {
+      "id": "vassals-37413d22ce",
+      "name": "Billa",
+      "group": "Plebe",
+      "service": "Bobo da Corte",
+      "description": "Billa é o bobo da corte dos Velkaris e alegra a todos com suas piadas e sátiras em grandes eventos familiares.",
+      "image": "uploads/vassals-b65576dcdaef.jpg"
+    },
+    {
+      "id": "vassals-4145c5b34d",
+      "name": "Ichigo Velvet",
+      "group": "PLebe",
+      "service": "Empregada do Castelo",
+      "description": "Chefe das empregadas e responsável pela organização e pelos cuidados do castelo real de Nazarik.",
+      "image": "uploads/vassals-11e443d23696.png"
+    },
+    {
+      "id": "vassals-e29850967a",
+      "name": "Rosália Acantha",
+      "group": "Plebe",
+      "service": "Artesã",
+      "description": "Plebeia vinculada à familia em um relacionamento com Kastiel Velkaris",
+      "image": "uploads/vassals-35cf1b91126c.png"
+    }
+  ],
+  "newspapers": [
+    {
+      "id": "newspapers-e8692a21eb",
+      "title": "Velas no Horizonte",
+      "edition": "01",
+      "date": "01/06",
+      "description": "",
+      "image": "uploads/newspaper-f59167a2158d.png"
+    }
+  ],
   "about": [
     {
       "id": "about-7f61039860",
@@ -61,8 +122,8 @@
       "id": "territories-2757bc066f",
       "name": "Nazarik",
       "type": "Cidade",
-      "description": "A Cidade de Nazarik.",
-      "lore": "A cidade capital da família Velkaris, a mais populosa entre as do seu domínio, liderada por Edward Velkaris, atual líder da família.",
+      "description": "A cidade de Nazarik.",
+      "lore": "A cidade capital da família Velkaris, a mais populosa de seu domínio, é liderada por Edward Velkaris, atual líder da família.",
       "coord_x": "43.44",
       "coord_y": "62.62",
       "status": "Cidade Capital",
@@ -76,8 +137,8 @@
       "id": "territories-b882e73de8",
       "name": "Estfall",
       "type": "Porto",
-      "description": "Posto Avançado de Estfall",
-      "lore": "O posto de Estfall fica localizado ao Leste de Nazarik as margens do rio Nilo, onde ali de forma estratégica foi localizado para poder controlar as rotas comerciais Flúviais que passam por ali.",
+      "description": "Posto avançado de Estfall.",
+      "lore": "O posto de Estfall está localizado a leste de Nazarik, às margens do rio Nilo. Sua posição estratégica permite controlar as rotas comerciais fluviais que passam pela região.",
       "coord_x": "58.38",
       "coord_y": "71.23",
       "status": "Posto Avançado",

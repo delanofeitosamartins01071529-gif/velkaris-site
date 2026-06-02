@@ -3,7 +3,6 @@
   const defaults = config.defaults || {};
   const storageKey = config.storageKey || "velkaris.audio.preferences.v1";
   const playbackStorageKey = `${storageKey}.playback`;
-  const silentNavigation = new URLSearchParams(window.location.search).get("audio") === "silent";
   const clamp = (value, min = 0, max = 1) => Math.min(max, Math.max(min, Number(value) || 0));
   const state = {
     musicEnabled: false,
@@ -18,9 +17,9 @@
   } catch (error) {
     // Preferences are optional.
   }
-  state.musicVolume = clamp(state.musicVolume);
+  state.musicEnabled = true;
+  state.musicVolume = 0.3;
   state.windVolume = clamp(state.windVolume ?? state.effectsVolume ?? 0.18);
-  if (silentNavigation) state.musicEnabled = false;
 
   let audioContext;
   let musicGain;

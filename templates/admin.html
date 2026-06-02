@@ -63,7 +63,7 @@
         <p>Edite textos, imagens, familiares, árvore genealógica, territórios, arquivos e galeria pública.</p>
       </div>
       <div class="admin-head-actions">
-        <a class="ghost-cta" href="{{ url_for('index', audio='silent') }}">Ver site</a>
+        <a class="ghost-cta" href="{{ url_for('index') }}">Ver site</a>
         <form method="post" action="{{ url_for('publish_site') }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button class="primary-cta" type="submit">Publicar alterações</button>
@@ -90,9 +90,10 @@
       <a href="#timeline">Crônicas</a>
       <a href="#eras-admin">Eras</a>
       <a href="#archives">Arquivos</a>
+      <a href="#newspapers">Jornais</a>
       <a href="#gallery">Galeria</a>
-      <a href="#leaders-admin">Hierarquia</a>
-      <a href="#fortifications-admin">Fortificações</a>
+      <a href="#leaders-admin">Lideranças</a>
+      <a href="#fortifications-admin">Edificações</a>
       <a href="#conflicts-admin">Confrontos</a>
       <a href="#aristocrats-admin">Aristocratas</a>
       <a href="#allies-admin">Aliados</a>
@@ -145,6 +146,10 @@
         <label>
           Título das eras
           <input type="text" name="eras_heading" value="{{ house.eras_heading }}">
+        </label>
+        <label>
+          Título dos jornais
+          <input type="text" name="newspapers_heading" value="{{ house.newspapers_heading }}">
         </label>
         <label>
           Título da galeria
@@ -888,6 +893,44 @@
       </form>
     </section>
 
+    <section class="admin-card reveal is-visible" id="newspapers">
+      <div class="admin-section-title">
+        <p class="section-kicker">Jornais</p>
+        <h2>Edições publicadas para leitura</h2>
+      </div>
+      <div class="admin-list two-col">
+        {% for newspaper in house.newspapers %}
+          <article class="admin-list-card">
+            <div class="admin-newspaper-preview">
+              <img src="{{ media_url(newspaper.image) }}" alt="{{ newspaper.title }}" data-preview-target>
+            </div>
+            <form class="admin-form" method="post" action="{{ url_for('update_collection_item', collection='newspapers', entry_id=newspaper.id) }}" enctype="multipart/form-data">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <label>Título <input type="text" name="title" value="{{ newspaper.title }}"></label>
+              <label>Edição <input type="text" name="edition" value="{{ newspaper.edition }}" placeholder="Edição nº 01"></label>
+              <label>Data <input type="text" name="date" value="{{ newspaper.date }}" placeholder="12/05"></label>
+              <label>Descrição <textarea name="description" rows="3">{{ newspaper.description }}</textarea></label>
+              <label>Nova imagem <input type="file" name="image" accept=".png,.jpg,.jpeg,.webp" data-preview-input></label>
+              <button class="primary-cta" type="submit">Salvar jornal</button>
+            </form>
+            <form method="post" action="{{ url_for('delete_collection_item', collection='newspapers', entry_id=newspaper.id) }}" class="delete-form inline-delete">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit">Excluir</button>
+            </form>
+          </article>
+        {% endfor %}
+      </div>
+      <form class="admin-form admin-form-grid admin-add-form" method="post" action="{{ url_for('create_collection_item', collection='newspapers') }}" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>Título <input type="text" name="title" required></label>
+        <label>Edição <input type="text" name="edition" placeholder="Edição nº 01"></label>
+        <label>Data <input type="text" name="date" placeholder="12/05"></label>
+        <label>Imagem <input type="file" name="image" accept=".png,.jpg,.jpeg,.webp" data-preview-input required></label>
+        <label class="span-2">Descrição <textarea name="description" rows="3"></textarea></label>
+        <button class="primary-cta" type="submit">Publicar jornal</button>
+      </form>
+    </section>
+
     <section class="admin-card reveal is-visible" id="gallery">
       <div class="admin-section-title">
         <p class="section-kicker">Galeria</p>
@@ -920,8 +963,8 @@
       </form>
     </section>
 
-    {{ strategic_collection("leaders-admin", "Hierarquia familiar", "Lideranças da Casa", "leaders", house.leaders, [("name", "Nome"), ("title", "Título"), ("period", "Período"), ("description", "Descrição")]) }}
-    {{ strategic_collection("fortifications-admin", "Defesas juramentadas", "Construções militares", "fortifications", house.fortifications, [("name", "Nome"), ("type", "Tipo"), ("responsible", "Responsável"), ("description", "Descrição")]) }}
+    {{ strategic_collection("leaders-admin", "Lideranças da família", "Lideranças da Casa", "leaders", house.leaders, [("name", "Nome"), ("title", "Título"), ("period", "Período"), ("description", "Descrição")]) }}
+    {{ strategic_collection("fortifications-admin", "Defesas juramentadas", "Edificações", "fortifications", house.fortifications, [("name", "Nome"), ("type", "Tipo"), ("responsible", "Responsável"), ("description", "Descrição")]) }}
     {{ strategic_collection("conflicts-admin", "Memória de batalha", "Confrontos enfrentados", "conflicts", house.conflicts, [("name", "Nome"), ("period", "Período"), ("outcome", "Desfecho"), ("description", "Descrição")]) }}
     {{ strategic_collection("aristocrats-admin", "Círculo da corte", "Aristocratas da família", "aristocrats", house.aristocrats, [("name", "Nome"), ("title", "Título"), ("role", "Papel"), ("description", "Descrição")]) }}
     {{ strategic_collection("allies-admin", "Pactos e favores", "Aliados da Casa", "allies", house.allies, [("name", "Nome"), ("group", "Grupo social"), ("role", "Apoio prestado"), ("description", "Descrição")]) }}
