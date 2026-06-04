@@ -4,7 +4,8 @@ root.classList.add("js");
 const loader = document.querySelector("[data-loader]");
 const pageTransition = document.querySelector("[data-page-transition]");
 let transitionTimer = 0;
-const playPageTransition = (duration = 760) => {
+const MODAL_MOTION_MS = 640;
+const playPageTransition = (duration = MODAL_MOTION_MS) => {
   if (!pageTransition || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   window.clearTimeout(transitionTimer);
   pageTransition.classList.remove("is-active");
@@ -104,7 +105,7 @@ const openDialogWithMotion = (dialog) => {
   dialog.classList.remove("is-opening");
   dialog.offsetHeight;
   dialog.classList.add("is-opening");
-  window.setTimeout(() => dialog.classList.remove("is-opening"), 520);
+  window.setTimeout(() => dialog.classList.remove("is-opening"), MODAL_MOTION_MS);
   document.body.classList.add("modal-open");
   requestAnimationFrame(syncCursorLayer);
 };
@@ -119,7 +120,7 @@ const closeDialogWithMotion = (dialog) => {
     dialog.classList.remove("is-closing");
     document.body.classList.remove("modal-open");
     requestAnimationFrame(syncCursorLayer);
-  }, 240);
+  }, MODAL_MOTION_MS);
 };
 
 window.VelkarisModalMotion = { open: openDialogWithMotion, close: closeDialogWithMotion };
@@ -412,9 +413,9 @@ const setTimelineExpanded = (expanded, animate = true) => {
   }
 
   const items = [...timelineRecords.querySelectorAll(".timeline-item")];
-  const itemDuration = expanded ? 380 : 280;
-  const itemDelay = expanded ? 54 : 34;
-  const totalDuration = itemDuration + Math.max(items.length - 1, 0) * itemDelay;
+  const totalDuration = MODAL_MOTION_MS;
+  const itemDuration = Math.min(920, Math.max(520, totalDuration * 0.46));
+  const itemDelay = items.length > 1 ? Math.max(28, (totalDuration - itemDuration) / (items.length - 1)) : 0;
   timelineSection.classList.remove("is-transitioning");
   timelineSection.offsetHeight;
   timelineSection.classList.add("is-transitioning");

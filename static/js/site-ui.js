@@ -58,23 +58,56 @@ nav?.querySelectorAll("a").forEach((link) => {
   });
 });
 
-const revealObserver = new IntersectionObserver(
-  (entries) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) {
-        entry.target.classList.remove("is-hiding");
-        entry.target.classList.add("is-visible");
-        return;
-      }
-      if (!entry.target.classList.contains("is-visible")) return;
-      entry.target.classList.add("is-hiding");
-      entry.target.classList.remove("is-visible");
-      window.setTimeout(() => entry.target.classList.remove("is-hiding"), 620);
-    });
-  },
-  { threshold: 0.12, rootMargin: "0px 0px -8% 0px" }
-);
-document.querySelectorAll("[data-reveal]").forEach((element) => revealObserver.observe(element));
+const revealHideTimers = new WeakMap();
+const REVEAL_ANIMATION_MS = 640;
+const showReveal = (element) => {
+  window.clearTimeout(revealHideTimers.get(element));
+  element.classList.remove("is-hiding");
+  element.classList.add("is-visible");
+};
+const hideReveal = (element) => {
+  if (!element.classList.contains("is-visible") || element.classList.contains("is-hiding")) return;
+  element.classList.add("is-hiding");
+  element.classList.remove("is-visible");
+  const timer = window.setTimeout(() => element.classList.remove("is-hiding"), REVEAL_ANIMATION_MS);
+  revealHideTimers.set(element, timer);
+};
+
+const revealElements = [...document.querySelectorAll("[data-reveal]")];
+let revealFrame = 0;
+let revealLastScrollY = window.scrollY;
+const syncReveals = () => {
+  revealFrame = 0;
+  const scrollingUp = window.scrollY < revealLastScrollY;
+  revealLastScrollY = window.scrollY;
+  const viewportHeight = window.innerHeight;
+  revealElements.forEach((element) => {
+    const rect = element.getBoundingClientRect();
+    const visibleHeight = Math.max(0, Math.min(rect.bottom, viewportHeight) - Math.max(rect.top, 0));
+    const referenceHeight = Math.max(1, Math.min(rect.height, viewportHeight));
+    const visibleRatio = visibleHeight / referenceHeight;
+    const enteringViewport = rect.top < viewportHeight * 0.92 && rect.bottom > viewportHeight * 0.06;
+    const leavingBelowLikeSideRail = scrollingUp && rect.top >= viewportHeight - referenceHeight * 0.5;
+    const almostHiddenBelow = rect.top > viewportHeight * 0.92 && visibleRatio <= 0.1;
+    const hiddenAbove = rect.bottom <= 0;
+    if (leavingBelowLikeSideRail) {
+      hideReveal(element);
+      return;
+    }
+    if (enteringViewport) {
+      showReveal(element);
+      return;
+    }
+    if (almostHiddenBelow || hiddenAbove) hideReveal(element);
+  });
+};
+const scheduleReveals = () => {
+  if (revealFrame) return;
+  revealFrame = window.requestAnimationFrame(syncReveals);
+};
+syncReveals();
+window.addEventListener("scroll", scheduleReveals, { passive: true });
+window.addEventListener("resize", scheduleReveals);
 
 const hero = document.querySelector("[data-hero]");
 const heroArt = document.querySelector(".hero-art");

@@ -14,6 +14,10 @@
   --panel: rgba(5, 8, 13, 0.78);
   --panel-soft: rgba(11, 22, 38, 0.7);
   --shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+  --motion-long: 620ms;
+  --motion-close: 640ms;
+  --motion-smooth: cubic-bezier(0.2, 0.78, 0.24, 1);
+  --motion-close-smooth: cubic-bezier(0.55, 0.08, 0.72, 0.38);
   --font-display: "Cinzel", "Trajan Pro", Georgia, serif;
   --font-serif: "Cormorant Garamond", Georgia, serif;
   --font-body: "Inter", Arial, sans-serif;
@@ -346,7 +350,7 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
 
 .page-transition.is-active {
   visibility: visible;
-  animation: transitionVeil 0.76s ease both;
+  animation: transitionVeil var(--motion-long) ease both;
 }
 
 .transition-line,
@@ -374,7 +378,7 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
 }
 
 .is-active .transition-line {
-  animation: transitionLine 0.62s 0.04s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: transitionLine var(--motion-long) 0.04s var(--motion-smooth) both;
 }
 
 .transition-sigil {
@@ -404,7 +408,7 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
 }
 
 .is-active .transition-sigil {
-  animation: transitionSigil 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: transitionSigil var(--motion-long) var(--motion-smooth) both;
 }
 
 .transition-sparks {
@@ -424,7 +428,7 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
 }
 
 .is-active .transition-sparks {
-  animation: transitionSparks 0.7s 0.08s ease both;
+  animation: transitionSparks var(--motion-long) 0.08s ease both;
 }
 
 .site-header {
@@ -637,35 +641,35 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
 }
 
 .audio-control-panel.is-opening {
-  animation: audioPanelOpen 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: audioPanelOpen var(--motion-long) var(--motion-smooth) both;
 }
 
 .audio-control-panel.is-closing {
-  animation: audioPanelClose 0.22s ease both;
+  animation: audioPanelClose var(--motion-close) var(--motion-close-smooth) both;
 }
 
 .audio-control-panel.is-opening .modal-effects::before {
-  animation: memberAuraOpen 0.72s ease-out both;
+  animation: memberAuraOpen var(--motion-long) ease-out both;
 }
 
 .audio-control-panel.is-opening .modal-effects::after {
-  animation: memberEdgeSweep 0.74s 0.04s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: memberEdgeSweep var(--motion-long) 0.04s var(--motion-smooth) both;
 }
 
 .audio-control-panel.is-opening .modal-effects span {
-  animation: memberSparksOpen 0.68s 0.08s ease-out both;
+  animation: memberSparksOpen var(--motion-long) 0.08s ease-out both;
 }
 
 .audio-control-panel.is-closing .modal-effects::before {
-  animation: memberAuraClose 0.22s ease both;
+  animation: memberAuraClose var(--motion-close) ease both;
 }
 
 .audio-control-panel.is-closing .modal-effects::after {
-  animation: memberEdgeSweepClose 0.24s ease both;
+  animation: memberEdgeSweepClose var(--motion-close) ease both;
 }
 
 .audio-control-panel.is-closing .modal-effects span {
-  animation: memberSparksClose 0.22s ease both;
+  animation: memberSparksClose var(--motion-close) ease both;
 }
 
 .audio-panel-head,
@@ -1505,7 +1509,7 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
 }
 
 .portrait-gallery:not([hidden]) {
-  animation: panelUnseal 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: panelUnseal var(--motion-long) var(--motion-smooth) both;
 }
 
 .portrait-gallery .filter-bar {
@@ -1674,7 +1678,7 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
 }
 
 .member-modal[open] {
-  animation: modalVeil 0.2s ease both;
+  animation: modalVeil var(--motion-long) ease both;
 }
 
 .member-modal::backdrop {
@@ -1683,7 +1687,7 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
 }
 
 .member-modal[open]::backdrop {
-  animation: modalBackdrop 0.28s ease both;
+  animation: modalBackdrop var(--motion-long) ease both;
 }
 
 .member-modal-shell {
@@ -1699,7 +1703,7 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
 }
 
 .member-modal[open] .member-modal-shell {
-  animation: memberRecordOpen 0.46s 0.08s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation: memberRecordOpen var(--motion-long) 0.08s var(--motion-smooth) backwards;
 }
 
 .modal-effects {
@@ -1766,27 +1770,27 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
 }
 
 dialog[open] .modal-effects::before {
-  animation: memberAuraOpen 0.72s ease-out both;
+  animation: memberAuraOpen var(--motion-long) ease-out both;
 }
 
 dialog[open] .modal-effects::after {
-  animation: memberEdgeSweep 0.74s 0.04s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: memberEdgeSweep var(--motion-long) 0.04s var(--motion-smooth) both;
 }
 
 dialog[open] .modal-effects span {
-  animation: memberSparksOpen 0.68s 0.08s ease-out both;
+  animation: memberSparksOpen var(--motion-long) 0.08s ease-out both;
 }
 
 dialog.is-closing .modal-effects::before {
-  animation: memberAuraClose 0.22s ease both;
+  animation: memberAuraClose var(--motion-close) ease both;
 }
 
 dialog.is-closing .modal-effects::after {
-  animation: memberEdgeSweepClose 0.24s ease both;
+  animation: memberEdgeSweepClose var(--motion-close) ease both;
 }
 
 dialog.is-closing .modal-effects span {
-  animation: memberSparksClose 0.22s ease both;
+  animation: memberSparksClose var(--motion-close) ease both;
 }
 
 .map-marker-modal[open],
@@ -1795,7 +1799,7 @@ dialog.is-closing .modal-effects span {
 .timeline-modal[open],
 .strategic-modal[open],
 .strategic-entry-modal[open] {
-  animation: modalVeil 0.2s ease both;
+  animation: modalVeil var(--motion-long) ease both;
 }
 
 .map-marker-modal[open]::backdrop,
@@ -1804,7 +1808,7 @@ dialog.is-closing .modal-effects span {
 .timeline-modal[open]::backdrop,
 .strategic-modal[open]::backdrop,
 .strategic-entry-modal[open]::backdrop {
-  animation: modalBackdrop 0.28s ease both;
+  animation: modalBackdrop var(--motion-long) ease both;
 }
 
 .map-marker-modal[open] > :not(.cursor-aura),
@@ -1813,20 +1817,20 @@ dialog.is-closing .modal-effects span {
 .timeline-modal[open] > :not(.cursor-aura),
 .strategic-modal[open] > :not(.cursor-aura),
 .strategic-entry-modal[open] > :not(.cursor-aura) {
-  animation: modalPanelArrive 0.38s 0.08s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation: modalPanelArrive var(--motion-long) 0.08s var(--motion-smooth) backwards;
 }
 
 dialog.is-closing {
-  animation: modalVeilOut 0.24s ease both;
+  animation: modalVeilOut var(--motion-close) ease both;
 }
 
 dialog.is-closing::backdrop {
-  animation: modalBackdropOut 0.24s ease both;
+  animation: modalBackdropOut var(--motion-close) ease both;
 }
 
 dialog.is-closing > :not(.cursor-aura),
 .member-modal.is-closing .member-modal-shell {
-  animation: modalPanelLeave 0.22s ease both;
+  animation: modalPanelLeave var(--motion-close) var(--motion-close-smooth) both;
 }
 
 .modal-close {
@@ -2789,11 +2793,11 @@ dialog.is-closing > :not(.cursor-aura),
 }
 
 .timeline-panel.is-transitioning {
-  animation: timelinePanelGlow 840ms ease both;
+  animation: timelinePanelGlow var(--motion-long) ease both;
 }
 
 .timeline-panel.is-transitioning::after {
-  animation: timelineEdgeSweep 760ms ease both;
+  animation: timelineEdgeSweep var(--motion-long) ease both;
 }
 
 .timeline-item {
@@ -3303,7 +3307,7 @@ dialog.is-closing > :not(.cursor-aura),
 }
 
 .strategic-modal-content > section.is-active {
-  animation: panelUnseal 0.48s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: panelUnseal var(--motion-long) var(--motion-smooth) both;
 }
 
 .strategic-entry-grid {
@@ -3436,8 +3440,9 @@ dialog.is-closing > :not(.cursor-aura),
 
 .reveal {
   opacity: 0;
-  transform: translateY(24px) scale(0.992);
-  transition: opacity 0.62s cubic-bezier(0.16, 1, 0.3, 1), transform 0.62s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.62s ease;
+  transform: translateY(16px) scale(0.996);
+  transition: opacity var(--motion-long) var(--motion-smooth), transform var(--motion-long) var(--motion-smooth), box-shadow var(--motion-long) ease;
+  will-change: opacity, transform;
 }
 
 .reveal.is-visible {
@@ -3446,21 +3451,64 @@ dialog.is-closing > :not(.cursor-aura),
 }
 
 .panel.reveal.is-visible {
-  animation: panelRevealGlow 760ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation:
+    panelRevealMotion var(--motion-long) var(--motion-smooth) both,
+    panelRevealGlow var(--motion-long) var(--motion-smooth) both;
 }
 
 .panel.reveal.is-visible::before,
 .panel.reveal.is-visible::after {
-  animation: panelCornerReveal 720ms ease-out both;
+  animation: panelCornerReveal var(--motion-long) ease-out both;
 }
 
 .panel.reveal.is-hiding {
-  animation: panelHideGlow 600ms ease-in both;
+  animation:
+    panelHideMotion var(--motion-close) var(--motion-close-smooth) both,
+    panelHideGlow var(--motion-close) ease-in both;
 }
 
 .panel.reveal.is-hiding::before,
 .panel.reveal.is-hiding::after {
-  animation: panelCornerHide 560ms ease-in both;
+  animation: panelCornerHide var(--motion-close) ease-in both;
+}
+
+@keyframes panelRevealMotion {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scaleY(0.97);
+    filter: brightness(1);
+  }
+  55% {
+    opacity: 0.82;
+    transform: translateY(4px) scaleY(0.992);
+    filter: brightness(1.08);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+    filter: brightness(1);
+  }
+}
+
+@keyframes panelHideMotion {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+    filter: brightness(1);
+  }
+  45% {
+    opacity: 0.48;
+    transform: translateY(8px) scaleY(0.986);
+    filter: brightness(1.08);
+  }
+  74% {
+    opacity: 0.18;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(18px) scaleY(0.97);
+    filter: brightness(1);
+  }
 }
 
 @keyframes panelRevealGlow {
@@ -3479,8 +3527,11 @@ dialog.is-closing > :not(.cursor-aura),
   0% {
     box-shadow: var(--shadow), inset 0 0 0 1px rgba(255, 255, 255, 0.025), 0 0 0 rgba(218, 178, 94, 0);
   }
-  52% {
-    box-shadow: var(--shadow), inset 0 0 0 1px rgba(240, 208, 139, 0.11), 0 0 28px rgba(218, 178, 94, 0.13);
+  24% {
+    box-shadow: var(--shadow), inset 0 0 0 1px rgba(240, 208, 139, 0.08), 0 0 18px rgba(218, 178, 94, 0.09);
+  }
+  64% {
+    box-shadow: var(--shadow), inset 0 0 0 1px rgba(240, 208, 139, 0.04), 0 0 8px rgba(218, 178, 94, 0.04);
   }
   100% {
     box-shadow: var(--shadow), inset 0 0 0 1px rgba(255, 255, 255, 0.025), 0 0 0 rgba(218, 178, 94, 0);
@@ -3508,8 +3559,12 @@ dialog.is-closing > :not(.cursor-aura),
     opacity: 1;
     transform: scale(1);
   }
-  46% {
+  24% {
+    opacity: 0.62;
     border-color: rgba(240, 208, 139, 0.68);
+  }
+  64% {
+    opacity: 0.18;
   }
   100% {
     opacity: 0;
@@ -4308,31 +4363,57 @@ dialog.is-closing > :not(.cursor-aura),
 }
 
 @keyframes modalPanelLeave {
-  from {
+  0% {
     opacity: 1;
     transform: translateY(0) scale(1);
+    filter: blur(0);
   }
-  to {
+  22% {
+    opacity: 0.68;
+    transform: translateY(3px) scale(0.997);
+    filter: blur(1px);
+  }
+  62% {
+    opacity: 0.24;
+    transform: translateY(8px) scale(0.993);
+    filter: blur(3px);
+  }
+  100% {
     opacity: 0;
-    transform: translateY(10px) scale(0.992);
+    transform: translateY(12px) scale(0.988);
+    filter: blur(6px);
   }
 }
 
 @keyframes modalVeilOut {
-  from {
+  0% {
     opacity: 1;
   }
-  to {
+  30% {
+    opacity: 0.55;
+  }
+  70% {
+    opacity: 0.18;
+  }
+  100% {
     opacity: 0;
   }
 }
 
 @keyframes modalBackdropOut {
-  from {
+  0% {
     opacity: 1;
     backdrop-filter: blur(8px);
   }
-  to {
+  34% {
+    opacity: 0.48;
+    backdrop-filter: blur(5px);
+  }
+  72% {
+    opacity: 0.16;
+    backdrop-filter: blur(2px);
+  }
+  100% {
     opacity: 0;
     backdrop-filter: blur(0);
   }
@@ -4378,13 +4459,21 @@ dialog.is-closing > :not(.cursor-aura),
 }
 
 @keyframes audioPanelClose {
-  from {
+  0% {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
-  to {
+  26% {
+    opacity: 0.58;
+    transform: translateY(-3px) scale(0.996);
+  }
+  66% {
+    opacity: 0.2;
+    transform: translateY(-7px) scale(0.992);
+  }
+  100% {
     opacity: 0;
-    transform: translateY(-8px) scale(0.99);
+    transform: translateY(-10px) scale(0.988);
   }
 }
 
@@ -4414,14 +4503,17 @@ dialog.is-closing > :not(.cursor-aura),
 }
 
 @keyframes memberAuraClose {
-  from {
+  0% {
     opacity: 0.18;
     transform: scale(1);
   }
-  58% {
-    opacity: 1;
+  24% {
+    opacity: 0.42;
   }
-  to {
+  56% {
+    opacity: 0.16;
+  }
+  100% {
     opacity: 0;
     transform: scale(0.96);
   }
@@ -4470,14 +4562,17 @@ dialog.is-closing > :not(.cursor-aura),
 }
 
 @keyframes memberSparksClose {
-  from {
+  0% {
     opacity: 0;
     transform: translateY(-24px) scale(1.12);
   }
-  58% {
-    opacity: 0.92;
+  26% {
+    opacity: 0.54;
   }
-  to {
+  64% {
+    opacity: 0.18;
+  }
+  100% {
     opacity: 0;
     transform: translateY(16px) scale(0.5);
   }
