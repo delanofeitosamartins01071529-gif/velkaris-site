@@ -63,9 +63,21 @@
         {% if request.endpoint == 'admin' %}
           <a class="vault-link admin-access-link" href="{{ url_for('index') }}#inicio">Voltar ao site</a>
         {% elif admin_logged_in %}
-          <a class="vault-link admin-access-link" href="{{ url_for('admin') }}">Painel Admin</a>
+          <a class="vault-link admin-access-link vault-family-link" href="{{ url_for('admin') }}" aria-label="Abrir Cofre Familiar">
+            <span class="vault-symbol" aria-hidden="true">
+              <span class="vault-symbol-lock"></span>
+              <span class="vault-symbol-coins"><i></i><i></i><i></i></span>
+            </span>
+            <span>Cofre Familiar</span>
+          </a>
         {% else %}
-          <a class="vault-link admin-access-link" href="{{ url_for('admin_login_alias') }}">Login Admin</a>
+          <a class="vault-link admin-access-link vault-family-link" href="{{ url_for('admin_login_alias') }}" aria-label="Abrir Cofre Familiar">
+            <span class="vault-symbol" aria-hidden="true">
+              <span class="vault-symbol-lock"></span>
+              <span class="vault-symbol-coins"><i></i><i></i><i></i></span>
+            </span>
+            <span>Cofre Familiar</span>
+          </a>
         {% endif %}
       </div>
     </header>
@@ -87,7 +99,7 @@
         <input type="range" min="0" max="100" value="30" data-music-volume>
       </label>
       <label>
-        Volume do vento
+        Volume dos Efeitos
         <input type="range" min="0" max="100" value="18" data-wind-volume>
       </label>
     </aside>

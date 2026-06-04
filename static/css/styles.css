@@ -505,9 +505,74 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
   display: inline-flex;
   min-height: 42px;
   align-items: center;
+  gap: 0.55rem;
   padding: 0.55rem 0.9rem;
   border: 1px solid rgba(185, 148, 85, 0.32);
   background: rgba(7, 12, 19, 0.58);
+}
+
+.vault-family-link {
+  white-space: nowrap;
+}
+
+.vault-symbol {
+  position: relative;
+  display: inline-grid;
+  width: 25px;
+  height: 21px;
+  flex: 0 0 auto;
+  place-items: center;
+}
+
+.vault-symbol-lock {
+  position: absolute;
+  top: 3px;
+  left: 4px;
+  width: 12px;
+  height: 11px;
+  border: 1px solid rgba(240, 208, 139, 0.88);
+  border-radius: 2px;
+  box-shadow: 0 0 10px rgba(240, 208, 139, 0.16);
+}
+
+.vault-symbol-lock::before {
+  position: absolute;
+  left: 2px;
+  top: -7px;
+  width: 6px;
+  height: 7px;
+  content: "";
+  border: 1px solid rgba(240, 208, 139, 0.88);
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+}
+
+.vault-symbol-lock::after {
+  position: absolute;
+  left: 5px;
+  top: 4px;
+  width: 2px;
+  height: 4px;
+  content: "";
+  border-radius: 2px;
+  background: rgba(240, 208, 139, 0.9);
+}
+
+.vault-symbol-coins {
+  position: absolute;
+  right: 0;
+  bottom: 1px;
+  display: grid;
+  gap: 1px;
+}
+
+.vault-symbol-coins i {
+  display: block;
+  width: 11px;
+  height: 4px;
+  border: 1px solid rgba(240, 208, 139, 0.84);
+  border-radius: 50%;
+  background: linear-gradient(180deg, rgba(240, 208, 139, 0.34), rgba(185, 148, 85, 0.18));
 }
 
 .main-nav a::after,
@@ -1063,16 +1128,17 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
 }
 
 .codex-grid {
-  display: grid;
-  grid-template-columns: 64px minmax(0, 1fr);
-  gap: 1rem;
+  position: relative;
+  display: block;
   width: min(1720px, calc(100% - clamp(1rem, 4vw, 5rem)));
   margin: 1rem auto 0;
+  padding-left: 80px;
 }
 
 .side-rail {
-  position: sticky;
-  top: 82px;
+  position: absolute;
+  top: 0;
+  left: 0;
   z-index: 8;
   isolation: isolate;
   display: grid;
@@ -1091,6 +1157,7 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
 
 .side-rail.is-docked {
   position: fixed;
+  top: 82px;
   left: var(--side-rail-left);
 }
 
@@ -1356,6 +1423,8 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
 
 .panel {
   position: relative;
+  height: fit-content;
+  min-height: 0;
   overflow: hidden;
   margin-bottom: 1rem;
   padding: clamp(1.1rem, 2.5vw, 2rem);
@@ -1465,11 +1534,11 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
 .archives-panel,
 .newspapers-panel,
 .gallery-panel {
-  grid-column: 2;
+  width: 100%;
 }
 
 .about-panel {
-  grid-column: 2;
+  width: 100%;
 }
 
 .filter-bar,
@@ -3440,36 +3509,32 @@ dialog.is-closing > :not(.cursor-aura),
 
 .reveal {
   opacity: 0;
-  transform: translateY(16px) scale(0.996);
-  transition: opacity var(--motion-long) var(--motion-smooth), transform var(--motion-long) var(--motion-smooth), box-shadow var(--motion-long) ease;
+  transform: translateY(18px) scaleY(0.97);
+  transition: opacity 220ms ease, transform 220ms ease;
   will-change: opacity, transform;
 }
 
 .reveal.is-visible {
   opacity: 1;
-  transform: translateY(0) scale(1);
+  transform: translateY(0) scaleY(1);
 }
 
 .panel.reveal.is-visible {
-  animation:
-    panelRevealMotion var(--motion-long) var(--motion-smooth) both,
-    panelRevealGlow var(--motion-long) var(--motion-smooth) both;
+  animation: sideRailReveal var(--motion-long) var(--motion-smooth) both;
 }
 
 .panel.reveal.is-visible::before,
 .panel.reveal.is-visible::after {
-  animation: panelCornerReveal var(--motion-long) ease-out both;
+  animation: panelCornerReveal 920ms ease-out both;
 }
 
 .panel.reveal.is-hiding {
-  animation:
-    panelHideMotion var(--motion-close) var(--motion-close-smooth) both,
-    panelHideGlow var(--motion-close) ease-in both;
+  animation: sideRailHide var(--motion-close) var(--motion-close-smooth) both;
 }
 
 .panel.reveal.is-hiding::before,
 .panel.reveal.is-hiding::after {
-  animation: panelCornerHide var(--motion-close) ease-in both;
+  animation: panelCornerHide 580ms ease-in both;
 }
 
 @keyframes panelRevealMotion {
@@ -4785,7 +4850,7 @@ dialog.is-closing > :not(.cursor-aura),
   }
 
   .codex-grid {
-    grid-template-columns: 1fr;
+    padding-left: 0;
   }
 
   .side-rail {
