@@ -24,25 +24,25 @@
     {
       "id": "leaders-cb4f5e87d8",
       "name": "Olaf Velkaris",
-      "title": "o Punho Forte",
-      "period": "1250 à 1280",
-      "description": "Liderou de 1250 à 1280",
+      "title": "O Punho Forte",
+      "period": "1250 a 1280",
+      "description": "Liderou de 1250 a 1280.",
       "image": "uploads/leaders-4f1cfaefb502.png"
     },
     {
       "id": "leaders-e9374b844b",
       "name": "Jhon Velkaris",
       "title": "O Líder",
-      "period": "1280 à 1300",
-      "description": "Liderou entre 1280 e 1300",
+      "period": "1280 a 1300",
+      "description": "Liderou entre 1280 e 1300.",
       "image": "uploads/leaders-8b0663fc5347.png"
     },
     {
       "id": "leaders-29a18a1631",
       "name": "Edward Velkaris",
       "title": "O Herdeiro",
-      "period": "1300 até os dias de hoje",
-      "description": "Apesar de jovem lidera a família hoje aconselhado pelos avô alfredo e Olaf",
+      "period": "1300 até os dias atuais",
+      "description": "Apesar de jovem, lidera a família atualmente, aconselhado pelos avôs Alfredo e Olaf.",
       "image": "uploads/leaders-be14575b631d.png"
     }
   ],
@@ -62,7 +62,7 @@
     {
       "id": "vassals-4145c5b34d",
       "name": "Ichigo Velvet",
-      "group": "PLebe",
+      "group": "Plebe",
       "service": "Empregada do Castelo",
       "description": "Chefe das empregadas e responsável pela organização e pelos cuidados do castelo real de Nazarik.",
       "image": "uploads/vassals-11e443d23696.png"
@@ -72,7 +72,7 @@
       "name": "Rosália Acantha",
       "group": "Plebe",
       "service": "Artesã",
-      "description": "Plebeia vinculada à familia em um relacionamento com Kastiel Velkaris",
+      "description": "Plebeia vinculada à família por seu relacionamento com Kastiel Velkaris.",
       "image": "uploads/vassals-35cf1b91126c.png"
     }
   ],

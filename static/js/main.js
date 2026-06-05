@@ -28,7 +28,7 @@ if (document.readyState === "complete") {
 }
 
 const cursor = document.querySelector("[data-cursor]");
-const finePointer = window.matchMedia("(pointer: fine)").matches;
+const finePointer = false;
 let syncCursorLayer = () => {};
 const cursorTargets = [
   "a",

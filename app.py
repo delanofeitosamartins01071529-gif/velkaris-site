@@ -134,7 +134,7 @@ app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
 app.secret_key = os.environ.get("SECRET_KEY", "velkaris-dev-secret-change-me")
 
-ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
+ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "adm")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "velkaris")
 LOGIN_ATTEMPTS: dict[str, list[float]] = {}
 MAX_LOGIN_ATTEMPTS = 6
@@ -833,7 +833,7 @@ def index():
         "index.html",
         members=members,
         house=house,
-        timeline_events=sorted(house["timeline"], key=timeline_sort_value),
+        timeline_events=sorted(house["timeline"], key=timeline_sort_value)[:8],
         featured_members=ancestor_members_for_house(members, house),
         portrait_members=members_in_tree_order(members, family_tree),
         family_tree=family_tree,

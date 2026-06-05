@@ -63,20 +63,12 @@
         {% if request.endpoint == 'admin' %}
           <a class="vault-link admin-access-link" href="{{ url_for('index') }}#inicio">Voltar ao site</a>
         {% elif admin_logged_in %}
-          <a class="vault-link admin-access-link vault-family-link" href="{{ url_for('admin') }}" aria-label="Abrir Cofre Familiar">
-            <span class="vault-symbol" aria-hidden="true">
-              <span class="vault-symbol-lock"></span>
-              <span class="vault-symbol-coins"><i></i><i></i><i></i></span>
-            </span>
-            <span>Cofre Familiar</span>
+          <a class="vault-link admin-access-link vault-family-link" href="{{ url_for('admin') }}" aria-label="Abrir Cofre">
+            <span class="vault-crown-icon" aria-hidden="true">&#9812;</span>
           </a>
         {% else %}
-          <a class="vault-link admin-access-link vault-family-link" href="{{ url_for('admin_login_alias') }}" aria-label="Abrir Cofre Familiar">
-            <span class="vault-symbol" aria-hidden="true">
-              <span class="vault-symbol-lock"></span>
-              <span class="vault-symbol-coins"><i></i><i></i><i></i></span>
-            </span>
-            <span>Cofre Familiar</span>
+          <a class="vault-link admin-access-link vault-family-link" href="{{ url_for('admin_login_alias') }}" aria-label="Abrir Cofre">
+            <span class="vault-crown-icon" aria-hidden="true">&#9812;</span>
           </a>
         {% endif %}
       </div>
@@ -89,7 +81,7 @@
           <p class="section-kicker">Áudio</p>
           <strong>Ambientação da Casa</strong>
         </div>
-        <button class="icon-button" type="button" data-audio-panel-close aria-label="Fechar painel de áudio">×</button>
+        <button class="icon-button" type="button" data-audio-panel-close aria-label="Fechar painel de áudio">&times;</button>
       </div>
       <div class="audio-panel-actions">
         <button class="audio-toggle" type="button" data-music-toggle>Ativar música</button>
@@ -103,12 +95,6 @@
         <input type="range" min="0" max="100" value="18" data-wind-volume>
       </label>
     </aside>
-
-    {% if request.endpoint != 'admin' %}
-      <a class="tree-jump-button" href="{{ url_for('index') }}#arvore" aria-label="Ir para a árvore genealógica">
-        <span aria-hidden="true">♔</span>
-      </a>
-    {% endif %}
 
     <div class="flash-stack" aria-live="polite">
       {% with messages = get_flashed_messages(with_categories=true) %}
@@ -128,8 +114,8 @@
       <div class="footer-sigil">
         <img src="{{ media_url(site_house.crest_image) }}" alt="">
       </div>
-      <p>© Casa {{ site_house.name }}. Todos os direitos reservados.</p>
-      <a href="{{ url_for('admin_login_alias') }}">Login Administrativo</a>
+      <p>&copy; Casa {{ site_house.name }}. Todos os direitos reservados.</p>
+      <a href="{{ url_for('admin_login_alias') }}">Cofre</a>
     </footer>
 
     <script src="{{ url_for('static', filename='js/audio-config.js', v=asset_version) }}"></script>

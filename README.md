@@ -37,13 +37,13 @@ O acesso administrativo fica em `/velkaris-admin`.
 
 Credenciais locais padrão:
 
-- Usuário: `admin`
+- Usuário: `adm`
 - Senha: `velkaris`
 
 Configure uma senha forte em produção:
 
 ```bash
-ADMIN_USERNAME=admin
+ADMIN_USERNAME=adm
 ADMIN_PASSWORD=sua_senha_forte
 SECRET_KEY=uma_chave_longa_e_secreta
 ```
