@@ -2,18 +2,22 @@ from __future__ import annotations
 
 import hmac
 import json
+import logging
 import mimetypes
 import os
 import re
+import secrets
 import time
 import unicodedata
 import urllib.error
 import urllib.request
 import uuid
+from datetime import timedelta
 from functools import wraps
 from io import BytesIO
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 from flask import (
     Flask,
@@ -28,6 +32,14 @@ from flask import (
     url_for,
 )
 from werkzeug.utils import secure_filename
+from werkzeug.middleware.proxy_fix import ProxyFix
+
+try:
+    from argon2 import PasswordHasher
+    from argon2.exceptions import VerifyMismatchError, VerificationError
+except ImportError:  # pragma: no cover - production installs argon2-cffi from requirements.
+    PasswordHasher = None
+    VerifyMismatchError = VerificationError = ValueError
 
 try:
     from PIL import Image, ImageOps, UnidentifiedImageError
@@ -52,7 +64,7 @@ SUPABASE_BUCKET = os.environ.get("SUPABASE_STORAGE_BUCKET", "velkaris-media")
 SUPABASE_ENABLED = bool(SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY)
 
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
-MEMBER_PORTRAIT_SIZE = (960, 1200)
+MEMBER_PORTRAIT_SIZE = (2160, 2700)
 GENERATION_OPTIONS = ["1ª Geração", "2ª Geração", "3ª Geração", "4ª Geração", "5ª Geração"]
 STATUS_OPTIONS = ["Vivo", "Morto", "Desaparecido"]
 PLACEHOLDERS = [
@@ -69,10 +81,11 @@ HOUSE_DEFAULTS = {
     "about_heading": "Juramentos escritos em ouro antigo",
     "members_heading": "Retratos da linhagem",
     "tree_heading": "Linhagem Velkaris",
-    "territories_heading": "Domínios juramentados",
+    "territories_heading": "Domínios",
     "archives_heading": "Registros recentes",
     "timeline_heading": "Crônicas do sangue antigo",
     "eras_heading": "Eras da Casa",
+    "newspapers_heading": "Gazeta da Casa",
     "gallery_heading": "Pinturas e banners",
     "crest_image": "assets/Velkaris.png",
     "hero_image": "assets/hero-castle.png",
@@ -84,6 +97,7 @@ HOUSE_DEFAULTS = {
     "aristocrats": [],
     "allies": [],
     "vassals": [],
+    "newspapers": [],
 }
 
 MAP_MARKER_TYPES = [
@@ -116,6 +130,7 @@ COLLECTION_FIELDS = {
     "archives": ("date", "title", "summary"),
     "timeline": ("date", "era", "title", "summary", "details"),
     "eras": ("name", "period", "description"),
+    "newspapers": ("title", "edition", "date", "description"),
     "gallery": ("title",),
     "leaders": ("name", "title", "period", "description"),
     "fortifications": ("name", "type", "responsible", "description"),
@@ -130,12 +145,29 @@ STRATEGIC_COLLECTIONS = {"leaders", "fortifications", "conflicts", "aristocrats"
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
 app.secret_key = os.environ.get("SECRET_KEY", "velkaris-dev-secret-change-me")
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE=os.environ.get("SESSION_COOKIE_SAMESITE", "Lax"),
+    SESSION_COOKIE_SECURE=os.environ.get("SESSION_COOKIE_SECURE", os.environ.get("FORCE_HTTPS", "0")) == "1",
+    PERMANENT_SESSION_LIFETIME=timedelta(seconds=int(os.environ.get("ADMIN_SESSION_SECONDS", "7200"))),
+)
+if os.environ.get("TRUST_PROXY_HEADERS") == "1":
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+logging.basicConfig(level=os.environ.get("LOG_LEVEL", "INFO"))
+if Image is not None:
+    Image.MAX_IMAGE_PIXELS = int(os.environ.get("MAX_IMAGE_PIXELS", "24000000"))
 
-ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
-ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "velkaris")
+ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "adm")
+DEFAULT_ADMIN_PASSWORD_HASH = "$argon2id$v=19$m=65536,t=3,p=4$irRP2gdsES31KAV/+UN4yw$PrCKkbbrBfMGVEy5iaEHBL6Ih6x1OcHsHJ6Bod4RlbQ"
+ADMIN_PASSWORD_HASH = os.environ.get("ADMIN_PASSWORD_HASH", DEFAULT_ADMIN_PASSWORD_HASH)
+LEGACY_ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD")
+ALLOW_PLAINTEXT_ADMIN_PASSWORD = os.environ.get("ALLOW_PLAINTEXT_ADMIN_PASSWORD") == "1"
+PASSWORD_HASHER = PasswordHasher() if PasswordHasher is not None else None
 LOGIN_ATTEMPTS: dict[str, list[float]] = {}
+RATE_LIMITS: dict[str, list[float]] = {}
 MAX_LOGIN_ATTEMPTS = 6
 LOGIN_WINDOW_SECONDS = 15 * 60
+CSRF_MAX_AGE_SECONDS = int(os.environ.get("CSRF_MAX_AGE_SECONDS", "7200"))
 
 
 def read_json(path: Path, fallback: Any) -> Any:
@@ -351,7 +383,7 @@ def ensure_collection_item(collection: str, item: Any, index: int) -> dict[str, 
         normalized["images"] = (
             [str(image) for image in images if image] if isinstance(images, list) else []
         )
-    if collection == "gallery":
+    if collection in {"gallery", "newspapers"}:
         normalized["image"] = item.get("image") or ["assets/gallery-castle.png", "assets/territory-map.png", "assets/gallery-fortress.png"][index % 3]
     if collection == "timeline":
         images = item.get("images", [])
@@ -393,41 +425,68 @@ def load_house() -> dict[str, Any]:
     return normalize_house(read_json(HOUSE_FILE, {}))
 
 
+def timeline_sort_value(item: dict[str, Any]) -> tuple[int, str]:
+    match = re.search(r"-?\d+", str(item.get("date", "")))
+    return (int(match.group()) if match else 0, str(item.get("title", "")))
+
+
 def allowed_file(filename: str) -> bool:
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
 def process_upload(file_storage, extension: str, prefix: str) -> tuple[bytes, str, str]:
+    if Image is None or ImageOps is None:
+        raise ValueError("Biblioteca de imagem indisponível.")
+
     file_storage.stream.seek(0)
     raw_body = file_storage.stream.read()
-    fallback_type = file_storage.mimetype or mimetypes.guess_type(f"upload.{extension}")[0] or "application/octet-stream"
-
-    if prefix != "member" or Image is None or ImageOps is None:
-        return raw_body, extension, fallback_type
+    if not raw_body:
+        raise ValueError("Arquivo vazio.")
 
     try:
+        probe = Image.open(BytesIO(raw_body))
+        probe.verify()
         image = Image.open(BytesIO(raw_body))
         image = ImageOps.exif_transpose(image)
+        image_format = (image.format or "").upper()
+        if image_format not in {"PNG", "JPEG", "WEBP"}:
+            raise ValueError("Formato de imagem não permitido.")
         resampling = getattr(Image, "Resampling", None)
         resample = resampling.LANCZOS if resampling else getattr(Image, "LANCZOS", 1)
-        image = ImageOps.fit(
-            image,
-            MEMBER_PORTRAIT_SIZE,
-            method=resample,
-            centering=(0.5, 0.36),
-        )
+
+        if prefix == "member":
+            image = ImageOps.fit(
+                image,
+                MEMBER_PORTRAIT_SIZE,
+                method=resample,
+                centering=(0.5, 0.36),
+            )
+            output_format = "WEBP"
+            extension = "webp"
+            content_type = "image/webp"
+        else:
+            image.thumbnail((4096, 4096), resample)
+            output_format = "PNG" if image.mode in {"RGBA", "LA"} and image_format == "PNG" else image_format
+            extension = {"JPEG": "jpg", "PNG": "png", "WEBP": "webp"}[output_format]
+            content_type = mimetypes.guess_type(f"upload.{extension}")[0] or "application/octet-stream"
+
         if image.mode == "RGBA":
-            background = Image.new("RGB", image.size, (7, 8, 12))
-            background.paste(image, mask=image.getchannel("A"))
-            image = background
+            if output_format in {"JPEG", "WEBP"}:
+                background = Image.new("RGB", image.size, (7, 8, 12))
+                background.paste(image, mask=image.getchannel("A"))
+                image = background
         elif image.mode != "RGB":
-            image = image.convert("RGB")
+            if output_format in {"JPEG", "WEBP"}:
+                image = image.convert("RGB")
 
         output = BytesIO()
-        image.save(output, format="WEBP", quality=88, method=6)
-        return output.getvalue(), "webp", "image/webp"
-    except (UnidentifiedImageError, OSError, ValueError):
-        return raw_body, extension, fallback_type
+        save_kwargs = {"quality": 96} if output_format in {"JPEG", "WEBP"} else {}
+        if output_format == "WEBP":
+            save_kwargs["method"] = 6
+        image.save(output, format=output_format, **save_kwargs)
+        return output.getvalue(), extension, content_type
+    except (UnidentifiedImageError, OSError, ValueError) as exc:
+        raise ValueError("Imagem inválida ou corrompida.") from exc
 
 
 def save_supabase_upload(body: bytes, filename: str, content_type: str) -> str | None:
@@ -451,12 +510,18 @@ def save_upload(file_storage, prefix: str) -> str | None:
     if not file_storage or not file_storage.filename:
         return None
     if not allowed_file(file_storage.filename):
+        app.logger.warning("Upload bloqueado por extensão inválida: %s", secure_filename(file_storage.filename))
         flash("Formato inválido. Use PNG, JPG, JPEG ou WEBP.", "error")
         return None
 
     original = secure_filename(file_storage.filename)
     extension = original.rsplit(".", 1)[1].lower()
-    body, extension, content_type = process_upload(file_storage, extension, prefix)
+    try:
+        body, extension, content_type = process_upload(file_storage, extension, prefix)
+    except ValueError:
+        app.logger.warning("Upload bloqueado por conteúdo inválido: %s", original)
+        flash("Arquivo inválido. Envie uma imagem PNG, JPG, JPEG ou WEBP válida.", "error")
+        return None
     filename = f"{prefix}-{uuid.uuid4().hex[:12]}.{extension}"
     supabase_url = save_supabase_upload(body, filename, content_type)
     if supabase_url:
@@ -480,6 +545,12 @@ def admin_required(view):
     @wraps(view)
     def wrapped(*args, **kwargs):
         if not session.get("is_admin"):
+            app.logger.warning("Acesso administrativo negado para %s em %s", request.remote_addr, request.path)
+            return redirect(url_for("admin_login_alias", next=request.full_path))
+        login_at = float(session.get("admin_login_at", 0) or 0)
+        if not login_at or time.time() - login_at > app.permanent_session_lifetime.total_seconds():
+            session.clear()
+            flash("Sessão expirada. Entre novamente.", "error")
             return redirect(url_for("admin_login_alias", next=request.full_path))
         return view(*args, **kwargs)
 
@@ -489,21 +560,27 @@ def admin_required(view):
 def csrf_token() -> str:
     token = session.get("csrf_token")
     if not token:
-        token = uuid.uuid4().hex
+        token = secrets.token_urlsafe(32)
         session["csrf_token"] = token
+        session["csrf_token_issued_at"] = time.time()
     return token
 
 
 def validate_csrf() -> None:
     posted = request.form.get("csrf_token", "")
     stored = session.get("csrf_token", "")
-    if not posted or not stored or not hmac.compare_digest(posted, stored):
+    issued_at = float(session.get("csrf_token_issued_at", 0) or 0)
+    expired = not issued_at or time.time() - issued_at > CSRF_MAX_AGE_SECONDS
+    if not posted or not stored or expired or not hmac.compare_digest(posted, stored):
+        app.logger.warning("CSRF inválido em %s de %s", request.path, request.remote_addr)
         abort(400, description="Token de segurança inválido.")
 
 
 def login_key() -> str:
-    forwarded = request.headers.get("X-Forwarded-For", "")
-    return (forwarded.split(",", 1)[0].strip() or request.remote_addr or "local")[:80]
+    if os.environ.get("TRUST_PROXY_HEADERS") == "1":
+        forwarded = request.headers.get("X-Forwarded-For", "")
+        return (forwarded.split(",", 1)[0].strip() or request.remote_addr or "local")[:80]
+    return (request.remote_addr or "local")[:80]
 
 
 def login_blocked(key: str) -> bool:
@@ -515,6 +592,41 @@ def login_blocked(key: str) -> bool:
 
 def record_failed_login(key: str) -> None:
     LOGIN_ATTEMPTS.setdefault(key, []).append(time.time())
+
+
+def verify_admin_password(password: str) -> bool:
+    if ADMIN_PASSWORD_HASH and PASSWORD_HASHER is not None:
+        try:
+            return PASSWORD_HASHER.verify(ADMIN_PASSWORD_HASH, password)
+        except (VerifyMismatchError, VerificationError, ValueError):
+            return False
+    if ALLOW_PLAINTEXT_ADMIN_PASSWORD and LEGACY_ADMIN_PASSWORD:
+        app.logger.warning("ADMIN_PASSWORD em texto puro está habilitado; use ADMIN_PASSWORD_HASH em produção.")
+        return hmac.compare_digest(password, LEGACY_ADMIN_PASSWORD)
+    app.logger.error("Argon2 indisponível ou ADMIN_PASSWORD_HASH ausente; login administrativo bloqueado.")
+    return False
+
+
+def safe_next_url(target: str | None) -> str | None:
+    if not target:
+        return None
+    parts = urlsplit(target)
+    if parts.scheme or parts.netloc:
+        return None
+    if not target.startswith("/"):
+        return None
+    return target
+
+
+def rate_limited(bucket: str, key: str, limit: int, window_seconds: int) -> bool:
+    now = time.time()
+    rate_key = f"{bucket}:{key}"
+    attempts = [stamp for stamp in RATE_LIMITS.get(rate_key, []) if now - stamp < window_seconds]
+    blocked = len(attempts) >= limit
+    if not blocked:
+        attempts.append(now)
+    RATE_LIMITS[rate_key] = attempts
+    return blocked
 
 
 def valid_partner_id(member: dict[str, Any], by_id: dict[str, dict[str, Any]]) -> str:
@@ -807,6 +919,8 @@ def inject_globals() -> dict[str, Any]:
 
 @app.get("/uploads/<path:filename>")
 def uploaded_file(filename: str):
+    if not allowed_file(filename):
+        abort(404)
     for directory in dict.fromkeys((UPLOAD_DIR, BUNDLED_UPLOAD_DIR)):
         root = directory.resolve()
         candidate = (root / filename).resolve()
@@ -825,6 +939,7 @@ def index():
         "index.html",
         members=members,
         house=house,
+        timeline_events=sorted(house["timeline"], key=timeline_sort_value)[:8],
         featured_members=ancestor_members_for_house(members, house),
         portrait_members=members_in_tree_order(members, family_tree),
         family_tree=family_tree,
@@ -859,6 +974,9 @@ def member_detail(slug: str):
 
 @app.get("/api/members")
 def members_api():
+    if rate_limited("api-members", login_key(), 120, 60):
+        app.logger.warning("Rate limit em /api/members para %s", login_key())
+        return {"error": "Muitas requisições. Tente novamente em instantes."}, 429
     return jsonify(load_members())
 
 
@@ -868,16 +986,23 @@ def admin_login():
         validate_csrf()
         key = login_key()
         if login_blocked(key):
+            app.logger.warning("Login bloqueado por força bruta para %s", key)
             flash("Muitas tentativas. Aguarde alguns minutos antes de tentar novamente.", "error")
             return render_template("admin_login.html"), 429
         username_ok = hmac.compare_digest(request.form.get("username", ""), ADMIN_USERNAME)
-        password_ok = hmac.compare_digest(request.form.get("password", ""), ADMIN_PASSWORD)
+        password_ok = verify_admin_password(request.form.get("password", ""))
         if username_ok and password_ok:
             LOGIN_ATTEMPTS.pop(key, None)
+            session.clear()
+            session.permanent = True
             session["is_admin"] = True
+            session["admin_login_at"] = time.time()
+            csrf_token()
+            app.logger.info("Login administrativo bem-sucedido para %s", key)
             flash("Acesso concedido ao arquivo interno.", "success")
-            return redirect(request.args.get("next") or url_for("admin", audio=request.args.get("audio")))
+            return redirect(safe_next_url(request.args.get("next")) or url_for("admin", audio=request.args.get("audio")))
         record_failed_login(key)
+        app.logger.warning("Falha de login administrativo para usuário '%s' em %s", request.form.get("username", ""), key)
         flash("Credenciais inválidas.", "error")
     return render_template("admin_login.html")
 
@@ -949,6 +1074,7 @@ def update_house_identity():
         "archives_heading",
         "timeline_heading",
         "eras_heading",
+        "newspapers_heading",
         "gallery_heading",
     ):
         house[field] = request.form.get(field, "").strip()
@@ -1001,6 +1127,11 @@ def create_collection_item(collection: str):
         ]
     if collection == "gallery":
         item["image"] = save_upload(request.files.get("image"), "gallery") or "assets/gallery-castle.png"
+    if collection == "newspapers":
+        item["image"] = save_upload(request.files.get("image"), "newspaper")
+        if not item["image"]:
+            flash("Envie uma imagem para publicar o jornal.", "error")
+            return redirect(url_for("admin", _anchor="newspapers"))
     if collection == "timeline":
         item["images"] = [
             saved
@@ -1040,6 +1171,10 @@ def update_collection_item(collection: str, entry_id: str):
         )
     if collection == "gallery":
         uploaded = save_upload(request.files.get("image"), "gallery")
+        if uploaded:
+            item["image"] = uploaded
+    if collection == "newspapers":
+        uploaded = save_upload(request.files.get("image"), "newspaper")
         if uploaded:
             item["image"] = uploaded
     if collection == "timeline":
@@ -1373,7 +1508,16 @@ def publish_site():
 
 @app.get("/healthz")
 def healthz():
-    return {"status": "ok", "house": load_house().get("name", "Velkaris")}
+    return {"status": "ok"}
+
+
+@app.before_request
+def enforce_https():
+    if request.endpoint == "healthz":
+        return None
+    if os.environ.get("FORCE_HTTPS") == "1" and not request.is_secure:
+        return redirect(request.url.replace("http://", "https://", 1), code=308)
+    return None
 
 
 @app.after_request
@@ -1381,6 +1525,24 @@ def add_security_headers(response):
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
     response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
     response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()")
+    response.headers.setdefault(
+        "Content-Security-Policy",
+        "default-src 'self'; "
+        "base-uri 'self'; "
+        "object-src 'none'; "
+        "frame-ancestors 'self'; "
+        "img-src 'self' data: blob: https:; "
+        "media-src 'self'; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "script-src 'self'; "
+        "connect-src 'self'",
+    )
+    if request.path.startswith("/admin") or request.path.startswith("/velkaris-admin"):
+        response.headers.setdefault("Cache-Control", "no-store")
+    if request.is_secure or os.environ.get("FORCE_HTTPS") == "1":
+        response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
     return response
 
 

@@ -37,15 +37,24 @@ O acesso administrativo fica em `/velkaris-admin`.
 
 Credenciais locais padrão:
 
-- Usuário: `admin`
+- Usuário: `adm`
 - Senha: `velkaris`
 
 Configure uma senha forte em produção:
 
 ```bash
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=sua_senha_forte
+ADMIN_USERNAME=adm
+ADMIN_PASSWORD_HASH=hash_argon2_da_senha
 SECRET_KEY=uma_chave_longa_e_secreta
+FORCE_HTTPS=1
+SESSION_COOKIE_SECURE=1
+TRUST_PROXY_HEADERS=1
+```
+
+Gere o hash com Argon2:
+
+```bash
+python -c "from argon2 import PasswordHasher; print(PasswordHasher().hash('sua_senha_forte'))"
 ```
 
 O painel permite editar:

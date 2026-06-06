@@ -4,7 +4,8 @@ root.classList.add("js");
 const loader = document.querySelector("[data-loader]");
 const pageTransition = document.querySelector("[data-page-transition]");
 let transitionTimer = 0;
-const playPageTransition = (duration = 760) => {
+const MODAL_MOTION_MS = 640;
+const playPageTransition = (duration = MODAL_MOTION_MS) => {
   if (!pageTransition || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   window.clearTimeout(transitionTimer);
   pageTransition.classList.remove("is-active");
@@ -27,7 +28,7 @@ if (document.readyState === "complete") {
 }
 
 const cursor = document.querySelector("[data-cursor]");
-const finePointer = window.matchMedia("(pointer: fine)").matches;
+const finePointer = false;
 let syncCursorLayer = () => {};
 const cursorTargets = [
   "a",
@@ -42,6 +43,7 @@ const cursorTargets = [
   "[data-territory-target]",
   ".member-card",
   ".mini-card",
+  ".newspaper-grid figure",
   ".gallery-grid figure",
 ].join(",");
 
@@ -103,7 +105,7 @@ const openDialogWithMotion = (dialog) => {
   dialog.classList.remove("is-opening");
   dialog.offsetHeight;
   dialog.classList.add("is-opening");
-  window.setTimeout(() => dialog.classList.remove("is-opening"), 520);
+  window.setTimeout(() => dialog.classList.remove("is-opening"), MODAL_MOTION_MS);
   document.body.classList.add("modal-open");
   requestAnimationFrame(syncCursorLayer);
 };
@@ -118,7 +120,7 @@ const closeDialogWithMotion = (dialog) => {
     dialog.classList.remove("is-closing");
     document.body.classList.remove("modal-open");
     requestAnimationFrame(syncCursorLayer);
-  }, 240);
+  }, MODAL_MOTION_MS);
 };
 
 window.VelkarisModalMotion = { open: openDialogWithMotion, close: closeDialogWithMotion };
@@ -276,6 +278,195 @@ galleryModal?.addEventListener("click", (event) => {
 });
 galleryModal?.addEventListener("close", () => document.body.classList.remove("modal-open"));
 
+const newspaperModal = document.querySelector("[data-newspaper-modal]");
+const newspaperImage = newspaperModal?.querySelector("[data-newspaper-modal-image]");
+const newspaperReader = newspaperModal?.querySelector("[data-newspaper-reader]");
+const newspaperZoomLabel = newspaperModal?.querySelector("[data-newspaper-zoom-reset]");
+let newspaperZoom = 1;
+
+const setNewspaperZoom = (zoom, originX, originY) => {
+  const oldZoom = newspaperZoom;
+  const nextZoom = Math.min(3, Math.max(0.6, zoom));
+  const readerX = originX ?? (newspaperReader?.clientWidth || 0) / 2;
+  const readerY = originY ?? (newspaperReader?.clientHeight || 0) / 2;
+  const worldX = ((newspaperReader?.scrollLeft || 0) + readerX) / oldZoom;
+  const worldY = ((newspaperReader?.scrollTop || 0) + readerY) / oldZoom;
+  newspaperZoom = nextZoom;
+  if (newspaperImage) newspaperImage.style.width = `${newspaperZoom * 100}%`;
+  if (newspaperZoomLabel) newspaperZoomLabel.textContent = `${Math.round(newspaperZoom * 100)}%`;
+  if (newspaperReader) {
+    newspaperReader.scrollLeft = worldX * newspaperZoom - readerX;
+    newspaperReader.scrollTop = worldY * newspaperZoom - readerY;
+  }
+};
+const resetNewspaperView = () => {
+  setNewspaperZoom(1);
+  if (!newspaperReader) return;
+  newspaperReader.scrollTop = 0;
+  newspaperReader.scrollLeft = 0;
+};
+const closeNewspaperModal = () => closeDialogWithMotion(newspaperModal);
+const openNewspaperModal = (figure) => {
+  if (!newspaperModal || !newspaperImage || !figure) return;
+  const source = figure.querySelector("img");
+  if (!source) return;
+  newspaperImage.src = source.src;
+  newspaperImage.alt = source.alt;
+  newspaperModal.querySelector("[data-newspaper-modal-title]").textContent = figure.dataset.title || source.alt;
+  newspaperModal.querySelector("[data-newspaper-modal-meta]").textContent = figure.dataset.meta || "";
+  newspaperModal.querySelector("[data-newspaper-modal-description]").textContent = figure.dataset.description || "";
+  resetNewspaperView();
+  openDialogWithMotion(newspaperModal);
+  window.VelkarisAudio?.playPanelOpen?.();
+};
+document.querySelectorAll("[data-newspaper-open]").forEach((figure) => {
+  figure.addEventListener("click", () => openNewspaperModal(figure));
+  figure.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    openNewspaperModal(figure);
+  });
+});
+document.querySelector("[data-newspaper-close]")?.addEventListener("click", closeNewspaperModal);
+document.querySelector("[data-newspaper-zoom-out]")?.addEventListener("click", () => setNewspaperZoom(newspaperZoom - 0.2));
+document.querySelector("[data-newspaper-zoom-reset]")?.addEventListener("click", resetNewspaperView);
+document.querySelector("[data-newspaper-zoom-in]")?.addEventListener("click", () => setNewspaperZoom(newspaperZoom + 0.2));
+if (newspaperReader) {
+  let isPanningNewspaper = false;
+  let newspaperPointerX = 0;
+  let newspaperPointerY = 0;
+  let newspaperScrollLeft = 0;
+  let newspaperScrollTop = 0;
+
+  newspaperReader.addEventListener("pointerdown", (event) => {
+    if (event.button !== 0) return;
+    isPanningNewspaper = true;
+    newspaperPointerX = event.clientX;
+    newspaperPointerY = event.clientY;
+    newspaperScrollLeft = newspaperReader.scrollLeft;
+    newspaperScrollTop = newspaperReader.scrollTop;
+    newspaperReader.classList.add("is-panning");
+    newspaperReader.setPointerCapture?.(event.pointerId);
+  });
+
+  newspaperReader.addEventListener("pointermove", (event) => {
+    if (!isPanningNewspaper) return;
+    event.preventDefault();
+    newspaperReader.scrollLeft = newspaperScrollLeft - (event.clientX - newspaperPointerX);
+    newspaperReader.scrollTop = newspaperScrollTop - (event.clientY - newspaperPointerY);
+  });
+
+  const stopNewspaperPanning = (event) => {
+    if (!isPanningNewspaper) return;
+    isPanningNewspaper = false;
+    newspaperReader.classList.remove("is-panning");
+    newspaperReader.releasePointerCapture?.(event.pointerId);
+  };
+  newspaperReader.addEventListener("pointerup", stopNewspaperPanning);
+  newspaperReader.addEventListener("pointercancel", stopNewspaperPanning);
+}
+newspaperModal?.addEventListener("click", (event) => {
+  if (event.target === newspaperModal) closeNewspaperModal();
+});
+newspaperModal?.addEventListener("close", () => {
+  document.body.classList.remove("modal-open");
+  resetNewspaperView();
+});
+
+const timelineSection = document.querySelector("[data-timeline-section]");
+const timelineRecords = document.querySelector("[data-timeline-records]");
+const timelineOverview = document.querySelector("[data-timeline-overview]");
+const timelineToggle = document.querySelector("[data-timeline-toggle]");
+const timelineToggleLabel = document.querySelector("[data-timeline-toggle-label]");
+let isTimelineExpanded = false;
+let timelineAnimation = null;
+let timelineItemAnimations = [];
+
+const clearTimelineAnimationStyles = () => {
+  if (!timelineRecords) return;
+  timelineRecords.style.height = "";
+  timelineRecords.style.opacity = "";
+  timelineRecords.style.transform = "";
+  timelineRecords.style.overflow = "";
+  timelineItemAnimations.forEach((animation) => animation.cancel());
+  timelineItemAnimations = [];
+};
+
+const setTimelineExpanded = (expanded, animate = true) => {
+  if (!timelineSection || !timelineRecords || !timelineOverview || !timelineToggle) return;
+  if (timelineAnimation) timelineAnimation.cancel();
+  timelineItemAnimations.forEach((animation) => animation.cancel());
+  timelineItemAnimations = [];
+  isTimelineExpanded = expanded;
+  if (expanded) window.VelkarisAudio?.playPanelOpen?.();
+  timelineToggle.setAttribute("aria-expanded", String(expanded));
+  if (timelineToggleLabel) timelineToggleLabel.textContent = expanded ? "Recolher crônicas" : "Expandir crônicas";
+  timelineSection.classList.toggle("is-expanded", expanded);
+  timelineSection.classList.toggle("is-collapsed", !expanded);
+
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (expanded) timelineRecords.hidden = false;
+  if (!animate || reduceMotion || typeof timelineRecords.animate !== "function") {
+    timelineRecords.hidden = !expanded;
+    clearTimelineAnimationStyles();
+    return;
+  }
+
+  const items = [...timelineRecords.querySelectorAll(".timeline-item")];
+  const totalDuration = MODAL_MOTION_MS;
+  const itemDuration = Math.min(920, Math.max(520, totalDuration * 0.46));
+  const itemDelay = items.length > 1 ? Math.max(28, (totalDuration - itemDuration) / (items.length - 1)) : 0;
+  timelineSection.classList.remove("is-transitioning");
+  timelineSection.offsetHeight;
+  timelineSection.classList.add("is-transitioning");
+
+  const animation = timelineRecords.animate(
+    [
+      { opacity: expanded ? 0.7 : 1 },
+      { opacity: expanded ? 1 : 0.7 },
+    ],
+    {
+      duration: totalDuration,
+      easing: "ease",
+      fill: "forwards",
+    }
+  );
+  timelineItemAnimations = items.map((item, index) => {
+    const sequenceIndex = expanded ? index : items.length - index - 1;
+    return item.animate(
+      expanded
+        ? [
+            { opacity: 0, transform: "translateY(-34px)", filter: "brightness(1.32) blur(2px)" },
+            { opacity: 1, transform: "translateY(0)", filter: "brightness(1) blur(0)" },
+          ]
+        : [
+            { opacity: 1, transform: "translateY(0)", filter: "brightness(1) blur(0)" },
+            { opacity: 0, transform: "translateY(-30px)", filter: "brightness(1.28) blur(2px)" },
+          ],
+      {
+        duration: itemDuration,
+        delay: sequenceIndex * itemDelay,
+        easing: "cubic-bezier(0.16, 1, 0.3, 1)",
+        fill: "both",
+      }
+    );
+  });
+  timelineAnimation = animation;
+  animation.onfinish = () => {
+    if (timelineAnimation !== animation) return;
+    timelineRecords.hidden = !expanded;
+    animation.cancel();
+    timelineAnimation = null;
+    clearTimelineAnimationStyles();
+    window.setTimeout(() => timelineSection.classList.remove("is-transitioning"), 220);
+  };
+  animation.oncancel = () => {
+    if (timelineAnimation === animation) timelineAnimation = null;
+  };
+};
+
+timelineToggle?.addEventListener("click", () => setTimelineExpanded(!isTimelineExpanded));
+
 const openTimelineModal = (id) => {
   const escapedId = typeof CSS !== "undefined" && CSS.escape ? CSS.escape(id) : id;
   const modal = document.querySelector(`[data-timeline-modal="${escapedId}"]`);
@@ -305,8 +496,8 @@ const strategicModal = document.querySelector("[data-strategic-modal]");
 const strategicPanels = [...document.querySelectorAll("[data-strategic-panel]")];
 const strategicTabs = [...document.querySelectorAll("[data-strategic-tab]")];
 const strategicSections = {
-  leaders: ["Arquivo de comando", "Hierarquia familiar", "A sucessão de lideranças que conduziram a Casa."],
-  fortifications: ["Defesas juramentadas", "Construções militares", "Fortalezas, postos de vigia e seus responsáveis."],
+  leaders: ["Arquivo de comando", "Lideranças da Família", "A sucessão de lideranças que conduziram a Casa."],
+  fortifications: ["Defesas juramentadas", "Edificações", "Fortalezas, postos de vigia e seus responsáveis."],
   conflicts: ["Memória de batalha", "Confrontos", "Campanhas, cercos e disputas enfrentadas pela família."],
   aristocrats: ["Círculo da corte", "Aristocratas", "Membros da linhagem presentes nos salões de poder."],
   allies: ["Pactos e favores", "Aliados da Casa", "Apoios diretos e indiretos que sustentam o legado."],
@@ -325,12 +516,12 @@ const setStrategicPanel = (key, animate = false) => {
     tab.classList.toggle("is-active", isActive);
     tab.setAttribute("aria-selected", String(isActive));
   });
-  const kicker = strategicModal?.querySelector("[data-strategic-kicker]");
   const title = strategicModal?.querySelector("[data-strategic-title]");
   const description = strategicModal?.querySelector("[data-strategic-description]");
-  if (kicker) kicker.textContent = section[0];
   if (title) title.textContent = section[1];
   if (description) description.textContent = section[2];
+  const shell = strategicModal?.querySelector(".strategic-modal-shell");
+  if (shell) shell.scrollTop = 0;
   if (animate) {
     window.VelkarisAudio?.playPanelOpen?.();
   }
@@ -360,6 +551,39 @@ strategicModal?.addEventListener("click", (event) => {
   if (event.target === strategicModal) closeStrategicModal();
 });
 strategicModal?.addEventListener("close", () => document.body.classList.remove("modal-open"));
+
+const strategicEntryModal = document.querySelector("[data-strategic-entry-modal]");
+const closeStrategicEntryModal = () => closeDialogWithMotion(strategicEntryModal);
+const openStrategicEntryModal = (entry) => {
+  if (!strategicEntryModal || !entry) return;
+  const portrait = strategicEntryModal.querySelector("[data-strategic-entry-modal-portrait]");
+  const image = strategicEntryModal.querySelector("[data-strategic-entry-modal-image]");
+  const imageUrl = entry.dataset.image || "";
+  image.src = imageUrl;
+  image.alt = imageUrl ? `Imagem de ${entry.dataset.name || "registro"}` : "";
+  portrait.hidden = !imageUrl;
+  strategicEntryModal.querySelector("[data-strategic-entry-modal-kicker]").textContent = entry.dataset.kicker || "Registro reservado";
+  strategicEntryModal.querySelector("[data-strategic-entry-modal-name]").textContent = entry.dataset.name || "";
+  strategicEntryModal.querySelector("[data-strategic-entry-modal-highlight]").textContent = entry.dataset.highlight || "";
+  strategicEntryModal.querySelector("[data-strategic-entry-modal-description]").textContent = entry.dataset.description || "";
+  openDialogWithMotion(strategicEntryModal);
+  window.VelkarisAudio?.playPanelOpen?.();
+};
+document.querySelectorAll("[data-strategic-entry-open]").forEach((entry) => {
+  entry.addEventListener("click", () => openStrategicEntryModal(entry));
+  entry.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    openStrategicEntryModal(entry);
+  });
+});
+document.querySelector("[data-strategic-entry-close]")?.addEventListener("click", closeStrategicEntryModal);
+strategicEntryModal?.addEventListener("click", (event) => {
+  if (event.target === strategicEntryModal) closeStrategicEntryModal();
+});
+strategicEntryModal?.addEventListener("close", () => {
+  document.body.classList.toggle("modal-open", Boolean(strategicModal?.open));
+});
 
 document.querySelectorAll(".member-card, .mini-card").forEach((card) => {
   card.addEventListener("pointermove", (event) => {
@@ -402,7 +626,7 @@ const familyTreeLines = document.querySelector("[data-family-lines]");
 const familyTreeDataElement = document.querySelector("#family-tree-data");
 const TREE_VIEW_KEY = "velkaris.familyTree.view.v4";
 const TREE_MIN_SCALE = 0.24;
-const TREE_MAX_SCALE = 1.32;
+const TREE_MAX_SCALE = 2.5;
 const TREE_NODE_WIDTH = 142;
 const TREE_NODE_HEIGHT = 174;
 const TREE_MEMBER_GAP = 24;
@@ -638,7 +862,7 @@ const applyFamilyTreeTransform = () => {
     : clamp(familyTreeView.y, viewport.height - scaledHeight - slack, slack);
   familyTreeStage.style.width = `${familyTreeSize.width}px`;
   familyTreeStage.style.height = `${familyTreeSize.height}px`;
-  familyTreeStage.style.transform = `translate3d(${familyTreeView.x}px, ${familyTreeView.y}px, 0) scale(${familyTreeView.scale})`;
+  familyTreeStage.style.transform = `translate(${Math.round(familyTreeView.x)}px, ${Math.round(familyTreeView.y)}px) scale(${familyTreeView.scale})`;
   const label = document.querySelector("[data-tree-zoom-reset]");
   if (label) label.textContent = `${Math.round(familyTreeView.scale * 100)}%`;
 };

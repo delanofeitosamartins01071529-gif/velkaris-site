@@ -13,6 +13,12 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: ADMIN_USERNAME
-        value: admin
-      - key: ADMIN_PASSWORD
-        value: velkaris-ascende
+        value: adm
+      - key: ADMIN_PASSWORD_HASH
+        value: "$argon2id$v=19$m=65536,t=3,p=4$irRP2gdsES31KAV/+UN4yw$PrCKkbbrBfMGVEy5iaEHBL6Ih6x1OcHsHJ6Bod4RlbQ"
+      - key: FORCE_HTTPS
+        value: "1"
+      - key: SESSION_COOKIE_SECURE
+        value: "1"
+      - key: TRUST_PROXY_HEADERS
+        value: "1"

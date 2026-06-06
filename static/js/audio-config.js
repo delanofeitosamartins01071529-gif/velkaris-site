@@ -5,7 +5,7 @@ window.VelkarisAudioConfig = {
   defaults: {
     musicEnabled: true,
     effectsEnabled: true,
-    musicVolume: 0.32,
+    musicVolume: 0.3,
     windVolume: 0.18,
   },
   hoverCooldownMs: 0,

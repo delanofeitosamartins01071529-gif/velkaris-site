@@ -3,7 +3,6 @@
   const defaults = config.defaults || {};
   const storageKey = config.storageKey || "velkaris.audio.preferences.v1";
   const playbackStorageKey = `${storageKey}.playback`;
-  const silentNavigation = new URLSearchParams(window.location.search).get("audio") === "silent";
   const clamp = (value, min = 0, max = 1) => Math.min(max, Math.max(min, Number(value) || 0));
   const state = {
     musicEnabled: false,
@@ -18,9 +17,9 @@
   } catch (error) {
     // Preferences are optional.
   }
-  state.musicVolume = clamp(state.musicVolume);
+  state.musicEnabled = true;
+  state.musicVolume = 0.3;
   state.windVolume = clamp(state.windVolume ?? state.effectsVolume ?? 0.18);
-  if (silentNavigation) state.musicEnabled = false;
 
   let audioContext;
   let musicGain;
@@ -446,6 +445,7 @@
     await player.play().catch(() => {});
   };
   const playPanelOpen = () => playWindWhisper();
+  const PANEL_MOTION_MS = 640;
 
   panelToggle?.addEventListener("click", () => {
     if (!panel) return;
@@ -454,7 +454,7 @@
       panel.hidden = false;
       panel.classList.remove("is-closing");
       panel.classList.add("is-opening");
-      window.setTimeout(() => panel.classList.remove("is-opening"), 360);
+      window.setTimeout(() => panel.classList.remove("is-opening"), PANEL_MOTION_MS);
       playPanelOpen();
     } else {
       panel.classList.remove("is-opening");
@@ -463,7 +463,7 @@
         panel.hidden = true;
         panel.classList.remove("is-closing");
         updateUi();
-      }, 220);
+      }, PANEL_MOTION_MS);
     }
     updateUi();
   });
@@ -474,7 +474,7 @@
       panel.hidden = true;
       panel.classList.remove("is-closing");
       updateUi();
-    }, 220);
+    }, PANEL_MOTION_MS);
   });
   musicToggle?.addEventListener("click", async () => {
     if (state.musicEnabled) {

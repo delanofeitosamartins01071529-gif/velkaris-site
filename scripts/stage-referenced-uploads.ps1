@@ -7,7 +7,7 @@ $house = Get-Content (Join-Path $repo "data\house.json") -Raw | ConvertFrom-Json
 $references = @($members | ForEach-Object { $_.image })
 $references += @($house.crest_image, $house.hero_image, $house.territory_map)
 
-foreach ($collection in @("territories", "timeline", "gallery", "leaders", "fortifications", "conflicts", "aristocrats", "allies", "vassals")) {
+foreach ($collection in @("territories", "timeline", "newspapers", "gallery", "leaders", "fortifications", "conflicts", "aristocrats", "allies", "vassals")) {
   foreach ($item in @($house.$collection)) {
     $references += $item.image
     $references += @($item.images)

@@ -34,6 +34,12 @@ Nao sobrescrever, recriar ou normalizar manualmente estes arquivos sem uma solic
 - `static/js/admin-bulk-members.js`: busca e salvamento em lote dos cards.
 - `static/js/admin-bulk-timeline.js`: salvamento em lote das cronicas.
 
+## Jornais
+
+- `house.newspapers`: edicoes publicadas com titulo, edicao, data, descricao e imagem.
+- `templates/index.html`: miniaturas publicas e leitor expansivel com zoom.
+- `templates/admin.html`: cadastro, edicao e exclusao das edicoes.
+
 ## Convencoes
 
 - Novos comportamentos visuais de pagina devem ir para `static/js/site-ui.js`.
