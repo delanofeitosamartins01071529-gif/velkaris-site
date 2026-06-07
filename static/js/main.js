@@ -278,25 +278,96 @@ galleryModal?.addEventListener("click", (event) => {
 });
 galleryModal?.addEventListener("close", () => document.body.classList.remove("modal-open"));
 
+const gallerySection = document.querySelector("[data-gallery-section]");
+const galleryRecords = document.querySelector("[data-gallery-records]");
+const galleryToggle = document.querySelector("[data-gallery-toggle]");
+const galleryToggleLabel = document.querySelector("[data-gallery-toggle-label]");
+let isGalleryExpanded = false;
+let galleryAnimation = null;
+
+const clearGalleryAnimationStyles = () => {
+  if (!galleryRecords) return;
+  galleryRecords.style.height = "";
+  galleryRecords.style.opacity = "";
+  galleryRecords.style.transform = "";
+  galleryRecords.style.overflow = "";
+};
+
+const setGalleryExpanded = (expanded, animate = true) => {
+  if (!gallerySection || !galleryRecords || !galleryToggle) return;
+  if (galleryAnimation) galleryAnimation.cancel();
+  isGalleryExpanded = expanded;
+  if (expanded) window.VelkarisAudio?.playPanelOpen?.();
+  galleryToggle.setAttribute("aria-expanded", String(expanded));
+  if (galleryToggleLabel) galleryToggleLabel.textContent = expanded ? "Recolher galeria" : "Expandir galeria";
+  gallerySection.classList.toggle("is-expanded", expanded);
+  gallerySection.classList.toggle("is-collapsed", !expanded);
+
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (expanded) galleryRecords.hidden = false;
+  if (!animate || reduceMotion || typeof galleryRecords.animate !== "function") {
+    galleryRecords.hidden = !expanded;
+    clearGalleryAnimationStyles();
+    return;
+  }
+
+  const startHeight = expanded ? 0 : galleryRecords.scrollHeight;
+  const endHeight = expanded ? galleryRecords.scrollHeight : 0;
+  galleryRecords.style.overflow = "hidden";
+  galleryRecords.style.height = `${startHeight}px`;
+  galleryRecords.style.opacity = expanded ? "0" : "1";
+  galleryRecords.style.transform = expanded ? "translateY(-10px)" : "translateY(0)";
+  galleryRecords.offsetHeight;
+
+  const animation = galleryRecords.animate(
+    [
+      { height: `${startHeight}px`, opacity: expanded ? 0 : 1, transform: expanded ? "translateY(-10px)" : "translateY(0)" },
+      { height: `${endHeight}px`, opacity: expanded ? 1 : 0, transform: expanded ? "translateY(0)" : "translateY(-8px)" },
+    ],
+    {
+      duration: expanded ? 540 : 360,
+      easing: "cubic-bezier(0.16, 1, 0.3, 1)",
+      fill: "forwards",
+    }
+  );
+  galleryAnimation = animation;
+  animation.onfinish = () => {
+    if (galleryAnimation !== animation) return;
+    galleryRecords.hidden = !expanded;
+    animation.cancel();
+    galleryAnimation = null;
+    clearGalleryAnimationStyles();
+  };
+  animation.oncancel = () => {
+    if (galleryAnimation === animation) galleryAnimation = null;
+  };
+};
+
+galleryToggle?.addEventListener("click", () => setGalleryExpanded(!isGalleryExpanded));
+
 const newspaperModal = document.querySelector("[data-newspaper-modal]");
 const newspaperImage = newspaperModal?.querySelector("[data-newspaper-modal-image]");
 const newspaperReader = newspaperModal?.querySelector("[data-newspaper-reader]");
 const newspaperZoomLabel = newspaperModal?.querySelector("[data-newspaper-zoom-reset]");
 let newspaperZoom = 1;
 
+const getNewspaperBaseWidth = () => newspaperImage?.naturalWidth || newspaperImage?.clientWidth || 1;
+
 const setNewspaperZoom = (zoom, originX, originY) => {
   const oldZoom = newspaperZoom;
   const nextZoom = Math.min(3, Math.max(0.6, zoom));
   const readerX = originX ?? (newspaperReader?.clientWidth || 0) / 2;
   const readerY = originY ?? (newspaperReader?.clientHeight || 0) / 2;
-  const worldX = ((newspaperReader?.scrollLeft || 0) + readerX) / oldZoom;
-  const worldY = ((newspaperReader?.scrollTop || 0) + readerY) / oldZoom;
+  const oldBaseWidth = getNewspaperBaseWidth() * oldZoom;
+  const worldX = ((newspaperReader?.scrollLeft || 0) + readerX) / Math.max(1, oldBaseWidth);
+  const worldY = ((newspaperReader?.scrollTop || 0) + readerY) / Math.max(1, oldBaseWidth);
   newspaperZoom = nextZoom;
-  if (newspaperImage) newspaperImage.style.width = `${newspaperZoom * 100}%`;
+  const nextWidth = getNewspaperBaseWidth() * newspaperZoom;
+  if (newspaperImage) newspaperImage.style.width = `${nextWidth}px`;
   if (newspaperZoomLabel) newspaperZoomLabel.textContent = `${Math.round(newspaperZoom * 100)}%`;
   if (newspaperReader) {
-    newspaperReader.scrollLeft = worldX * newspaperZoom - readerX;
-    newspaperReader.scrollTop = worldY * newspaperZoom - readerY;
+    newspaperReader.scrollLeft = worldX * nextWidth - readerX;
+    newspaperReader.scrollTop = worldY * nextWidth - readerY;
   }
 };
 const resetNewspaperView = () => {
@@ -315,7 +386,8 @@ const openNewspaperModal = (figure) => {
   newspaperModal.querySelector("[data-newspaper-modal-title]").textContent = figure.dataset.title || source.alt;
   newspaperModal.querySelector("[data-newspaper-modal-meta]").textContent = figure.dataset.meta || "";
   newspaperModal.querySelector("[data-newspaper-modal-description]").textContent = figure.dataset.description || "";
-  resetNewspaperView();
+  if (newspaperImage.complete) resetNewspaperView();
+  else newspaperImage.addEventListener("load", resetNewspaperView, { once: true });
   openDialogWithMotion(newspaperModal);
   window.VelkarisAudio?.playPanelOpen?.();
 };
@@ -475,10 +547,14 @@ const openTimelineModal = (id) => {
   window.VelkarisAudio?.playPanelOpen?.();
 };
 document.querySelectorAll("[data-timeline-open]").forEach((item) => {
-  item.addEventListener("click", () => openTimelineModal(item.dataset.timelineOpen));
+  item.addEventListener("click", () => {
+    item.blur();
+    openTimelineModal(item.dataset.timelineOpen);
+  });
   item.addEventListener("keydown", (event) => {
     if (event.key !== "Enter" && event.key !== " ") return;
     event.preventDefault();
+    item.blur();
     openTimelineModal(item.dataset.timelineOpen);
   });
 });
@@ -499,7 +575,7 @@ const strategicSections = {
   leaders: ["Arquivo de comando", "Lideranças da Família", "A sucessão de lideranças que conduziram a Casa."],
   fortifications: ["Defesas juramentadas", "Edificações", "Fortalezas, postos de vigia e seus responsáveis."],
   conflicts: ["Memória de batalha", "Confrontos", "Campanhas, cercos e disputas enfrentadas pela família."],
-  aristocrats: ["Círculo da corte", "Aristocratas", "Membros da linhagem presentes nos salões de poder."],
+  aristocrats: ["Funções dos Membros", "Funções", "Membros da linhagem e suas funções dentro da Casa."],
   allies: ["Pactos e favores", "Aliados da Casa", "Apoios diretos e indiretos que sustentam o legado."],
   vassals: ["Serviços juramentados", "Vassalos da Casa", "Servos, camponeses e trabalhadores ligados aos domínios da família."],
 };

@@ -39,7 +39,7 @@
       <button type="button" data-strategic-open="leaders" aria-label="Abrir lideranças da família" title="Lideranças da Família">♔</button>
       <button type="button" data-strategic-open="fortifications" aria-label="Abrir edificações" title="Edificações">♜</button>
       <button type="button" data-strategic-open="conflicts" aria-label="Abrir confrontos" title="Confrontos">⚔</button>
-      <button type="button" data-strategic-open="aristocrats" aria-label="Abrir aristocratas" title="Aristocratas">✦</button>
+      <button type="button" data-strategic-open="aristocrats" aria-label="Abrir funções dos membros" title="Funções dos Membros">✦</button>
       <button type="button" data-strategic-open="allies" aria-label="Abrir aliados" title="Aliados">◆</button>
       <button type="button" data-strategic-open="vassals" aria-label="Abrir vassalos" title="Vassalos">♣</button>
     </aside>
@@ -56,7 +56,7 @@
           <button type="button" role="tab" data-strategic-tab="leaders">Lideranças</button>
           <button type="button" role="tab" data-strategic-tab="fortifications">Edificações</button>
           <button type="button" role="tab" data-strategic-tab="conflicts">Confrontos</button>
-          <button type="button" role="tab" data-strategic-tab="aristocrats">Aristocratas</button>
+          <button type="button" role="tab" data-strategic-tab="aristocrats">Funções dos Membros</button>
           <button type="button" role="tab" data-strategic-tab="allies">Aliados</button>
           <button type="button" role="tab" data-strategic-tab="vassals">Vassalos</button>
         </div>
@@ -394,7 +394,7 @@
         <p class="section-kicker">Sistema de eras</p>
         <h2>{{ house.eras_heading }}</h2>
       </div>
-      <div class="era-grid">
+      <div class="era-grid" style="--era-count: {{ house.eras|length if house.eras else 1 }};">
         {% for era in house.eras %}
           <article class="era-card">
             <span>{{ era.period }}</span>
@@ -416,7 +416,7 @@
         </button>
       </div>
       <div class="timeline-overview" data-timeline-overview>
-        <div class="timeline-overview-track">
+        <div class="timeline-overview-track" style="--timeline-event-count: {{ timeline_events|length if timeline_events else 1 }};">
           {% for event in timeline_events %}
             <button type="button" class="timeline-overview-event" data-timeline-open="{{ event.id }}" aria-label="Abrir detalhes de {{ event.title }}">
               <time>{{ event.date }}</time>
@@ -530,12 +530,17 @@
       </dialog>
     </section>
 
-    <section class="panel gallery-panel reveal" id="galeria" data-reveal>
-      <div class="panel-heading">
-        <p class="section-kicker">Galeria</p>
-        <h2>{{ house.gallery_heading }}</h2>
+    <section class="panel gallery-panel reveal is-collapsed" id="galeria" data-reveal data-gallery-section>
+      <div class="row-heading">
+        <div class="panel-heading">
+          <p class="section-kicker">Galeria</p>
+          <h2>{{ house.gallery_heading }}</h2>
+        </div>
+        <button class="gallery-toggle" type="button" data-gallery-toggle aria-expanded="false" aria-controls="gallery-records">
+          <span data-gallery-toggle-label>Expandir galeria</span>
+        </button>
       </div>
-      <div class="gallery-grid">
+      <div class="gallery-grid gallery-records" id="gallery-records" data-gallery-records hidden>
         {% for item in house.gallery %}
           <figure role="button" tabindex="0" data-gallery-open>
             <img src="{{ media_url(item.image) }}" alt="{{ item.title }}">

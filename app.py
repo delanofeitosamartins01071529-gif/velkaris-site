@@ -195,6 +195,23 @@ def write_json(path: Path, payload: Any) -> None:
     temp_path.replace(path)
 
 
+MOJIBAKE_MARKERS = ("Ã", "Â", "â", "�")
+
+
+def repair_text_encoding(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {key: repair_text_encoding(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [repair_text_encoding(item) for item in value]
+    if not isinstance(value, str) or not any(marker in value for marker in MOJIBAKE_MARKERS):
+        return value
+    try:
+        repaired = value.encode("cp1252").decode("utf-8")
+    except UnicodeError:
+        return value
+    return repaired
+
+
 def item_id(prefix: str) -> str:
     return f"{prefix}-{uuid.uuid4().hex[:10]}"
 
@@ -359,7 +376,8 @@ def normalize_member(member: dict[str, Any], index: int) -> dict[str, Any]:
 
 
 def load_members() -> list[dict[str, Any]]:
-    return sort_members([normalize_member(member, index) for index, member in enumerate(read_json(MEMBERS_FILE, []))])
+    members = repair_text_encoding(read_json(MEMBERS_FILE, []))
+    return sort_members([normalize_member(member, index) for index, member in enumerate(members)])
 
 
 def ensure_collection_item(collection: str, item: Any, index: int) -> dict[str, Any]:
@@ -422,12 +440,7 @@ def sanitize_map_marker(item: dict[str, Any]) -> dict[str, Any]:
 
 
 def load_house() -> dict[str, Any]:
-    return normalize_house(read_json(HOUSE_FILE, {}))
-
-
-def timeline_sort_value(item: dict[str, Any]) -> tuple[int, str]:
-    match = re.search(r"-?\d+", str(item.get("date", "")))
-    return (int(match.group()) if match else 0, str(item.get("title", "")))
+    return normalize_house(repair_text_encoding(read_json(HOUSE_FILE, {})))
 
 
 def allowed_file(filename: str) -> bool:
@@ -447,10 +460,16 @@ def process_upload(file_storage, extension: str, prefix: str) -> tuple[bytes, st
         probe = Image.open(BytesIO(raw_body))
         probe.verify()
         image = Image.open(BytesIO(raw_body))
-        image = ImageOps.exif_transpose(image)
         image_format = (image.format or "").upper()
         if image_format not in {"PNG", "JPEG", "WEBP"}:
             raise ValueError("Formato de imagem não permitido.")
+
+        if prefix == "newspaper":
+            extension = {"JPEG": "jpg", "PNG": "png", "WEBP": "webp"}[image_format]
+            content_type = mimetypes.guess_type(f"upload.{extension}")[0] or "application/octet-stream"
+            return raw_body, extension, content_type
+
+        image = ImageOps.exif_transpose(image)
         resampling = getattr(Image, "Resampling", None)
         resample = resampling.LANCZOS if resampling else getattr(Image, "LANCZOS", 1)
 
@@ -939,7 +958,7 @@ def index():
         "index.html",
         members=members,
         house=house,
-        timeline_events=sorted(house["timeline"], key=timeline_sort_value)[:8],
+        timeline_events=house["timeline"],
         featured_members=ancestor_members_for_house(members, house),
         portrait_members=members_in_tree_order(members, family_tree),
         family_tree=family_tree,

@@ -519,21 +519,32 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
   height: 42px;
   justify-content: center;
   padding: 0;
-  border-radius: 50%;
+  border-radius: 0;
+  background: rgba(7, 12, 19, 0.72);
+  cursor: pointer;
   white-space: nowrap;
-  box-shadow:
-    0 0 0 1px rgba(240, 208, 139, 0.08),
-    0 0 22px rgba(185, 148, 85, 0.14);
+  box-shadow: none;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease, color 0.25s ease;
+}
+
+.vault-family-link::after {
+  display: none;
+}
+
+.vault-family-link:hover {
+  border-color: var(--bright-gold);
+  box-shadow: 0 0 28px rgba(185, 148, 85, 0.18);
+  transform: translateY(-1px);
 }
 
 .vault-crown-icon {
-  display: grid;
-  width: 100%;
-  height: 100%;
+  display: inline-grid;
+  width: 15px;
+  height: 19px;
   place-items: center;
   color: var(--bright-gold);
   font-family: Georgia, "Times New Roman", serif;
-  font-size: 1.05rem;
+  font-size: 1rem;
   line-height: 1;
   text-shadow:
     0 0 10px rgba(240, 208, 139, 0.48),
@@ -712,11 +723,17 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
   z-index: 4;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: 0.75rem;
 }
 
+.audio-panel-head > div {
+  width: 100%;
+  text-align: center;
+}
+
 .audio-panel-head strong {
+  display: block;
   color: var(--bright-gold);
   font-family: var(--font-display);
 }
@@ -948,7 +965,8 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
 .filter-bar button,
 .tree-controls button,
 .portrait-toggle,
-.timeline-toggle {
+.timeline-toggle,
+.gallery-toggle {
   position: relative;
   display: inline-flex;
   min-height: 44px;
@@ -977,7 +995,9 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
 .portrait-toggle:hover,
 .portrait-toggle[aria-expanded="true"],
 .timeline-toggle:hover,
-.timeline-toggle[aria-expanded="true"] {
+.timeline-toggle[aria-expanded="true"],
+.gallery-toggle:hover,
+.gallery-toggle[aria-expanded="true"] {
   color: #fff3d8;
   border-color: var(--bright-gold);
   box-shadow: 0 0 26px rgba(185, 148, 85, 0.18), inset 0 0 18px rgba(185, 148, 85, 0.08);
@@ -1533,7 +1553,8 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
   white-space: nowrap;
 }
 
-.timeline-toggle {
+.timeline-toggle,
+.gallery-toggle {
   min-width: 174px;
   background:
     radial-gradient(circle at 18% 50%, rgba(240, 208, 139, 0.16), transparent 5rem),
@@ -2663,14 +2684,15 @@ dialog.is-closing > :not(.cursor-aura),
 
 .era-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.9rem;
+  grid-template-columns: repeat(var(--era-count, 3), minmax(0, 1fr));
+  gap: clamp(0.55rem, 1vw, 0.9rem);
+  align-items: stretch;
 }
 
 .era-card,
 .timeline-item {
   position: relative;
-  padding: 1rem;
+  padding: clamp(0.72rem, 1.25vw, 1rem);
   border: 1px solid rgba(185, 148, 85, 0.24);
   background: rgba(3, 6, 10, 0.5);
 }
@@ -2688,8 +2710,14 @@ dialog.is-closing > :not(.cursor-aura),
   margin: 0.35rem 0 0;
   color: var(--bright-gold);
   font-family: var(--font-display);
-  font-size: 1rem;
+  font-size: clamp(0.78rem, 0.88vw, 1rem);
   font-weight: 500;
+}
+
+.era-card p {
+  margin: 0.45rem 0 0;
+  font-size: clamp(0.84rem, 0.9vw, 0.98rem);
+  line-height: 1.45;
 }
 
 .timeline-list {
@@ -2708,7 +2736,7 @@ dialog.is-closing > :not(.cursor-aura),
 
 .timeline-overview {
   position: relative;
-  overflow-x: hidden;
+  overflow-x: auto;
   overflow-y: hidden;
   padding: 0.8rem 0.45rem 0.6rem;
   border-top: 1px solid rgba(185, 148, 85, 0.28);
@@ -2720,8 +2748,8 @@ dialog.is-closing > :not(.cursor-aura),
 .timeline-overview-track {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
-  min-width: 0;
+  grid-template-columns: repeat(var(--timeline-event-count, 8), minmax(120px, 1fr));
+  min-width: max(100%, calc(var(--timeline-event-count, 8) * 132px));
   padding: 0.25rem 0.2rem;
 }
 
@@ -2991,10 +3019,17 @@ dialog.is-closing > :not(.cursor-aura),
   position: relative;
   max-height: calc(100svh - 2rem);
   padding: 2.1rem;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: none;
   background:
     linear-gradient(180deg, rgba(12, 20, 32, 0.76), rgba(4, 7, 11, 0.97)),
     radial-gradient(circle at 78% 8%, rgba(185, 148, 85, 0.12), transparent 24rem);
+}
+
+.timeline-modal-shell::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 .timeline-modal h2 {
@@ -3192,9 +3227,10 @@ dialog.is-closing > :not(.cursor-aura),
 
 .newspaper-reader img {
   display: block;
-  width: 100%;
+  width: auto;
   max-width: none;
   margin: 0 auto;
+  image-rendering: auto;
   pointer-events: none;
   user-select: none;
 }
@@ -3218,6 +3254,19 @@ dialog.is-closing > :not(.cursor-aura),
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.9rem;
+}
+
+.gallery-records {
+  overflow: hidden;
+  will-change: height, opacity, transform;
+}
+
+.gallery-records:not([hidden]) {
+  animation: panelUnseal var(--motion-long) var(--motion-smooth) both;
+}
+
+.gallery-records[hidden] {
+  display: none;
 }
 
 .gallery-grid figure {
@@ -5134,7 +5183,8 @@ dialog.is-closing > :not(.cursor-aura),
   }
 
   .portrait-toggle,
-  .timeline-toggle {
+  .timeline-toggle,
+  .gallery-toggle {
     width: 100%;
   }
 

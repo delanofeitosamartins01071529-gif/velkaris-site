@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% macro strategic_collection(section_id, kicker, heading, collection, items, fields) %}
-  <section class="admin-card reveal is-visible" id="{{ section_id }}">
+  <section class="admin-card reveal is-visible" id="{{ section_id }}" data-bulk-section data-bulk-label="{{ heading|lower }}" data-bulk-button="Salvar todos os registros" data-bulk-anchor="{{ section_id }}">
     <div class="admin-section-title">
       <p class="section-kicker">{{ kicker }}</p>
       <h2>{{ heading }}</h2>
@@ -95,7 +95,7 @@
       <a href="#leaders-admin">Lideranças</a>
       <a href="#fortifications-admin">Edificações</a>
       <a href="#conflicts-admin">Confrontos</a>
-      <a href="#aristocrats-admin">Aristocratas</a>
+      <a href="#aristocrats-admin">Funções dos Membros</a>
       <a href="#allies-admin">Aliados</a>
       <a href="#vassals-admin">Vassalos</a>
     </nav>
@@ -619,7 +619,7 @@
       {% endfor %}
     </section>
 
-    <section class="admin-card reveal is-visible" id="symbols">
+    <section class="admin-card reveal is-visible" id="symbols" data-bulk-section data-bulk-label="símbolos" data-bulk-button="Salvar todos os símbolos" data-bulk-anchor="symbols">
       <div class="admin-section-title">
         <p class="section-kicker">Símbolos</p>
         <h2>Adicionar, editar ou excluir símbolos da Casa</h2>
@@ -717,7 +717,7 @@
       </div>
     </section>
 
-    <section class="admin-card reveal is-visible" id="territories">
+    <section class="admin-card reveal is-visible" id="territories" data-bulk-section data-bulk-label="territórios" data-bulk-button="Salvar todos os territórios" data-bulk-anchor="territories">
       <div class="admin-section-title">
         <p class="section-kicker">Marcadores salvos</p>
         <h2>Editar pontos de interesse</h2>
@@ -795,10 +795,20 @@
             <form class="admin-form" method="post" enctype="multipart/form-data" action="{{ url_for('update_collection_item', collection='timeline', entry_id=event.id) }}" data-timeline-editor-form>
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <label>Data <input type="text" name="date" value="{{ event.date }}"></label>
-              <label>Era <input type="text" name="era" value="{{ event.era }}"></label>
+              <label>
+                Era
+                <select name="era">
+                  {% if event.era and event.era not in house.eras|map(attribute='name')|list %}
+                    <option selected>{{ event.era }}</option>
+                  {% endif %}
+                  {% for era in house.eras %}
+                    <option value="{{ era.name }}" {% if event.era == era.name %}selected{% endif %}>{{ era.name }}</option>
+                  {% endfor %}
+                </select>
+              </label>
               <label>Título <input type="text" name="title" value="{{ event.title }}"></label>
-              <label>Resumo <textarea name="summary" rows="3">{{ event.summary }}</textarea></label>
-              <label>História detalhada <textarea name="details" rows="6">{{ event.details }}</textarea></label>
+              <label>Resumo <textarea name="summary" rows="10">{{ event.summary }}</textarea></label>
+              <label>História detalhada <textarea name="details" rows="7">{{ event.details }}</textarea></label>
               {% if event.images %}
                 <div class="admin-media-strip">
                   {% for image in event.images %}
@@ -822,16 +832,23 @@
       <form class="admin-form admin-form-grid admin-add-form" method="post" enctype="multipart/form-data" action="{{ url_for('create_collection_item', collection='timeline') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <label>Data <input type="text" name="date" placeholder="Ano 742"></label>
-        <label>Era <input type="text" name="era" placeholder="Era do Juramento Velkaris"></label>
+        <label>
+          Era
+          <select name="era">
+            {% for era in house.eras %}
+              <option value="{{ era.name }}">{{ era.name }}</option>
+            {% endfor %}
+          </select>
+        </label>
         <label>Título <input type="text" name="title"></label>
-        <label class="span-2">Resumo <textarea name="summary" rows="3"></textarea></label>
-        <label class="span-2">História detalhada <textarea name="details" rows="6"></textarea></label>
+        <label class="span-2">Resumo <textarea name="summary" rows="10"></textarea></label>
+        <label class="span-2">História detalhada <textarea name="details" rows="7"></textarea></label>
         <label class="span-2">Fotos <input type="file" name="images" accept="image/*" multiple></label>
         <button class="primary-cta" type="submit">Adicionar crônica</button>
       </form>
     </section>
 
-    <section class="admin-card reveal is-visible" id="eras-admin">
+    <section class="admin-card reveal is-visible" id="eras-admin" data-bulk-section data-bulk-label="eras" data-bulk-button="Salvar todas as eras" data-bulk-anchor="eras-admin">
       <div class="admin-section-title">
         <p class="section-kicker">Eras</p>
         <h2>Sistema de eras da Casa</h2>
@@ -862,7 +879,7 @@
       </form>
     </section>
 
-    <section class="admin-card reveal is-visible" id="archives">
+    <section class="admin-card reveal is-visible" id="archives" data-bulk-section data-bulk-label="arquivos" data-bulk-button="Salvar todos os arquivos" data-bulk-anchor="archives">
       <div class="admin-section-title">
         <p class="section-kicker">Arquivos</p>
         <h2>Notícias, eventos e registros históricos</h2>
@@ -893,7 +910,7 @@
       </form>
     </section>
 
-    <section class="admin-card reveal is-visible" id="newspapers">
+    <section class="admin-card reveal is-visible" id="newspapers" data-bulk-section data-bulk-label="jornais" data-bulk-button="Salvar todos os jornais" data-bulk-anchor="newspapers">
       <div class="admin-section-title">
         <p class="section-kicker">Jornais</p>
         <h2>Edições publicadas para leitura</h2>
@@ -910,7 +927,7 @@
               <label>Edição <input type="text" name="edition" value="{{ newspaper.edition }}" placeholder="Edição nº 01"></label>
               <label>Data <input type="text" name="date" value="{{ newspaper.date }}" placeholder="12/05"></label>
               <label>Descrição <textarea name="description" rows="3">{{ newspaper.description }}</textarea></label>
-              <label>Nova imagem <input type="file" name="image" accept=".png,.jpg,.jpeg,.webp" data-preview-input></label>
+              <label>Nova imagem <input type="file" name="image" accept=".png,.jpg,.jpeg,.webp" data-preview-input data-skip-crop="true"></label>
               <button class="primary-cta" type="submit">Salvar jornal</button>
             </form>
             <form method="post" action="{{ url_for('delete_collection_item', collection='newspapers', entry_id=newspaper.id) }}" class="delete-form inline-delete">
@@ -925,13 +942,13 @@
         <label>Título <input type="text" name="title" required></label>
         <label>Edição <input type="text" name="edition" placeholder="Edição nº 01"></label>
         <label>Data <input type="text" name="date" placeholder="12/05"></label>
-        <label>Imagem <input type="file" name="image" accept=".png,.jpg,.jpeg,.webp" data-preview-input required></label>
+        <label>Imagem <input type="file" name="image" accept=".png,.jpg,.jpeg,.webp" data-preview-input data-skip-crop="true" required></label>
         <label class="span-2">Descrição <textarea name="description" rows="3"></textarea></label>
         <button class="primary-cta" type="submit">Publicar jornal</button>
       </form>
     </section>
 
-    <section class="admin-card reveal is-visible" id="gallery">
+    <section class="admin-card reveal is-visible" id="gallery" data-bulk-section data-bulk-label="galeria" data-bulk-button="Salvar toda a galeria" data-bulk-anchor="gallery">
       <div class="admin-section-title">
         <p class="section-kicker">Galeria</p>
         <h2>Artes, pinturas e banners</h2>
@@ -958,7 +975,7 @@
       <form class="admin-form admin-form-grid admin-add-form" method="post" action="{{ url_for('create_collection_item', collection='gallery') }}" enctype="multipart/form-data">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <label>Título <input type="text" name="title"></label>
-        <label>Imagem <input type="file" name="image" accept=".png,.jpg,.jpeg,.webp" data-preview-input></label>
+        <label>Imagem <input type="file" name="image" accept=".png,.jpg,.jpeg,.webp" data-preview-input required></label>
         <button class="primary-cta" type="submit">Adicionar à galeria</button>
       </form>
     </section>
@@ -966,7 +983,7 @@
     {{ strategic_collection("leaders-admin", "Lideranças da família", "Lideranças da Casa", "leaders", house.leaders, [("name", "Nome"), ("title", "Título"), ("period", "Período"), ("description", "Descrição")]) }}
     {{ strategic_collection("fortifications-admin", "Defesas juramentadas", "Edificações", "fortifications", house.fortifications, [("name", "Nome"), ("type", "Tipo"), ("responsible", "Responsável"), ("description", "Descrição")]) }}
     {{ strategic_collection("conflicts-admin", "Memória de batalha", "Confrontos enfrentados", "conflicts", house.conflicts, [("name", "Nome"), ("period", "Período"), ("outcome", "Desfecho"), ("description", "Descrição")]) }}
-    {{ strategic_collection("aristocrats-admin", "Círculo da corte", "Aristocratas da família", "aristocrats", house.aristocrats, [("name", "Nome"), ("title", "Título"), ("role", "Papel"), ("description", "Descrição")]) }}
+    {{ strategic_collection("aristocrats-admin", "Funções dos Membros", "Funções dos membros da família", "aristocrats", house.aristocrats, [("name", "Nome"), ("title", "Título"), ("role", "Papel"), ("description", "Descrição")]) }}
     {{ strategic_collection("allies-admin", "Pactos e favores", "Aliados da Casa", "allies", house.allies, [("name", "Nome"), ("group", "Grupo social"), ("role", "Apoio prestado"), ("description", "Descrição")]) }}
     {{ strategic_collection("vassals-admin", "Serviços juramentados", "Vassalos da Casa", "vassals", house.vassals, [("name", "Nome"), ("group", "Grupo social"), ("service", "Serviço prestado"), ("description", "Descrição")]) }}
   </section>

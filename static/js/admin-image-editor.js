@@ -1,5 +1,7 @@
 (() => {
   const imageInputs = [...document.querySelectorAll('input[type="file"]:not([multiple])')]
+    .filter((input) => input.dataset.skipCrop !== "true")
+    .filter((input) => !input.form?.action.includes("/newspapers"))
     .filter((input) => (input.accept || "").includes("image") || /\.(png|jpe?g|webp)/i.test(input.accept || ""));
   if (!imageInputs.length) return;
 

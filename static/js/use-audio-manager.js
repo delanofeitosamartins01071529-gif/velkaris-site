@@ -12,13 +12,17 @@
     ...defaults,
   };
 
+  let savedPreferences = {};
   try {
-    Object.assign(state, JSON.parse(localStorage.getItem(storageKey) || "{}"));
+    savedPreferences = JSON.parse(localStorage.getItem(storageKey) || "{}");
+    Object.assign(state, savedPreferences);
   } catch (error) {
     // Preferences are optional.
   }
-  state.musicEnabled = true;
-  state.musicVolume = 0.3;
+  if (!Object.prototype.hasOwnProperty.call(savedPreferences, "musicEnabled")) {
+    state.musicEnabled = defaults.musicEnabled ?? state.musicEnabled;
+  }
+  state.musicVolume = clamp(state.musicVolume ?? defaults.musicVolume ?? 0.3);
   state.windVolume = clamp(state.windVolume ?? state.effectsVolume ?? 0.18);
 
   let audioContext;
@@ -132,7 +136,10 @@
     }
     if (musicVolume) musicVolume.value = String(Math.round(state.musicVolume * 100));
     if (windVolume) windVolume.value = String(Math.round(state.windVolume * 100));
-    if (musicElement && !isFadingMusic) musicElement.volume = state.musicEnabled ? state.musicVolume : 0;
+    if (musicElement && !isFadingMusic) {
+      musicElement.muted = !state.musicEnabled;
+      musicElement.volume = state.musicEnabled ? state.musicVolume : 0;
+    }
     if (musicGain && audioContext) {
       musicGain.gain.setTargetAtTime(state.musicEnabled ? state.musicVolume : 0.0001, audioContext.currentTime, 0.2);
     }
@@ -148,6 +155,7 @@
     pulseTimer = 0;
     if (musicElement) {
       persistMusicPosition();
+      musicElement.muted = true;
       musicElement.pause();
     }
     if (!audioContext) return;
@@ -310,10 +318,11 @@
   };
 
   const startMusic = async ({ fadeIn = false } = {}) => {
+    if (!state.musicEnabled) return;
     if (config.musicSrc) {
       ensureMusicElement();
-      state.musicEnabled = true;
       isFadingMusic = fadeIn;
+      musicElement.muted = false;
       musicElement.volume = fadeIn ? 0 : state.musicVolume;
       updateUi();
       save();
@@ -335,7 +344,6 @@
     if (musicNodes.length) stopMusic();
     phraseIndex = 0;
     schedulePhrase();
-    state.musicEnabled = true;
     updateUi();
     save();
   };
@@ -483,6 +491,9 @@
       updateUi();
       save();
     } else {
+      state.musicEnabled = true;
+      updateUi();
+      save();
       await startMusic();
     }
   });
@@ -512,13 +523,14 @@
 
   window.VelkarisAudio = { playPanelOpen, playWindWhisper, state };
   updateUi();
+  if (!state.musicEnabled) stopMusic();
 
   if (state.musicEnabled) {
     startMusic({ fadeIn: true }).catch(() => {});
     const startOnGesture = async () => {
       window.removeEventListener("pointerdown", startOnGesture);
       window.removeEventListener("keydown", startOnGesture);
-      if (!musicNodes.length && musicElement?.paused) await startMusic({ fadeIn: true });
+      if (state.musicEnabled && !musicNodes.length && musicElement?.paused) await startMusic({ fadeIn: true });
     };
     window.addEventListener("pointerdown", startOnGesture, { once: true });
     window.addEventListener("keydown", startOnGesture, { once: true });
