@@ -111,21 +111,21 @@
   "symbols": [
     {
       "id": "symbols-40fc0dbea5",
-      "name": "Dragão Azul",
+      "name": "O Dragão Azul",
       "meaning": "Vigilância, soberania e poder herdado.",
-      "image": ""
+      "image": "uploads/symbols-53505ba9c3be.png"
     },
     {
       "id": "symbols-a2ffecffca",
-      "name": "Coroa Partida",
+      "name": "A Coroa Partida",
       "meaning": "O preço da liderança antes da glória.",
-      "image": ""
+      "image": "uploads/symbols-735885ddf90a.png"
     },
     {
       "id": "symbols-39f1e6df81",
-      "name": "Rosa de Prata",
+      "name": "A Flor de Prata",
       "meaning": "Elegância, luto e promessa.",
-      "image": ""
+      "image": "uploads/symbols-a37fb2f2d9b1.png"
     }
   ],
   "territories": [

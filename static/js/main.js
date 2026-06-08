@@ -41,6 +41,7 @@ const cursorTargets = [
   "[role='button']",
   "[data-member-open]",
   "[data-territory-target]",
+  ".portrait-preview-avatar",
   ".member-card",
   ".mini-card",
   ".newspaper-grid figure",
@@ -705,13 +706,13 @@ const TREE_MIN_SCALE = 0.24;
 const TREE_MAX_SCALE = 2.5;
 const TREE_NODE_WIDTH = 142;
 const TREE_NODE_HEIGHT = 174;
-const TREE_MEMBER_GAP = 24;
-const TREE_UNIT_PAD = 14;
-const TREE_LEVEL_GAP = 236;
-const TREE_SIBLING_GAP = 64;
-const TREE_ROOT_GAP = 96;
-const TREE_MARGIN = 96;
-const TREE_CHILD_JUNCTION_GAP = 72;
+const TREE_MEMBER_GAP = 18;
+const TREE_UNIT_PAD = 10;
+const TREE_LEVEL_GAP = 178;
+const TREE_SIBLING_GAP = 42;
+const TREE_ROOT_GAP = 64;
+const TREE_MARGIN = 72;
+const TREE_CHILD_JUNCTION_GAP = 54;
 let familyTreeData = [];
 let familyTreeLayouts = [];
 let familyTreePlaced = [];

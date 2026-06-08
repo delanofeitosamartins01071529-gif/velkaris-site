@@ -218,6 +218,13 @@
           <span data-portraits-toggle-label>Expandir retratos</span>
         </button>
       </div>
+      <div class="portrait-preview-row" aria-label="Prévia dos retratos da família">
+        {% for member in portrait_members %}
+          <button class="portrait-preview-avatar" type="button" data-member-open="{{ member.id }}" aria-label="Abrir retrato de {{ member.name }}">
+            <img src="{{ media_url(member.image) }}" alt="">
+          </button>
+        {% endfor %}
+      </div>
       <div class="portrait-gallery" id="portrait-gallery" data-portraits-content hidden>
         <div class="filter-bar" aria-label="Filtrar por geração">
           <button type="button" class="is-active" data-filter="all">Todos</button>

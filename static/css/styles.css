@@ -1605,6 +1605,78 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
   white-space: nowrap;
 }
 
+.portrait-preview-row {
+  position: relative;
+  display: flex;
+  min-height: 7.25rem;
+  align-items: center;
+  gap: 0.9rem;
+  margin: 1.25rem 0 0.25rem;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.portrait-preview-row::after {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 2;
+  width: min(10rem, 22%);
+  height: 100%;
+  content: "";
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, transparent, rgba(5, 8, 13, 0.72) 42%, rgba(5, 8, 13, 0.98)),
+    radial-gradient(circle at 35% 50%, rgba(240, 208, 139, 0.14), transparent 4.5rem);
+}
+
+.portrait-preview-avatar {
+  position: relative;
+  display: grid;
+  flex: 0 0 auto;
+  width: clamp(4.45rem, 6vw, 6.2rem);
+  aspect-ratio: 1;
+  place-items: center;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgba(210, 173, 104, 0.58);
+  border-radius: 50%;
+  background: rgba(3, 6, 10, 0.78);
+  box-shadow: 0 0 0 4px rgba(185, 148, 85, 0.06), 0 18px 44px rgba(0, 0, 0, 0.34);
+  cursor: pointer;
+  transition: transform 0.28s ease, border-color 0.28s ease, box-shadow 0.28s ease, filter 0.28s ease;
+}
+
+.portrait-preview-avatar::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(255, 232, 170, 0.1), transparent 42%, rgba(2, 4, 7, 0.34)),
+    radial-gradient(circle at 50% 22%, transparent 42%, rgba(0, 0, 0, 0.32));
+}
+
+.portrait-preview-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.36s ease, filter 0.36s ease;
+}
+
+.portrait-preview-avatar:hover,
+.portrait-preview-avatar:focus-visible {
+  border-color: var(--bright-gold);
+  box-shadow: 0 0 0 4px rgba(240, 208, 139, 0.1), 0 0 28px rgba(185, 148, 85, 0.22), 0 18px 44px rgba(0, 0, 0, 0.42);
+  filter: brightness(1.05);
+  transform: translateY(-4px);
+}
+
+.portrait-preview-avatar:hover img,
+.portrait-preview-avatar:focus-visible img {
+  transform: scale(1.055);
+}
+
 .timeline-toggle,
 .gallery-toggle {
   min-width: 174px;
@@ -1615,6 +1687,7 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
 }
 
 .portrait-gallery {
+  margin-top: 1rem;
   overflow: hidden;
   will-change: height, opacity, transform;
 }
