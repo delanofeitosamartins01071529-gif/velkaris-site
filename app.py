@@ -128,7 +128,7 @@ COLLECTION_FIELDS = {
     "symbols": ("name", "meaning"),
     "territories": ("name", "type", "description", "lore", "coord_x", "coord_y", "status", "color", "icon"),
     "archives": ("date", "title", "summary"),
-    "timeline": ("date", "era", "title", "summary", "details"),
+    "timeline": ("date", "era", "title", "details"),
     "eras": ("name", "period", "description"),
     "newspapers": ("title", "edition", "date", "description"),
     "gallery": ("title",),
@@ -403,7 +403,11 @@ def ensure_collection_item(collection: str, item: Any, index: int) -> dict[str, 
         )
     if collection in {"gallery", "newspapers"}:
         normalized["image"] = item.get("image") or ["assets/gallery-castle.png", "assets/territory-map.png", "assets/gallery-fortress.png"][index % 3]
+    if collection == "symbols":
+        normalized["image"] = str(item.get("image") or "")
     if collection == "timeline":
+        if not normalized.get("details") and item.get("summary"):
+            normalized["details"] = item.get("summary", "")
         images = item.get("images", [])
         normalized["images"] = (
             [str(image) for image in images if image] if isinstance(images, list) else []
@@ -1146,6 +1150,8 @@ def create_collection_item(collection: str):
         ]
     if collection == "gallery":
         item["image"] = save_upload(request.files.get("image"), "gallery") or "assets/gallery-castle.png"
+    if collection == "symbols":
+        item["image"] = save_upload(request.files.get("image"), "symbols") or ""
     if collection == "newspapers":
         item["image"] = save_upload(request.files.get("image"), "newspaper")
         if not item["image"]:
@@ -1190,6 +1196,10 @@ def update_collection_item(collection: str, entry_id: str):
         )
     if collection == "gallery":
         uploaded = save_upload(request.files.get("image"), "gallery")
+        if uploaded:
+            item["image"] = uploaded
+    if collection == "symbols":
+        uploaded = save_upload(request.files.get("image"), "symbols")
         if uploaded:
             item["image"] = uploaded
     if collection == "newspapers":

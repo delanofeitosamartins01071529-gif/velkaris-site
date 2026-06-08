@@ -112,17 +112,20 @@
     {
       "id": "symbols-40fc0dbea5",
       "name": "Dragão Azul",
-      "meaning": "Vigilância, soberania e poder herdado."
+      "meaning": "Vigilância, soberania e poder herdado.",
+      "image": ""
     },
     {
       "id": "symbols-a2ffecffca",
       "name": "Coroa Partida",
-      "meaning": "O preço da liderança antes da glória."
+      "meaning": "O preço da liderança antes da glória.",
+      "image": ""
     },
     {
       "id": "symbols-39f1e6df81",
       "name": "Rosa de Prata",
-      "meaning": "Elegância, luto e promessa."
+      "meaning": "Elegância, luto e promessa.",
+      "image": ""
     }
   ],
   "territories": [
@@ -160,94 +163,74 @@
   "archives": [
     {
       "id": "archives-c9f461114b",
-      "date": "12/05",
-      "title": "A expansão das fronteiras ao norte",
-      "summary": "Novos mapas apontam fortalezas antigas sob neve e pedra azul."
-    },
-    {
-      "id": "archives-4fb25f5831",
-      "date": "08/05",
-      "title": "Retorno de uma missão diplomática",
-      "summary": "Os selos do Porto Argentum foram renovados diante do conselho."
-    },
-    {
-      "id": "archives-0544b8d021",
-      "date": "01/05",
-      "title": "Festival da Lua Azul",
-      "summary": "Tradição, memória e união marcaram o salão principal."
+      "date": "112 d.R.",
+      "title": "A chegada dos Antigos Eldorianos",
+      "summary": "Exatamente um século após o Grande Êxodo, vigias posicionados no litoral de Nazarik avistaram dezenas de grandes caravelas surgindo no horizonte. A princípio, acreditou-se tratar de uma frota mercante ou de uma invasão, levando a população a reunir-se nas praias e muralhas para observar a aproximação das embarcações.\r\n\r\nÀ medida que os navios lançavam âncora, seus passageiros revelaram-se descendentes do antigo povo de Eldoria, que havia deixado aquelas terras cem anos antes rumo a Sothoria. O reencontro entre os dois povos marcou o fim da Era do Abandono. Os eldorianos encontraram uma terra preservada, estradas reconstruídas e, no coração da região, a cidade de Nazarik, erguida pela Casa Velkaris durante sua ausência."
     }
   ],
   "timeline": [
     {
-      "id": "timeline-e917d23563",
+      "id": "timeline-293f8c7978",
       "date": "12 d.R.",
       "era": "Era de Altair Velkaris",
       "title": "O Grande Êxodo",
-      "summary": "Por razões que jamais foram registradas, o povo de Eldoria abandonou sua terra natal e partiu para Sothoria. Cidades inteiras foram deixadas para trás e o reino caiu em silêncio. Durante décadas, as antigas terras permaneceram praticamente vazias. Assim teve início a Era do Abandono.",
-      "details": "",
+      "details": "Por razões que jamais foram registradas, o povo de Eldoria abandonou sua terra natal e partiu para Sothoria. Cidades inteiras foram deixadas para trás e o reino caiu em silêncio. Durante décadas, as antigas terras permaneceram praticamente vazias. Assim teve início a Era do Abandono.",
       "images": []
     },
     {
-      "id": "timeline-bcc429b226",
+      "id": "timeline-f727e75368",
       "date": "45 d.R.",
       "era": "Era de Altair Velkaris",
-      "title": "A Chegada dos Velkaris",
-      "summary": "Altair Velkaris e sua Casa chega às terras abandonadas de Eldoria acompanhado de sua família e seguidores. Enquanto outros viam ruínas, ele viu oportunidade. Decidiu permanecer e iniciar uma nova vida na região. Este evento marcou o nascimento da Casa Velkaris.",
-      "details": "",
+      "title": "A Chegada de Altair",
+      "details": "Altair Velkaris chegou às terras abandonadas de Eldoria acompanhado de sua família e seguidores. Enquanto outros viam ruínas, ele viu oportunidade. Decidiu permanecer e iniciar uma nova vida na região. Este evento marcou o nascimento da Casa Velkaris.",
       "images": []
     },
     {
-      "id": "timeline-c2b4ac18fe",
+      "id": "timeline-6fece38b48",
       "date": "48 d.R.",
       "era": "Era de Altair Velkaris",
       "title": "A Fundação de Nazarik",
-      "summary": "No mesmo período, Altair fundou Nazarik, o primeiro assentamento Velkaris. Construída sobre antigas rotas comerciais, a cidade rapidamente atraiu colonos, artesãos e agricultores. Nazarik tornou-se o coração da família. Seu crescimento daria início ao legado Velkaris.",
-      "details": "",
+      "details": "alguns anos depois da chegada em Eldoria, Altair fundou Nazarik, o primeiro assentamento Velkaris. Construída sobre antigas rotas comerciais, a cidade rapidamente atraiu colonos, artesãos e agricultores. Nazarik tornou-se o coração da família. Seu crescimento daria início ao legado Velkaris.",
       "images": []
     },
     {
-      "id": "timeline-d8f95a9b60",
+      "id": "timeline-cabbe20028",
       "date": "48–72 d.R.",
       "era": "Era de Altair Velkaris",
-      "title": "Tempo de Reconstrução",
-      "summary": "Sob a liderança de Altair, estradas foram restauradas, fazendas foram criadas e o comércio voltou a florescer. Nazarik cresceu rapidamente e tornou-se a principal cidade da região. As terras esquecidas voltaram a prosperar. Os Velkaris consolidaram sua influência.",
-      "details": "",
+      "title": "A Era da Reconstrução",
+      "details": "Sob a liderança de Altair, estradas foram restauradas, fazendas foram criadas e o comércio voltou a florescer. Nazarik cresceu rapidamente e tornou-se a principal cidade da região. As terras esquecidas voltaram a prosperar. Os Velkaris consolidaram sua influência.",
       "images": []
     },
     {
-      "id": "timeline-bda8bfc513",
+      "id": "timeline-2a2d0470b4",
       "date": "72–95 d.R.",
       "era": "Era de Olaf Velkaris",
       "title": "A Consolidação dos Domínios",
-      "summary": "Olaf Velkaris assumiu a liderança após Altair. Novas muralhas foram erguidas e diversas comunidades juraram lealdade à família. Nazarik tornou-se um importante centro político e econômico. A Casa Velkaris expandiu sua influência por toda a região.",
-      "details": "",
+      "details": "Olaf Velkaris assumiu a liderança após Altair. Novas muralhas foram erguidas e diversas comunidades juraram lealdade à família. Nazarik tornou-se um importante centro político e econômico. A Casa Velkaris expandiu sua influência por toda a região.",
       "images": []
     },
     {
-      "id": "timeline-22268c9e0d",
+      "id": "timeline-34d17ed592",
       "date": "95–106 d.R.",
       "era": "Era de Jhon Velkaris",
       "title": "O Tempo dos Herdeiros",
-      "summary": "Jhon Velkaris governou durante um período de crescimento e estabilidade. O comércio prosperou e os registros históricos passaram a ser preservados no Grande Arquivo de Nazarik. A influência dos Velkaris atingiu seu auge. O futuro parecia promissor para a família.",
-      "details": "",
+      "details": "Jhon Velkaris governou durante um período de crescimento e estabilidade. O comércio prosperou e os registros históricos passaram a ser preservados no Grande Arquivo de Nazarik. A influência dos Velkaris atingiu seu auge. O futuro parecia promissor para a família.",
       "images": []
     },
     {
-      "id": "timeline-aefc1cd5ec",
+      "id": "timeline-4f6cb3f8da",
       "date": "106–109 d.R.",
       "era": "Era de Jhon Velkaris",
       "title": "O Inverno Silencioso",
-      "summary": "Os últimos anos de Jhon foram marcados por disputas políticas e rivalidades comerciais. Em 109 d.R., ele faleceu repentinamente aos 34 anos. Os registros falam em doença, mas rumores de envenenamento persistem até hoje. Sua morte permanece um dos grandes mistérios de Nazarik.\r\nEdward Velkaris assume como novo líder, tutelado por seus avôs Olaf e Alfredo Velkaris",
-      "details": "",
+      "details": "Os últimos anos de Jhon foram marcados por disputas políticas e rivalidades comerciais. Em 109 d.R., ele faleceu repentinamente aos 34 anos. Os registros falam em doença, mas rumores de envenenamento persistem até hoje. Sua morte permanece um dos grandes mistérios de Nazarik.",
       "images": []
     },
     {
-      "id": "timeline-b58a87b678",
+      "id": "timeline-aedfd26291",
       "date": "112 d.R.",
       "era": "Era de Edward Velkaris",
       "title": "O Retorno dos Eldorianos",
-      "summary": "Cem anos após o Grande Êxodo, embarcações vindas de Sothoria chegaram às costas de Eldoria. Os viajantes afirmavam ser descendentes dos antigos eldorianos. Ao desembarcarem, encontraram Nazarik e uma terra reconstruída pelos Velkaris. Assim terminou a Era do Abandono e iniciou-se uma nova era para Eldoria.",
-      "details": "",
+      "details": "Cem anos após o Grande Êxodo, embarcações vindas de Sothoria chegaram às costas de Eldoria. Os viajantes afirmavam ser descendentes dos antigos eldorianos. Ao desembarcarem, encontraram Nazarik e uma terra reconstruída pelos Velkaris. Assim terminou a Era do Abandono e iniciou-se uma nova era para Eldoria.",
       "images": []
     }
   ],

@@ -627,10 +627,16 @@
       <div class="admin-list two-col">
         {% for symbol in house.symbols %}
           <article class="admin-list-card">
-            <form class="admin-form" method="post" action="{{ url_for('update_collection_item', collection='symbols', entry_id=symbol.id) }}">
+            {% if symbol.image %}
+              <div class="admin-wide-preview symbol-admin-preview">
+                <img src="{{ media_url(symbol.image) }}" alt="{{ symbol.name }}" data-preview-target>
+              </div>
+            {% endif %}
+            <form class="admin-form" method="post" action="{{ url_for('update_collection_item', collection='symbols', entry_id=symbol.id) }}" enctype="multipart/form-data">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <label>Nome <input type="text" name="name" value="{{ symbol.name }}"></label>
               <label>Significado <textarea name="meaning" rows="3">{{ symbol.meaning }}</textarea></label>
+              <label>Nova imagem <input type="file" name="image" accept=".png,.jpg,.jpeg,.webp" data-preview-input></label>
               <button class="primary-cta" type="submit">Salvar símbolo</button>
             </form>
             <form method="post" action="{{ url_for('delete_collection_item', collection='symbols', entry_id=symbol.id) }}" class="delete-form inline-delete">
@@ -640,10 +646,11 @@
           </article>
         {% endfor %}
       </div>
-      <form class="admin-form admin-form-grid admin-add-form" method="post" action="{{ url_for('create_collection_item', collection='symbols') }}">
+      <form class="admin-form admin-form-grid admin-add-form" method="post" action="{{ url_for('create_collection_item', collection='symbols') }}" enctype="multipart/form-data">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <label>Nome <input type="text" name="name" placeholder="Ex: Dragão Azul"></label>
         <label>Significado <input type="text" name="meaning" placeholder="O que esse símbolo representa"></label>
+        <label>Imagem <input type="file" name="image" accept=".png,.jpg,.jpeg,.webp" data-preview-input></label>
         <button class="primary-cta" type="submit">Adicionar símbolo</button>
       </form>
     </section>
@@ -807,8 +814,7 @@
                 </select>
               </label>
               <label>Título <input type="text" name="title" value="{{ event.title }}"></label>
-              <label>Resumo <textarea name="summary" rows="10">{{ event.summary }}</textarea></label>
-              <label>História detalhada <textarea name="details" rows="7">{{ event.details }}</textarea></label>
+              <label>História detalhada <textarea name="details" rows="10">{{ event.details }}</textarea></label>
               {% if event.images %}
                 <div class="admin-media-strip">
                   {% for image in event.images %}
@@ -841,8 +847,7 @@
           </select>
         </label>
         <label>Título <input type="text" name="title"></label>
-        <label class="span-2">Resumo <textarea name="summary" rows="10"></textarea></label>
-        <label class="span-2">História detalhada <textarea name="details" rows="7"></textarea></label>
+        <label class="span-2">História detalhada <textarea name="details" rows="10"></textarea></label>
         <label class="span-2">Fotos <input type="file" name="images" accept="image/*" multiple></label>
         <button class="primary-cta" type="submit">Adicionar crônica</button>
       </form>

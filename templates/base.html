@@ -94,11 +94,11 @@
       </label>
     </aside>
 
-    <div class="flash-stack" aria-live="polite">
+    <div class="flash-stack {% if request.endpoint == 'admin' %}admin-flash-stack{% endif %}" aria-live="polite">
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
           {% for category, message in messages %}
-            <p class="flash flash-{{ category }}">{{ message }}</p>
+            <p class="flash flash-{{ category }}" data-flash-message>{{ message }}</p>
           {% endfor %}
         {% endif %}
       {% endwith %}

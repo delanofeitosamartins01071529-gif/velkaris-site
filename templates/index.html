@@ -192,9 +192,17 @@
       <div class="symbol-grid">
         {% for symbol in house.symbols %}
           <article class="symbol-card">
-            <span aria-hidden="true">✥</span>
-            <h3>{{ symbol.name }}</h3>
-            <p>{{ symbol.meaning }}</p>
+            <div class="symbol-card-mark" aria-hidden="true">
+              {% if symbol.image %}
+                <img src="{{ media_url(symbol.image) }}" alt="">
+              {% else %}
+                <span>✥</span>
+              {% endif %}
+            </div>
+            <div class="symbol-card-copy">
+              <h3>{{ symbol.name }}</h3>
+              <p>{{ symbol.meaning }}</p>
+            </div>
           </article>
         {% endfor %}
       </div>
@@ -443,7 +451,6 @@
             <button class="modal-close" type="button" data-timeline-close aria-label="Fechar crônica">×</button>
             <p class="section-kicker">{{ event.date }} · {{ event.era }}</p>
             <h2>{{ event.title }}</h2>
-            <p class="timeline-modal-summary">{{ event.summary }}</p>
             {% if event.details %}
               <p class="timeline-modal-details">{{ event.details }}</p>
             {% endif %}

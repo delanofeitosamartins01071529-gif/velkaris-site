@@ -51,6 +51,10 @@ navToggle?.addEventListener("click", () => {
   navToggle.setAttribute("aria-expanded", String(open));
 });
 
+document.querySelectorAll("[data-flash-message]").forEach((message) => {
+  message.addEventListener("animationend", () => message.remove(), { once: true });
+});
+
 nav?.querySelectorAll("a").forEach((link) => {
   link.addEventListener("click", () => {
     nav.classList.remove("is-open");
