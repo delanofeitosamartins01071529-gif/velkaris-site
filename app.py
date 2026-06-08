@@ -157,8 +157,8 @@ logging.basicConfig(level=os.environ.get("LOG_LEVEL", "INFO"))
 if Image is not None:
     Image.MAX_IMAGE_PIXELS = int(os.environ.get("MAX_IMAGE_PIXELS", "24000000"))
 
-ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "adm")
-DEFAULT_ADMIN_PASSWORD_HASH = "$argon2id$v=19$m=65536,t=3,p=4$irRP2gdsES31KAV/+UN4yw$PrCKkbbrBfMGVEy5iaEHBL6Ih6x1OcHsHJ6Bod4RlbQ"
+ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
+DEFAULT_ADMIN_PASSWORD_HASH = "$argon2id$v=19$m=65536,t=3,p=4$QUw0hovFRvlrH98ev/PsCw$51iZxj84VFu7OB3zmDN8/mvcdz1ItQIasKrODq4/YJE"
 ADMIN_PASSWORD_HASH = os.environ.get("ADMIN_PASSWORD_HASH", DEFAULT_ADMIN_PASSWORD_HASH)
 LEGACY_ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD")
 ALLOW_PLAINTEXT_ADMIN_PASSWORD = os.environ.get("ALLOW_PLAINTEXT_ADMIN_PASSWORD") == "1"
