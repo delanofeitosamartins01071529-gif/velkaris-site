@@ -265,9 +265,6 @@
               <p class="section-kicker">{{ member.generation }}</p>
               <h3>{{ member.name }}</h3>
               <p class="modal-title">{{ member.title }}</p>
-              {% if member.quote %}
-                <blockquote>{{ member.quote }}</blockquote>
-              {% endif %}
               <dl class="member-facts">
                 <div><dt>Status</dt><dd>{{ member.status }}</dd></div>
                 {% if member.status == "Morto" and member.death_cause %}<div><dt>Causa da morte</dt><dd>{{ member.death_cause }}</dd></div>{% endif %}
@@ -303,7 +300,7 @@
                   </p>
                 </div>
               </div>
-              <p>{{ member.biography }}</p>
+              <p class="member-modal-quote">{{ member.quote or member.biography }}</p>
               {% if member.traits %}
                 <div class="member-traits">
                   <span>Traços e feitos</span>

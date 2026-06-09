@@ -146,8 +146,9 @@ select {
   inset: 0;
   z-index: 100;
   display: grid;
-  place-items: center;
-  gap: 1rem;
+  align-content: center;
+  justify-items: center;
+  gap: clamp(1.8rem, 4vh, 3.4rem);
   background:
     radial-gradient(circle at 50% 42%, rgba(14, 47, 91, 0.42), transparent 18rem),
     #030507;
@@ -168,19 +169,19 @@ html.js body:not(.is-loaded) .site-header {
 .loading-screen p {
   position: relative;
   z-index: 1;
-  margin: clamp(9rem, 24vh, 14rem) 0 0;
+  margin: 0;
   color: var(--bright-gold);
   font-family: var(--font-display);
-  font-size: clamp(1.3rem, 4vw, 2.7rem);
+  font-size: clamp(1.45rem, 4.2vw, 3rem);
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
 .loading-sigil {
-  position: absolute;
+  position: relative;
   display: grid;
   place-items: center;
-  width: min(44vw, 300px);
+  width: min(64vw, 430px);
   aspect-ratio: 1;
 }
 
@@ -204,7 +205,7 @@ html.js body:not(.is-loaded) .site-header {
 .loading-crest {
   position: relative;
   z-index: 1;
-  width: min(34vw, 220px);
+  width: min(52vw, 330px);
   filter: drop-shadow(0 0 26px rgba(185, 148, 85, 0.38));
   animation: crestPulse 2.2s ease-in-out infinite;
 }
@@ -2096,6 +2097,16 @@ dialog.is-closing > :not(.cursor-aura),
   color: rgba(232, 224, 211, 0.82);
   font-family: var(--font-serif);
   font-size: 1.12rem;
+}
+
+.member-modal-quote {
+  margin: 1rem 0 0;
+  color: #8ecaff;
+  font-family: var(--font-serif);
+  font-size: clamp(1.02rem, 1.8vw, 1.22rem);
+  font-style: italic;
+  line-height: 1.55;
+  text-shadow: 0 0 18px rgba(93, 169, 232, 0.18);
 }
 
 .member-facts {

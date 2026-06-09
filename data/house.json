@@ -146,8 +146,8 @@
     },
     {
       "id": "territories-b882e73de8",
-      "name": "Estfall",
-      "type": "Porto",
+      "name": "Posto Avançado Estfall",
+      "type": "Território aliado",
       "description": "Posto avançado de Estfall.",
       "lore": "O posto de Estfall está localizado a leste de Nazarik, às margens do rio Nilo. Sua posição estratégica permite controlar as rotas comerciais fluviais que passam pela região.",
       "coord_x": "58.38",
