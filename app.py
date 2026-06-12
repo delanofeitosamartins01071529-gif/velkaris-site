@@ -135,7 +135,7 @@ COLLECTION_FIELDS = {
     "leaders": ("name", "title", "period", "description"),
     "fortifications": ("name", "type", "responsible", "description"),
     "conflicts": ("name", "period", "outcome", "description"),
-    "aristocrats": ("name", "title", "role", "description"),
+    "aristocrats": ("role", "description"),
     "allies": ("name", "group", "role", "description"),
     "vassals": ("name", "group", "service", "description"),
 }
@@ -412,6 +412,16 @@ def ensure_collection_item(collection: str, item: Any, index: int) -> dict[str, 
         normalized["images"] = (
             [str(image) for image in images if image] if isinstance(images, list) else []
         )
+    if collection == "aristocrats":
+        normalized["name"] = item.get("name", "")
+        normalized["title"] = item.get("title", "")
+        person_ids = item.get("person_ids", [])
+        if not isinstance(person_ids, list):
+            person_ids = []
+        if item.get("person_id") and item.get("person_id") not in person_ids:
+            person_ids.insert(0, item.get("person_id"))
+        normalized["person_ids"] = [str(person_id) for person_id in person_ids if person_id]
+        normalized["person_id"] = normalized["person_ids"][0] if normalized["person_ids"] else ""
     if collection in STRATEGIC_COLLECTIONS:
         normalized["image"] = item.get("image", "")
     return normalized
@@ -925,6 +935,82 @@ def ancestor_members_for_house(members: list[dict[str, Any]], house: dict[str, A
     return selected[:4]
 
 
+def strategic_people_options(members: list[dict[str, Any]], house: dict[str, Any]) -> list[dict[str, str]]:
+    options = [
+        {
+            "id": f"member:{member.get('id', '')}",
+            "name": member.get("name", ""),
+            "kind": "Familiar",
+            "subtitle": member.get("title") or member.get("generation") or "Membro da família",
+            "image": member.get("image", ""),
+        }
+        for member in members
+        if member.get("id")
+    ]
+    options.extend(
+        {
+            "id": f"vassal:{vassal.get('id', '')}",
+            "name": vassal.get("name", ""),
+            "kind": "Vassalo",
+            "subtitle": vassal.get("service") or vassal.get("group") or "Vassalo da Casa",
+            "image": vassal.get("image", ""),
+        }
+        for vassal in house.get("vassals", [])
+        if vassal.get("id")
+    )
+    return sorted(options, key=lambda person: (person["kind"], person["name"].lower()))
+
+
+def resolve_strategic_person(person_id: str, members: list[dict[str, Any]], house: dict[str, Any]) -> dict[str, str] | None:
+    if not person_id:
+        return None
+    if ":" not in person_id:
+        person_id = f"member:{person_id}"
+    by_id = {person["id"]: person for person in strategic_people_options(members, house)}
+    return by_id.get(person_id)
+
+
+def normalize_strategic_person_ids(person_ids: list[str]) -> list[str]:
+    normalized: list[str] = []
+    for person_id in person_ids:
+        person_id = str(person_id or "").strip()
+        if not person_id:
+            continue
+        if ":" not in person_id:
+            person_id = f"member:{person_id}"
+        if person_id not in normalized:
+            normalized.append(person_id)
+    return normalized
+
+
+def aristocrat_role_groups(members: list[dict[str, Any]], house: dict[str, Any]) -> list[dict[str, Any]]:
+    groups: dict[str, dict[str, Any]] = {}
+    for item in house.get("aristocrats", []):
+        role = item.get("role") or item.get("title") or "Função não nomeada"
+        person_ids = normalize_strategic_person_ids(item.get("person_ids", []) or [item.get("person_id", "")])
+        people = [resolve_strategic_person(person_id, members, house) for person_id in person_ids]
+        people = [person for person in people if person]
+        if not people:
+            people = [{
+                "id": item.get("id", ""),
+                "name": item.get("name", "Registro sem pessoa"),
+                "kind": "Registro",
+                "subtitle": item.get("title", ""),
+                "image": item.get("image", ""),
+            }]
+        for person in people:
+            entry = {
+                **item,
+                "role": role,
+                "name": person.get("name", ""),
+                "kind": person.get("kind", ""),
+                "subtitle": person.get("subtitle", ""),
+                "image": person.get("image", ""),
+            }
+            groups.setdefault(role, {"role": role, "entries": []})["entries"].append(entry)
+    return sorted(groups.values(), key=lambda group: group["role"].casefold())
+
+
 @app.context_processor
 def inject_globals() -> dict[str, Any]:
     try:
@@ -967,6 +1053,7 @@ def index():
         portrait_members=members_in_tree_order(members, family_tree),
         family_tree=family_tree,
         family_tree_payload=build_family_tree_payload(family_tree),
+        aristocrat_groups=aristocrat_role_groups(members, house),
         generation_options=GENERATION_OPTIONS,
     )
 
@@ -1061,6 +1148,7 @@ def admin():
         map_marker_colors=MAP_MARKER_COLORS,
         map_marker_icons=MAP_MARKER_ICONS,
         family_links=build_family_links(members),
+        strategic_people=strategic_people_options(members, house),
     )
 
 
@@ -1141,6 +1229,9 @@ def create_collection_item(collection: str):
     item = {"id": item_id(collection)}
     for field in COLLECTION_FIELDS[collection]:
         item[field] = request.form.get(field, "").strip()
+    if collection == "aristocrats":
+        item["person_ids"] = normalize_strategic_person_ids(request.form.getlist("person_ids"))
+        item["person_id"] = item["person_ids"][0] if item["person_ids"] else ""
     if collection == "territories":
         sanitize_map_marker(item)
         item["images"] = [
@@ -1163,7 +1254,7 @@ def create_collection_item(collection: str):
             for upload in request.files.getlist("images")
             if (saved := save_upload(upload, "timeline"))
         ]
-    if collection in STRATEGIC_COLLECTIONS:
+    if collection in STRATEGIC_COLLECTIONS and collection != "aristocrats":
         item["image"] = save_upload(request.files.get("image"), collection) or ""
     house[collection].append(item)
     write_json(HOUSE_FILE, house)
@@ -1183,6 +1274,9 @@ def update_collection_item(collection: str, entry_id: str):
         abort(404)
     for field in COLLECTION_FIELDS[collection]:
         item[field] = request.form.get(field, "").strip()
+    if collection == "aristocrats":
+        item["person_ids"] = normalize_strategic_person_ids(request.form.getlist("person_ids"))
+        item["person_id"] = item["person_ids"][0] if item["person_ids"] else ""
     if collection == "territories":
         sanitize_map_marker(item)
         removed_images = set(request.form.getlist("remove_images"))
@@ -1216,7 +1310,7 @@ def update_collection_item(collection: str, entry_id: str):
             for upload in request.files.getlist("images")
             if (saved := save_upload(upload, "timeline"))
         )
-    if collection in STRATEGIC_COLLECTIONS:
+    if collection in STRATEGIC_COLLECTIONS and collection != "aristocrats":
         uploaded = save_upload(request.files.get("image"), collection)
         if uploaded:
             item["image"] = uploaded

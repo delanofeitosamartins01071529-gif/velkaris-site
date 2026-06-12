@@ -48,7 +48,200 @@
   ],
   "fortifications": [],
   "conflicts": [],
-  "aristocrats": [],
+  "aristocrats": [
+    {
+      "id": "aristocrats-2094b5d040",
+      "role": "Líder da Casa",
+      "description": "líder da casa",
+      "name": "",
+      "title": "",
+      "person_ids": [
+        "member:member-c3f29642f6"
+      ],
+      "person_id": "member:member-c3f29642f6",
+      "image": ""
+    },
+    {
+      "id": "aristocrats-1a9532ee61",
+      "role": "Conselheiros",
+      "description": "",
+      "name": "",
+      "title": "",
+      "person_ids": [
+        "member:velkaris-07",
+        "member:velkaris-05",
+        "member:velkaris-04",
+        "member:velkaris-06"
+      ],
+      "person_id": "member:velkaris-07",
+      "image": ""
+    },
+    {
+      "id": "aristocrats-c1589faedc",
+      "role": "Lider da Guarda",
+      "description": "",
+      "name": "",
+      "title": "",
+      "person_ids": [
+        "member:member-83e2210d64"
+      ],
+      "person_id": "member:member-83e2210d64",
+      "image": ""
+    },
+    {
+      "id": "aristocrats-cad6a94cc0",
+      "role": "General",
+      "description": "",
+      "name": "",
+      "title": "",
+      "person_ids": [
+        "member:velkaris-06"
+      ],
+      "person_id": "member:velkaris-06",
+      "image": ""
+    },
+    {
+      "id": "aristocrats-62fef00ae4",
+      "role": "Mestre da Lei",
+      "description": "",
+      "name": "",
+      "title": "",
+      "person_ids": [
+        "member:velkaris-07"
+      ],
+      "person_id": "member:velkaris-07",
+      "image": ""
+    },
+    {
+      "id": "aristocrats-cca24272c5",
+      "role": "Tesoureiro Real",
+      "description": "",
+      "name": "",
+      "title": "",
+      "person_ids": [
+        "member:member-b58b3700b0"
+      ],
+      "person_id": "member:member-b58b3700b0",
+      "image": ""
+    },
+    {
+      "id": "aristocrats-334ef9bc57",
+      "role": "Mestre de Obras",
+      "description": "",
+      "name": "",
+      "title": "",
+      "person_ids": [
+        "member:member-da54509e24"
+      ],
+      "person_id": "member:member-da54509e24",
+      "image": ""
+    },
+    {
+      "id": "aristocrats-94b78c3178",
+      "role": "Mestre dos Correios",
+      "description": "",
+      "name": "",
+      "title": "",
+      "person_ids": [
+        "member:member-7519b66ce0"
+      ],
+      "person_id": "member:member-7519b66ce0",
+      "image": ""
+    },
+    {
+      "id": "aristocrats-43a7d99a1a",
+      "role": "Mestre dos Espiões",
+      "description": "",
+      "name": "",
+      "title": "",
+      "person_ids": [
+        "member:member-d87d22daab"
+      ],
+      "person_id": "member:member-d87d22daab",
+      "image": ""
+    },
+    {
+      "id": "aristocrats-b068debaf5",
+      "role": "Mestre dos Cerimoniais",
+      "description": "",
+      "name": "",
+      "title": "",
+      "person_ids": [
+        "member:member-873089649f"
+      ],
+      "person_id": "member:member-873089649f",
+      "image": ""
+    },
+    {
+      "id": "aristocrats-202e61a7d8",
+      "role": "Mordomo-Mor",
+      "description": "",
+      "name": "",
+      "title": "",
+      "person_ids": [
+        "vassal:vassals-f5afb85799"
+      ],
+      "person_id": "vassal:vassals-f5afb85799",
+      "image": ""
+    },
+    {
+      "id": "aristocrats-b9c6bd1355",
+      "role": "Médico Real",
+      "description": "",
+      "name": "",
+      "title": "",
+      "person_ids": [
+        "member:velkaris-05"
+      ],
+      "person_id": "member:velkaris-05",
+      "image": ""
+    },
+    {
+      "id": "aristocrats-669bb85d5f",
+      "role": "Arquivista Real",
+      "description": "",
+      "name": "",
+      "title": "",
+      "person_ids": [
+        "member:member-1a0287e432"
+      ],
+      "person_id": "member:member-1a0287e432",
+      "image": ""
+    },
+    {
+      "id": "aristocrats-f45846f3bd",
+      "role": "Bobo da Corte",
+      "description": "",
+      "name": "",
+      "title": "",
+      "person_ids": [
+        "vassal:vassals-37413d22ce"
+      ],
+      "person_id": "vassal:vassals-37413d22ce",
+      "image": ""
+    },
+    {
+      "id": "aristocrats-37f2c7ed1a",
+      "role": "Arauto Real",
+      "description": "",
+      "name": "",
+      "title": "",
+      "person_ids": [
+        "member:member-7e782798e9"
+      ],
+      "person_id": "member:member-7e782798e9",
+      "image": ""
+    },
+    {
+      "id": "aristocrats-5f68ad02b2",
+      "role": "Chefe do armazém",
+      "description": "",
+      "person_ids": [
+        "member:member-2ddaf268bb"
+      ],
+      "person_id": "member:member-2ddaf268bb"
+    }
+  ],
   "allies": [],
   "vassals": [
     {

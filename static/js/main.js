@@ -1161,6 +1161,32 @@ document.querySelectorAll("[data-preview-input]").forEach((input) => {
   });
 });
 
+document.querySelectorAll("[data-person-select]").forEach((select) => {
+  const updatePersonPreview = () => {
+    const preview = select.closest("form")?.querySelector("[data-person-preview-list]");
+    if (!preview) return;
+    const selected = [...select.selectedOptions].filter((option) => option.value);
+    preview.replaceChildren();
+    selected.forEach((option) => {
+      const image = option.dataset.image || "";
+      const name = option.dataset.name || option.textContent.trim();
+      if (!image) {
+        const label = document.createElement("span");
+        label.textContent = name;
+        preview.append(label);
+        return;
+      }
+      const img = document.createElement("img");
+      img.src = image;
+      img.alt = name;
+      preview.append(img);
+    });
+    preview.hidden = !selected.length;
+  };
+  select.addEventListener("change", updatePersonPreview);
+  updatePersonPreview();
+});
+
 const bulkTreeButton = document.querySelector("[data-tree-bulk-save]");
 bulkTreeButton?.addEventListener("click", async () => {
   const forms = Array.from(document.querySelectorAll("[data-tree-editor-form]"));

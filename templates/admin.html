@@ -52,6 +52,74 @@
   </section>
 {% endmacro %}
 
+{% macro aristocrat_collection(section_id, kicker, heading, items, people) %}
+  <section class="admin-card reveal is-visible" id="{{ section_id }}" data-bulk-section data-bulk-label="{{ heading|lower }}" data-bulk-button="Salvar todas as funções" data-bulk-anchor="{{ section_id }}">
+    <div class="admin-section-title">
+      <p class="section-kicker">{{ kicker }}</p>
+      <h2>{{ heading }}</h2>
+    </div>
+    <div class="admin-list two-col">
+      {% for item in items|sort(attribute='role') %}
+        {% set selected_ids = item.person_ids or ([item.person_id] if item.person_id else []) %}
+        <article class="admin-list-card">
+          <form class="admin-form" method="post" action="{{ url_for('update_collection_item', collection='aristocrats', entry_id=item.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="admin-person-preview-list" data-person-preview-list>
+              {% for person in people %}
+                {% if person.id in selected_ids or person.id.removeprefix('member:') in selected_ids %}
+                  {% if person.image %}<img src="{{ media_url(person.image) }}" alt="{{ person.name }}">{% endif %}
+                {% endif %}
+              {% endfor %}
+            </div>
+            <label>
+              Nome do cargo
+              <input type="text" name="role" value="{{ item.role or item.title }}">
+            </label>
+            <label>
+              Pessoas
+              <select name="person_ids" data-person-select multiple size="8">
+                {% for person in people %}
+                  <option value="{{ person.id }}" data-image="{% if person.image %}{{ media_url(person.image) }}{% endif %}" data-name="{{ person.name }}" {% if person.id in selected_ids or person.id.removeprefix('member:') in selected_ids %}selected{% endif %}>{{ person.name }} — {{ person.kind }}</option>
+                {% endfor %}
+              </select>
+            </label>
+            <label>
+              Descrição
+              <textarea name="description" rows="3">{{ item.description }}</textarea>
+            </label>
+            <button class="primary-cta" type="submit">Salvar função</button>
+          </form>
+          <form method="post" action="{{ url_for('delete_collection_item', collection='aristocrats', entry_id=item.id) }}" class="delete-form inline-delete">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit">Excluir</button>
+          </form>
+        </article>
+      {% endfor %}
+    </div>
+    <form class="admin-form admin-form-grid admin-add-form" method="post" action="{{ url_for('create_collection_item', collection='aristocrats') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="admin-person-preview-list span-2" data-person-preview-list></div>
+      <label>
+        Nome do cargo
+        <input type="text" name="role" placeholder="Ex: Conselheiro, General, Guardião">
+      </label>
+      <label>
+        Pessoas
+        <select name="person_ids" data-person-select multiple size="8">
+          {% for person in people %}
+            <option value="{{ person.id }}" data-image="{% if person.image %}{{ media_url(person.image) }}{% endif %}" data-name="{{ person.name }}">{{ person.name }} — {{ person.kind }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="span-2">
+        Descrição
+        <textarea name="description" rows="3"></textarea>
+      </label>
+      <button class="primary-cta" type="submit">Adicionar função</button>
+    </form>
+  </section>
+{% endmacro %}
+
 {% block title %}Admin | Casa {{ house.name }}{% endblock %}
 
 {% block content %}
@@ -988,7 +1056,7 @@
     {{ strategic_collection("leaders-admin", "Lideranças da família", "Lideranças da Casa", "leaders", house.leaders, [("name", "Nome"), ("title", "Título"), ("period", "Período"), ("description", "Descrição")]) }}
     {{ strategic_collection("fortifications-admin", "Defesas juramentadas", "Edificações", "fortifications", house.fortifications, [("name", "Nome"), ("type", "Tipo"), ("responsible", "Responsável"), ("description", "Descrição")]) }}
     {{ strategic_collection("conflicts-admin", "Memória de batalha", "Confrontos enfrentados", "conflicts", house.conflicts, [("name", "Nome"), ("period", "Período"), ("outcome", "Desfecho"), ("description", "Descrição")]) }}
-    {{ strategic_collection("aristocrats-admin", "Funções dos Membros", "Funções dos membros da família", "aristocrats", house.aristocrats, [("name", "Nome"), ("title", "Título"), ("role", "Papel"), ("description", "Descrição")]) }}
+    {{ aristocrat_collection("aristocrats-admin", "Funções dos Membros", "Funções dos membros da família", house.aristocrats, strategic_people) }}
     {{ strategic_collection("allies-admin", "Pactos e favores", "Aliados da Casa", "allies", house.allies, [("name", "Nome"), ("group", "Grupo social"), ("role", "Apoio prestado"), ("description", "Descrição")]) }}
     {{ strategic_collection("vassals-admin", "Serviços juramentados", "Vassalos da Casa", "vassals", house.vassals, [("name", "Nome"), ("group", "Grupo social"), ("service", "Serviço prestado"), ("description", "Descrição")]) }}
   </section>

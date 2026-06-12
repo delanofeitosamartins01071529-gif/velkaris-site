@@ -107,17 +107,34 @@
             </div>
           </section>
           <section data-strategic-panel="aristocrats" hidden>
-            <div class="strategic-entry-grid">
-              {% for item in house.aristocrats %}
-                <article class="strategic-entry" role="button" tabindex="0" data-strategic-entry-open data-kicker="{{ item.role }}" data-name="{{ item.name }}" data-highlight="{{ item.title }}" data-description="{{ item.description }}" data-image="{% if item.image %}{{ media_url(item.image) }}{% endif %}">
-                  {% if item.image %}<img src="{{ media_url(item.image) }}" alt="Imagem de {{ item.name }}">{% endif %}
-                  <span>{{ item.role }}</span>
-                  <h3>{{ item.name }}</h3>
-                  <strong>{{ item.title }}</strong>
-                  <p>{{ item.description }}</p>
-                </article>
+            <div class="function-role-list">
+              {% for group in aristocrat_groups %}
+                <details class="function-role-group" {% if loop.first %}open{% endif %}>
+                  <summary>
+                    <span class="function-role-title">{{ group.role }}</span>
+                    <span class="function-role-count">{{ group.entries|length }} pessoa{{ '' if group.entries|length == 1 else 's' }}</span>
+                    <span class="function-role-avatars" aria-hidden="true">
+                      {% for item in group.entries[:5] %}
+                        {% if item.image %}<img src="{{ media_url(item.image) }}" alt="">{% endif %}
+                      {% endfor %}
+                    </span>
+                  </summary>
+                  <div class="function-entry-grid">
+                    {% for item in group.entries %}
+                      <article class="strategic-entry function-entry" role="button" tabindex="0" data-strategic-entry-open data-kicker="{{ group.role }}" data-name="{{ item.name }}" data-highlight="{{ item.subtitle or item.kind }}" data-description="{{ item.description }}" data-image="{% if item.image %}{{ media_url(item.image) }}{% endif %}">
+                        {% if item.image %}<img src="{{ media_url(item.image) }}" alt="Imagem de {{ item.name }}">{% endif %}
+                        <div>
+                          <span>{{ item.kind }}</span>
+                          <h3>{{ item.name }}</h3>
+                          <strong>{{ item.subtitle }}</strong>
+                          <p>{{ item.description }}</p>
+                        </div>
+                      </article>
+                    {% endfor %}
+                  </div>
+                </details>
               {% else %}
-                <p class="empty-state">Nenhum aristocrata registrado.</p>
+                <p class="empty-state">Nenhuma função registrada.</p>
               {% endfor %}
             </div>
           </section>
