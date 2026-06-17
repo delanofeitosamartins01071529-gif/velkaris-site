@@ -23,6 +23,7 @@ from flask import (
     Flask,
     abort,
     flash,
+    has_request_context,
     jsonify,
     redirect,
     render_template,
@@ -184,15 +185,34 @@ def read_json(path: Path, fallback: Any) -> Any:
         return json.load(handle)
 
 
-def write_json(path: Path, payload: Any) -> None:
+def is_serverless_runtime() -> bool:
+    return bool(os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"))
+
+
+def notify_admin(message: str, category: str = "error") -> None:
+    if has_request_context():
+        flash(message, category)
+
+
+def write_json(path: Path, payload: Any) -> bool:
     if supabase_write_json(path, payload):
-        return
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temp_path = path.with_suffix(".tmp")
-    with temp_path.open("w", encoding="utf-8") as handle:
-        json.dump(payload, handle, ensure_ascii=False, indent=2)
-        handle.write("\n")
-    temp_path.replace(path)
+        return True
+    if is_serverless_runtime():
+        app.logger.error("Persistencia bloqueada em ambiente serverless: %s", path.name)
+        notify_admin("Nao foi possivel salvar. Confira as variaveis e tabelas do Supabase na Vercel.", "error")
+        return False
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        temp_path = path.with_suffix(".tmp")
+        with temp_path.open("w", encoding="utf-8") as handle:
+            json.dump(payload, handle, ensure_ascii=False, indent=2)
+            handle.write("\n")
+        temp_path.replace(path)
+        return True
+    except OSError:
+        app.logger.exception("Falha ao salvar dados locais em %s", path)
+        notify_admin("Nao foi possivel salvar os dados no servidor.", "error")
+        return False
 
 
 MOJIBAKE_MARKERS = ("Ã", "Â", "â", "�")
@@ -277,7 +297,11 @@ def supabase_write_json(path: Path, payload: Any) -> bool:
     try:
         with urllib.request.urlopen(request_obj, timeout=8):
             return True
-    except urllib.error.URLError:
+    except urllib.error.HTTPError as exc:
+        app.logger.error("Supabase recusou salvar %s: HTTP %s %s", path.name, exc.code, exc.read().decode("utf-8", "ignore"))
+        return False
+    except urllib.error.URLError as exc:
+        app.logger.error("Falha ao conectar ao Supabase para salvar %s: %s", path.name, exc)
         return False
 
 
@@ -535,7 +559,11 @@ def save_supabase_upload(body: bytes, filename: str, content_type: str) -> str |
     try:
         with urllib.request.urlopen(request_obj, timeout=18):
             return f"{SUPABASE_URL}/storage/v1/object/public/{SUPABASE_BUCKET}/{object_path}"
-    except urllib.error.URLError:
+    except urllib.error.HTTPError as exc:
+        app.logger.error("Supabase recusou upload %s: HTTP %s %s", filename, exc.code, exc.read().decode("utf-8", "ignore"))
+        return None
+    except urllib.error.URLError as exc:
+        app.logger.error("Falha ao conectar ao Supabase para upload %s: %s", filename, exc)
         return None
 
 
@@ -559,10 +587,19 @@ def save_upload(file_storage, prefix: str) -> str | None:
     supabase_url = save_supabase_upload(body, filename, content_type)
     if supabase_url:
         return supabase_url
-    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-    destination = UPLOAD_DIR / filename
-    destination.write_bytes(body)
-    return f"uploads/{filename}"
+    if is_serverless_runtime():
+        app.logger.error("Upload bloqueado em ambiente serverless sem Supabase funcional: %s", filename)
+        flash("Nao foi possivel salvar a imagem. Confira o bucket do Supabase na Vercel.", "error")
+        return None
+    try:
+        UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+        destination = UPLOAD_DIR / filename
+        destination.write_bytes(body)
+        return f"uploads/{filename}"
+    except OSError:
+        app.logger.exception("Falha ao salvar upload local em %s", UPLOAD_DIR)
+        flash("Nao foi possivel salvar a imagem no servidor.", "error")
+        return None
 
 
 def media_url(path: str) -> str:
@@ -1212,8 +1249,8 @@ def update_interactive_map_image():
     uploaded = save_upload(request.files.get("interactive_map"), "interactive-map")
     if uploaded:
         house["territory_map"] = uploaded
-        write_json(HOUSE_FILE, house)
-        flash("Mapa interativo atualizado.", "success")
+        if write_json(HOUSE_FILE, house):
+            flash("Mapa interativo atualizado.", "success")
     else:
         flash("Envie uma imagem PNG, JPG, JPEG ou WEBP para trocar o mapa.", "error")
     return redirect(url_for("admin", _anchor="mapa-interativo"))
