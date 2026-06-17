@@ -267,30 +267,6 @@ def ensure_supabase_bucket() -> bool:
     if SUPABASE_BUCKET_READY:
         return True
 
-    check_request = urllib.request.Request(
-        f"{SUPABASE_URL}/storage/v1/bucket/{SUPABASE_BUCKET}",
-        headers=supabase_headers({"Accept": "application/json"}),
-    )
-    try:
-        with urllib.request.urlopen(check_request, timeout=8):
-            SUPABASE_BUCKET_READY = True
-            return True
-    except urllib.error.HTTPError as exc:
-        if exc.code != 404:
-            response_body = exc.read().decode("utf-8", "ignore")
-            set_supabase_error(f"Falha ao verificar bucket: HTTP {exc.code} {response_body}")
-            app.logger.error(
-                "Supabase recusou verificar bucket %s: HTTP %s %s",
-                SUPABASE_BUCKET,
-                exc.code,
-                response_body,
-            )
-            return False
-    except urllib.error.URLError as exc:
-        set_supabase_error(f"Falha ao conectar ao Supabase: {exc}")
-        app.logger.error("Falha ao conectar ao Supabase para verificar bucket %s: %s", SUPABASE_BUCKET, exc)
-        return False
-
     request_obj = urllib.request.Request(
         f"{SUPABASE_URL}/storage/v1/bucket",
         data=json.dumps({"id": SUPABASE_BUCKET, "name": SUPABASE_BUCKET, "public": True}).encode("utf-8"),
@@ -620,8 +596,6 @@ def save_supabase_upload(body: bytes, filename: str, content_type: str) -> str |
         set_supabase_error("SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY ausente na Vercel.")
         app.logger.error("Supabase desativado: SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY ausente.")
         return None
-    if not ensure_supabase_bucket():
-        return None
     object_path = f"uploads/{filename}"
     request_obj = urllib.request.Request(
         f"{SUPABASE_URL}/storage/v1/object/{SUPABASE_BUCKET}/{object_path}",
@@ -634,6 +608,29 @@ def save_supabase_upload(body: bytes, filename: str, content_type: str) -> str |
             return f"{SUPABASE_URL}/storage/v1/object/public/{SUPABASE_BUCKET}/{object_path}"
     except urllib.error.HTTPError as exc:
         response_body = exc.read().decode("utf-8", "ignore")
+        lower_body = response_body.lower()
+        missing_bucket = exc.code in {400, 404} and any(
+            marker in lower_body for marker in ("bucket", "not found", "does not exist")
+        )
+        if missing_bucket and ensure_supabase_bucket():
+            retry_request = urllib.request.Request(
+                f"{SUPABASE_URL}/storage/v1/object/{SUPABASE_BUCKET}/{object_path}",
+                data=body,
+                method="POST",
+                headers=supabase_headers({"Content-Type": content_type, "x-upsert": "false"}),
+            )
+            try:
+                with urllib.request.urlopen(retry_request, timeout=18):
+                    return f"{SUPABASE_URL}/storage/v1/object/public/{SUPABASE_BUCKET}/{object_path}"
+            except urllib.error.HTTPError as retry_exc:
+                retry_body = retry_exc.read().decode("utf-8", "ignore")
+                set_supabase_error(f"Falha no upload apos criar bucket: HTTP {retry_exc.code} {retry_body}")
+                app.logger.error("Supabase recusou retry upload %s: HTTP %s %s", filename, retry_exc.code, retry_body)
+                return None
+            except urllib.error.URLError as retry_exc:
+                set_supabase_error(f"Falha ao conectar no retry do Supabase: {retry_exc}")
+                app.logger.error("Falha ao conectar ao Supabase no retry do upload %s: %s", filename, retry_exc)
+                return None
         set_supabase_error(f"Falha no upload: HTTP {exc.code} {response_body}")
         app.logger.error("Supabase recusou upload %s: HTTP %s %s", filename, exc.code, response_body)
         return None
