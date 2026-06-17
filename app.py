@@ -64,6 +64,7 @@ SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
 SUPABASE_BUCKET = os.environ.get("SUPABASE_STORAGE_BUCKET", "velkaris-media")
 SUPABASE_ENABLED = bool(SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY)
 SUPABASE_BUCKET_READY = False
+SUPABASE_LAST_ERROR = ""
 
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
 MEMBER_PORTRAIT_SIZE = (2160, 2700)
@@ -195,6 +196,11 @@ def notify_admin(message: str, category: str = "error") -> None:
         flash(message, category)
 
 
+def set_supabase_error(message: str) -> None:
+    global SUPABASE_LAST_ERROR
+    SUPABASE_LAST_ERROR = message[:220]
+
+
 def write_json(path: Path, payload: Any) -> bool:
     if supabase_write_json(path, payload):
         return True
@@ -256,9 +262,34 @@ def supabase_headers(extra: dict[str, str] | None = None) -> dict[str, str]:
 def ensure_supabase_bucket() -> bool:
     global SUPABASE_BUCKET_READY
     if not SUPABASE_ENABLED:
+        set_supabase_error("SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY ausente na Vercel.")
         return False
     if SUPABASE_BUCKET_READY:
         return True
+
+    check_request = urllib.request.Request(
+        f"{SUPABASE_URL}/storage/v1/bucket/{SUPABASE_BUCKET}",
+        headers=supabase_headers({"Accept": "application/json"}),
+    )
+    try:
+        with urllib.request.urlopen(check_request, timeout=8):
+            SUPABASE_BUCKET_READY = True
+            return True
+    except urllib.error.HTTPError as exc:
+        if exc.code != 404:
+            response_body = exc.read().decode("utf-8", "ignore")
+            set_supabase_error(f"Falha ao verificar bucket: HTTP {exc.code} {response_body}")
+            app.logger.error(
+                "Supabase recusou verificar bucket %s: HTTP %s %s",
+                SUPABASE_BUCKET,
+                exc.code,
+                response_body,
+            )
+            return False
+    except urllib.error.URLError as exc:
+        set_supabase_error(f"Falha ao conectar ao Supabase: {exc}")
+        app.logger.error("Falha ao conectar ao Supabase para verificar bucket %s: %s", SUPABASE_BUCKET, exc)
+        return False
 
     request_obj = urllib.request.Request(
         f"{SUPABASE_URL}/storage/v1/bucket",
@@ -272,9 +303,11 @@ def ensure_supabase_bucket() -> bool:
             return True
     except urllib.error.HTTPError as exc:
         response_body = exc.read().decode("utf-8", "ignore")
-        if exc.code in {400, 409} and "already" in response_body.lower():
+        lower_body = response_body.lower()
+        if exc.code in {400, 409} and any(marker in lower_body for marker in ("already", "exist", "duplicate")):
             SUPABASE_BUCKET_READY = True
             return True
+        set_supabase_error(f"Falha ao criar bucket: HTTP {exc.code} {response_body}")
         app.logger.error(
             "Supabase recusou criar/verificar bucket %s: HTTP %s %s",
             SUPABASE_BUCKET,
@@ -283,6 +316,7 @@ def ensure_supabase_bucket() -> bool:
         )
         return False
     except urllib.error.URLError as exc:
+        set_supabase_error(f"Falha ao conectar ao Supabase: {exc}")
         app.logger.error("Falha ao conectar ao Supabase para verificar bucket %s: %s", SUPABASE_BUCKET, exc)
         return False
 
@@ -583,6 +617,7 @@ def process_upload(file_storage, extension: str, prefix: str) -> tuple[bytes, st
 
 def save_supabase_upload(body: bytes, filename: str, content_type: str) -> str | None:
     if not SUPABASE_ENABLED:
+        set_supabase_error("SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY ausente na Vercel.")
         app.logger.error("Supabase desativado: SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY ausente.")
         return None
     if not ensure_supabase_bucket():
@@ -598,9 +633,12 @@ def save_supabase_upload(body: bytes, filename: str, content_type: str) -> str |
         with urllib.request.urlopen(request_obj, timeout=18):
             return f"{SUPABASE_URL}/storage/v1/object/public/{SUPABASE_BUCKET}/{object_path}"
     except urllib.error.HTTPError as exc:
-        app.logger.error("Supabase recusou upload %s: HTTP %s %s", filename, exc.code, exc.read().decode("utf-8", "ignore"))
+        response_body = exc.read().decode("utf-8", "ignore")
+        set_supabase_error(f"Falha no upload: HTTP {exc.code} {response_body}")
+        app.logger.error("Supabase recusou upload %s: HTTP %s %s", filename, exc.code, response_body)
         return None
     except urllib.error.URLError as exc:
+        set_supabase_error(f"Falha ao conectar ao Supabase: {exc}")
         app.logger.error("Falha ao conectar ao Supabase para upload %s: %s", filename, exc)
         return None
 
@@ -627,7 +665,8 @@ def save_upload(file_storage, prefix: str) -> str | None:
         return supabase_url
     if is_serverless_runtime():
         app.logger.error("Upload bloqueado em ambiente serverless sem Supabase funcional: %s", filename)
-        flash("Nao foi possivel salvar a imagem. Confira o bucket do Supabase na Vercel.", "error")
+        details = f" Detalhes: {SUPABASE_LAST_ERROR}" if SUPABASE_LAST_ERROR else ""
+        flash(f"Nao foi possivel salvar a imagem no Supabase.{details}", "error")
         return None
     try:
         UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
