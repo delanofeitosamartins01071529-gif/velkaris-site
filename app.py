@@ -63,6 +63,7 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
 SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
 SUPABASE_BUCKET = os.environ.get("SUPABASE_STORAGE_BUCKET", "velkaris-media")
 SUPABASE_ENABLED = bool(SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY)
+SUPABASE_BUCKET_READY = False
 
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
 MEMBER_PORTRAIT_SIZE = (2160, 2700)
@@ -250,6 +251,40 @@ def supabase_headers(extra: dict[str, str] | None = None) -> dict[str, str]:
     }
     headers.update(extra or {})
     return headers
+
+
+def ensure_supabase_bucket() -> bool:
+    global SUPABASE_BUCKET_READY
+    if not SUPABASE_ENABLED:
+        return False
+    if SUPABASE_BUCKET_READY:
+        return True
+
+    request_obj = urllib.request.Request(
+        f"{SUPABASE_URL}/storage/v1/bucket",
+        data=json.dumps({"id": SUPABASE_BUCKET, "name": SUPABASE_BUCKET, "public": True}).encode("utf-8"),
+        method="POST",
+        headers=supabase_headers({"Content-Type": "application/json"}),
+    )
+    try:
+        with urllib.request.urlopen(request_obj, timeout=8):
+            SUPABASE_BUCKET_READY = True
+            return True
+    except urllib.error.HTTPError as exc:
+        response_body = exc.read().decode("utf-8", "ignore")
+        if exc.code in {400, 409} and "already" in response_body.lower():
+            SUPABASE_BUCKET_READY = True
+            return True
+        app.logger.error(
+            "Supabase recusou criar/verificar bucket %s: HTTP %s %s",
+            SUPABASE_BUCKET,
+            exc.code,
+            response_body,
+        )
+        return False
+    except urllib.error.URLError as exc:
+        app.logger.error("Falha ao conectar ao Supabase para verificar bucket %s: %s", SUPABASE_BUCKET, exc)
+        return False
 
 
 def supabase_document_key(path: Path) -> str | None:
@@ -548,6 +583,9 @@ def process_upload(file_storage, extension: str, prefix: str) -> tuple[bytes, st
 
 def save_supabase_upload(body: bytes, filename: str, content_type: str) -> str | None:
     if not SUPABASE_ENABLED:
+        app.logger.error("Supabase desativado: SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY ausente.")
+        return None
+    if not ensure_supabase_bucket():
         return None
     object_path = f"uploads/{filename}"
     request_obj = urllib.request.Request(
