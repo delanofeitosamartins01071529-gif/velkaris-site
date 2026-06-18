@@ -1,6 +1,8 @@
 (() => {
-  const MAX_UPLOAD_IMAGE_BYTES = 3.5 * 1024 * 1024;
-  const MAX_UPLOAD_IMAGE_EDGE = 2600;
+  const DEFAULT_UPLOAD_IMAGE_BYTES = 3.6 * 1024 * 1024;
+  const HIGH_QUALITY_UPLOAD_BYTES = 4 * 1024 * 1024;
+  const DEFAULT_UPLOAD_IMAGE_EDGE = 3000;
+  const HIGH_QUALITY_UPLOAD_EDGE = 4096;
 
   const replaceInputFile = (input, file) => {
     const transfer = new DataTransfer();
@@ -27,7 +29,27 @@
     image.src = url;
   });
 
-  const compressImageFile = async (file, { maxEdge = MAX_UPLOAD_IMAGE_EDGE, maxBytes = MAX_UPLOAD_IMAGE_BYTES } = {}) => {
+  const compressionProfile = (input) => {
+    const profile = input?.dataset?.qualityProfile;
+    const action = input?.form?.action || "";
+    if (profile === "map" || input?.name === "interactive_map") {
+      return { maxEdge: HIGH_QUALITY_UPLOAD_EDGE, maxBytes: HIGH_QUALITY_UPLOAD_BYTES, initialQuality: 0.92, minQuality: 0.68 };
+    }
+    if (profile === "newspaper" || action.includes("/newspapers")) {
+      return { maxEdge: HIGH_QUALITY_UPLOAD_EDGE, maxBytes: HIGH_QUALITY_UPLOAD_BYTES, initialQuality: 0.92, minQuality: 0.66 };
+    }
+    return { maxEdge: DEFAULT_UPLOAD_IMAGE_EDGE, maxBytes: DEFAULT_UPLOAD_IMAGE_BYTES, initialQuality: 0.9, minQuality: 0.62 };
+  };
+
+  const compressImageFile = async (
+    file,
+    {
+      maxEdge = DEFAULT_UPLOAD_IMAGE_EDGE,
+      maxBytes = DEFAULT_UPLOAD_IMAGE_BYTES,
+      initialQuality = 0.9,
+      minQuality = 0.62,
+    } = {}
+  ) => {
     if (!file?.type?.startsWith("image/") || file.size <= maxBytes) return file;
     const source = await imageFromFile(file);
     const scale = Math.min(1, maxEdge / Math.max(source.naturalWidth, source.naturalHeight));
@@ -39,10 +61,10 @@
     const baseName = file.name.replace(/\.[^.]+$/, "");
     const extension = file.type === "image/webp" ? "webp" : "jpg";
     const outputType = extension === "webp" ? "image/webp" : "image/jpeg";
-    let quality = 0.86;
+    let quality = initialQuality;
     let blob = await canvasToBlob(canvas, outputType, quality);
-    while (blob && blob.size > maxBytes && quality > 0.58) {
-      quality -= 0.08;
+    while (blob && blob.size > maxBytes && quality > minQuality) {
+      quality -= 0.06;
       blob = await canvasToBlob(canvas, outputType, quality);
     }
     if (!blob || blob.size >= file.size) return file;
@@ -246,7 +268,7 @@
       }
       const file = input.files?.[0];
       if (!file?.type.startsWith("image/")) return;
-      const compactFile = await compressImageFile(file, { maxEdge: 3200, maxBytes: MAX_UPLOAD_IMAGE_BYTES });
+      const compactFile = await compressImageFile(file, compressionProfile(input));
       if (compactFile === file) return;
       skipNextCompression.add(input);
       replaceInputFile(input, compactFile);
@@ -263,7 +285,7 @@
       if (!files.length) return;
       const transfer = new DataTransfer();
       for (const file of files) {
-        transfer.items.add(await compressImageFile(file));
+        transfer.items.add(await compressImageFile(file, compressionProfile(input)));
       }
       skipNextCompression.add(input);
       input.files = transfer.files;
@@ -316,12 +338,13 @@
   editor.querySelector("[data-crop-apply]").addEventListener("click", () => {
     if (!activeInput || !sourceFile || !image) return;
     const output = document.createElement("canvas");
-    const maxWidth = 2400;
+    const profile = compressionProfile(activeInput);
+    const maxWidth = Math.min(profile.maxEdge, image.naturalWidth);
     output.width = Math.min(maxWidth, image.naturalWidth);
     output.height = Math.round(output.width / aspectRatio);
     const outputContext = output.getContext("2d");
     outputContext.drawImage(canvas, 0, 0, canvas.width, canvas.height, 0, 0, output.width, output.height);
-    output.toBlob((blob) => {
+    output.toBlob(async (blob) => {
       if (!blob || !activeInput) return;
       const extension = sourceFile.type === "image/png" ? "png" : "jpg";
       const baseName = sourceFile.name.replace(/\.[^.]+$/, "");
@@ -329,9 +352,10 @@
         type: extension === "png" ? "image/png" : "image/jpeg",
         lastModified: Date.now(),
       });
+      const finalFile = await compressImageFile(croppedFile, profile);
       skipNextEditor.add(activeInput);
-      replaceInputFile(activeInput, croppedFile);
+      replaceInputFile(activeInput, finalFile);
       closeEditor(false);
-    }, sourceFile.type === "image/png" ? "image/png" : "image/jpeg", 0.86);
+    }, sourceFile.type === "image/png" ? "image/png" : "image/jpeg", profile.initialQuality);
   });
 })();

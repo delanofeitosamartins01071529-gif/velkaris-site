@@ -735,7 +735,7 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <label>
               Nova imagem do mapa interativo
-              <input type="file" name="interactive_map" accept=".png,.jpg,.jpeg,.webp" data-preview-input="interactive_map">
+              <input type="file" name="interactive_map" accept=".png,.jpg,.jpeg,.webp" data-preview-input="interactive_map" data-skip-crop="true" data-quality-profile="map">
             </label>
             <button class="primary-cta" type="submit">Salvar novo mapa</button>
           </form>
