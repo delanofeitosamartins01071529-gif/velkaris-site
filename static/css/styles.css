@@ -4172,6 +4172,59 @@ dialog.is-closing > :not(.cursor-aura),
   color: rgba(232, 224, 211, 0.72);
 }
 
+.color-picker-row {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 0.55rem;
+  align-items: stretch;
+}
+
+.admin-form input[type="color"] {
+  width: 56px;
+  min-height: 44px;
+  padding: 0.25rem;
+  cursor: pointer;
+}
+
+.map-position-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.7rem;
+  border: 1px solid rgba(185, 148, 85, 0.2);
+  background: rgba(3, 6, 10, 0.42);
+}
+
+.map-position-actions span {
+  color: rgba(232, 224, 211, 0.68);
+  font-family: var(--font-serif);
+  font-size: 0.86rem;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.secondary-cta {
+  min-height: 42px;
+  border: 1px solid rgba(185, 148, 85, 0.38);
+  background: rgba(7, 10, 16, 0.84);
+  color: var(--bright-gold);
+  padding: 0.75rem 1rem;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+}
+
+.secondary-cta:hover,
+.secondary-cta:focus-visible,
+.is-picking-map-position .secondary-cta {
+  border-color: var(--bright-gold);
+  box-shadow: 0 0 22px rgba(185, 148, 85, 0.18);
+  color: #fff3d1;
+}
+
 .admin-member-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -4271,6 +4324,11 @@ dialog.is-closing > :not(.cursor-aura),
   min-height: 360px;
   border: 1px solid rgba(185, 148, 85, 0.26);
   background: rgba(3, 6, 10, 0.58);
+}
+
+.map-admin-preview.is-picking-position {
+  border-color: rgba(240, 208, 139, 0.72);
+  box-shadow: 0 0 32px rgba(185, 148, 85, 0.18);
   cursor: crosshair;
 }
 
@@ -4290,7 +4348,8 @@ dialog.is-closing > :not(.cursor-aura),
   height: 24px;
   border: 1px solid var(--bright-gold);
   border-radius: 50%;
-  background: rgba(240, 208, 139, 0.18);
+  background: color-mix(in srgb, var(--draft-color, var(--bright-gold)) 34%, transparent);
+  box-shadow: 0 0 22px var(--draft-color, rgba(240, 208, 139, 0.74));
   content: "";
   translate: -50% -50%;
   pointer-events: none;

@@ -754,7 +754,7 @@
             {% endfor %}
           </div>
         </div>
-        <form class="admin-form admin-form-grid admin-add-form" method="post" enctype="multipart/form-data" action="{{ url_for('create_collection_item', collection='territories') }}" data-map-marker-create>
+        <form class="admin-form admin-form-grid admin-add-form" method="post" enctype="multipart/form-data" action="{{ url_for('create_collection_item', collection='territories') }}" data-map-marker-create data-map-marker-form>
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <label>Nome do local <input type="text" name="name" required></label>
           <label>
@@ -776,11 +776,10 @@
           </label>
           <label>
             Cor do marcador
-            <select name="color" data-map-color-select>
-              {% for marker_color in map_marker_colors %}
-                <option value="{{ marker_color }}">{{ marker_color }}</option>
-              {% endfor %}
-            </select>
+            <span class="color-picker-row">
+              <input type="color" value="{{ map_marker_colors[0] }}" data-map-color-picker aria-label="Escolher cor do marcador">
+              <input type="text" name="color" value="{{ map_marker_colors[0] }}" pattern="#[0-9a-fA-F]{6}" data-map-color-text>
+            </span>
           </label>
           <label>Posição X (%) <input type="number" step="0.01" name="coord_x" value="50" min="0" max="100" data-map-x></label>
           <label>Posição Y (%) <input type="number" step="0.01" name="coord_y" value="50" min="0" max="100" data-map-y></label>
@@ -800,7 +799,7 @@
       <div class="admin-list two-col">
         {% for territory in house.territories %}
           <article class="admin-list-card" data-territory-editor="{{ territory.id }}">
-            <form class="admin-form" method="post" enctype="multipart/form-data" action="{{ url_for('update_collection_item', collection='territories', entry_id=territory.id) }}">
+            <form class="admin-form" method="post" enctype="multipart/form-data" action="{{ url_for('update_collection_item', collection='territories', entry_id=territory.id) }}" data-map-marker-form>
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <label>Nome <input type="text" name="name" value="{{ territory.name }}"></label>
               <label>

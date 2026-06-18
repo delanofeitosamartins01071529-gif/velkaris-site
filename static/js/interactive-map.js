@@ -56,28 +56,105 @@
   modal?.addEventListener("close", () => document.body.classList.remove("modal-open"));
 
   const adminPreview = document.querySelector("[data-map-admin-preview]");
-  const createForm = document.querySelector("[data-map-marker-create]");
-  const xInput = createForm?.querySelector("[data-map-x]");
-  const yInput = createForm?.querySelector("[data-map-y]");
+  const markerForms = [...document.querySelectorAll("[data-map-marker-form]")];
+  let activePickForm = null;
 
-  const setCreatePosition = (event) => {
-    if (!adminPreview || !xInput || !yInput) return;
+  const getColorField = (form) => form?.querySelector('[name="color"], [data-map-color-text]');
+
+  const normalizeColor = (value) => (/^#[0-9a-f]{6}$/i.test(value || "") ? value : "#d7b46a");
+
+  const syncDraftMarker = (form) => {
+    if (!adminPreview || !form) return;
+    const x = Number.parseFloat(form.querySelector('[name="coord_x"]')?.value || "50");
+    const y = Number.parseFloat(form.querySelector('[name="coord_y"]')?.value || "50");
+    const color = normalizeColor(getColorField(form)?.value);
+    adminPreview.style.setProperty("--draft-x", `${Math.min(100, Math.max(0, x))}%`);
+    adminPreview.style.setProperty("--draft-y", `${Math.min(100, Math.max(0, y))}%`);
+    adminPreview.style.setProperty("--draft-color", color);
+    adminPreview.classList.add("has-draft-marker");
+  };
+
+  const setActivePickForm = (form) => {
+    activePickForm = form;
+    markerForms.forEach((item) => item.classList.toggle("is-picking-map-position", item === form));
+    adminPreview?.classList.toggle("is-picking-position", Boolean(form));
+    markerForms.forEach((item) => {
+      const status = item.querySelector("[data-map-pick-status]");
+      if (status) status.textContent = item === form ? "Clique no ponto desejado do mapa." : "Clique no botÃ£o e depois no mapa.";
+    });
+    syncDraftMarker(form);
+    adminPreview?.scrollIntoView({ block: "center", behavior: "smooth" });
+  };
+
+  const setPickedPosition = (event) => {
+    if (!adminPreview || !activePickForm) return;
     if (event.target.closest("button")) return;
     const image = adminPreview.querySelector("img");
     const rect = image?.getBoundingClientRect() || adminPreview.getBoundingClientRect();
     const x = Math.min(100, Math.max(0, ((event.clientX - rect.left) / rect.width) * 100));
     const y = Math.min(100, Math.max(0, ((event.clientY - rect.top) / rect.height) * 100));
+    const xInput = activePickForm.querySelector('[name="coord_x"]');
+    const yInput = activePickForm.querySelector('[name="coord_y"]');
+    if (!xInput || !yInput) return;
     xInput.value = x.toFixed(2);
     yInput.value = y.toFixed(2);
-    adminPreview.style.setProperty("--draft-x", `${x}%`);
-    adminPreview.style.setProperty("--draft-y", `${y}%`);
-    adminPreview.classList.add("has-draft-marker");
-    createForm?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    syncDraftMarker(activePickForm);
+    activePickForm.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    setActivePickForm(null);
   };
 
-  adminPreview?.addEventListener("click", setCreatePosition);
+  markerForms.forEach((form) => {
+    if (!form.querySelector("[data-map-pick-position]")) {
+      const actions = document.createElement("div");
+      actions.className = "map-position-actions";
+      actions.innerHTML = `
+        <button class="secondary-cta" type="button" data-map-pick-position>Selecionar posiÃ§Ã£o no mapa</button>
+        <span data-map-pick-status>Clique no botÃ£o e depois no mapa.</span>
+      `;
+      const yField = form.querySelector('[name="coord_y"]')?.closest("label");
+      yField?.insertAdjacentElement("afterend", actions);
+    }
+    form.querySelector("[data-map-pick-position]")?.addEventListener("click", () => setActivePickForm(form));
+    form.querySelectorAll('[name="coord_x"], [name="coord_y"], [name="color"], [data-map-color-text]').forEach((input) => {
+      input.addEventListener("input", () => {
+        if (activePickForm === form) syncDraftMarker(form);
+      });
+    });
+  });
+
+  document.querySelectorAll("[data-map-color-select]").forEach((select) => {
+    const currentValue = normalizeColor(select.value);
+    const wrapper = document.createElement("span");
+    wrapper.className = "color-picker-row";
+    wrapper.innerHTML = `
+      <input type="color" value="${currentValue}" data-map-color-picker aria-label="Escolher cor do marcador">
+      <input type="text" name="${select.name}" value="${currentValue}" pattern="#[0-9a-fA-F]{6}" data-map-color-text>
+    `;
+    select.replaceWith(wrapper);
+  });
+
+  document.querySelectorAll("[data-map-color-picker]").forEach((picker) => {
+    const form = picker.closest("[data-map-marker-form]");
+    const text = picker.parentElement?.querySelector("[data-map-color-text]");
+    picker.addEventListener("input", () => {
+      if (text) text.value = picker.value;
+      if (activePickForm === form) syncDraftMarker(form);
+    });
+  });
+
+  document.querySelectorAll("[data-map-color-text]").forEach((text) => {
+    const form = text.closest("[data-map-marker-form]");
+    const picker = text.parentElement?.querySelector("[data-map-color-picker]");
+    text.addEventListener("input", () => {
+      if (picker && /^#[0-9a-f]{6}$/i.test(text.value)) picker.value = text.value;
+      if (activePickForm === form) syncDraftMarker(form);
+    });
+  });
+
+  adminPreview?.addEventListener("click", setPickedPosition);
   document.querySelectorAll("[data-map-admin-marker]").forEach((marker) => {
     marker.addEventListener("click", () => {
+      if (activePickForm) return;
       const id = marker.dataset.mapAdminMarker;
       const editor = document.querySelector(`[data-territory-editor="${id}"]`);
       editor?.scrollIntoView({ block: "center", behavior: "smooth" });
