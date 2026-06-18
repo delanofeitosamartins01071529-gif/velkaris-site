@@ -2623,7 +2623,7 @@ dialog.is-closing > :not(.cursor-aura),
 
 .territory-layout {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(280px, 0.86fr) minmax(320px, 1fr);
   gap: 1rem;
   align-items: stretch;
 }
@@ -2631,8 +2631,7 @@ dialog.is-closing > :not(.cursor-aura),
 .territory-map-wrap {
   position: relative;
   overflow: hidden;
-  aspect-ratio: 1.93 / 1;
-  min-height: 360px;
+  min-height: 410px;
   border: 1px solid rgba(185, 148, 85, 0.28);
   background: rgba(3, 6, 10, 0.7);
 }
@@ -2642,10 +2641,6 @@ dialog.is-closing > :not(.cursor-aura),
   height: 100%;
   object-fit: cover;
   filter: saturate(0.88) contrast(1.08);
-}
-
-.territory-list {
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }
 
 .map-marker {
