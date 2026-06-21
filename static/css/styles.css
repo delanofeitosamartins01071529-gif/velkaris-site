@@ -489,7 +489,7 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
 .main-nav {
   display: flex;
   justify-content: center;
-  gap: clamp(1rem, 3vw, 3rem);
+  gap: clamp(0.65rem, 1.8vw, 1.8rem);
 }
 
 .main-nav a,
@@ -990,6 +990,7 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
 .text-link,
 .filter-bar button,
 .tree-controls button,
+.map-controls button,
 .portrait-toggle,
 .timeline-toggle,
 .gallery-toggle {
@@ -1018,6 +1019,8 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
 .filter-bar button:hover,
 .filter-bar button.is-active,
 .tree-controls button:hover,
+.map-controls button:hover,
+.map-controls button:focus-visible,
 .portrait-toggle:hover,
 .portrait-toggle[aria-expanded="true"],
 .timeline-toggle:hover,
@@ -1571,6 +1574,7 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
 .members-panel,
 .tree-panel,
 .territories-panel,
+.culture-panel,
 .eras-panel,
 .timeline-panel,
 .archives-panel,
@@ -1584,7 +1588,8 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
 }
 
 .filter-bar,
-.tree-controls {
+.tree-controls,
+.map-controls {
   display: flex;
   flex-wrap: wrap;
   gap: 0.45rem;
@@ -1592,10 +1597,15 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
 }
 
 .filter-bar button,
-.tree-controls button {
+.tree-controls button,
+.map-controls button {
   min-height: 38px;
   padding: 0.55rem 0.85rem;
   background: rgba(5, 8, 13, 0.72);
+}
+
+.map-controls button[data-map-zoom-reset] {
+  min-width: 64px;
 }
 
 .portrait-toggle {
@@ -2623,24 +2633,98 @@ dialog.is-closing > :not(.cursor-aura),
 
 .territory-layout {
   display: grid;
-  grid-template-columns: minmax(280px, 0.86fr) minmax(320px, 1fr);
+  grid-template-columns: 1fr;
   gap: 1rem;
   align-items: stretch;
+}
+
+.map-panel {
+  width: 100%;
+  max-width: none;
+  margin-left: 0;
 }
 
 .territory-map-wrap {
   position: relative;
   overflow: hidden;
-  min-height: 410px;
+  height: clamp(620px, 78vh, 920px);
+  min-height: 620px;
+  padding: 0;
   border: 1px solid rgba(185, 148, 85, 0.28);
-  background: rgba(3, 6, 10, 0.7);
+  background: rgba(2, 5, 9, 0.94);
+  contain: layout paint;
+  cursor: grab;
+  touch-action: none;
 }
 
-.territory-map-wrap > img {
+.territory-map-wrap.is-panning {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.map-stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+.map-stage > img {
+  display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: fill;
   filter: saturate(0.88) contrast(1.08);
+  pointer-events: none;
+  user-select: none;
+}
+
+.map-viewport-hint {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 4;
+  max-width: min(430px, calc(100% - 2rem));
+  margin: 0;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid rgba(185, 148, 85, 0.24);
+  background: rgba(3, 6, 10, 0.82);
+  color: rgba(232, 224, 211, 0.72);
+  font-size: 0.86rem !important;
+  pointer-events: none;
+}
+
+.map-panel:fullscreen,
+.map-panel.is-map-fullscreen {
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 1rem;
+  overflow: hidden;
+  border: 0;
+  background: #020509;
+}
+
+.map-panel:fullscreen .panel-heading,
+.map-panel.is-map-fullscreen .panel-heading {
+  margin-bottom: 0.65rem;
+}
+
+.map-panel:fullscreen .territory-layout,
+.map-panel.is-map-fullscreen .territory-layout {
+  height: calc(100vh - 92px);
+}
+
+.map-panel:fullscreen .territory-map-wrap,
+.map-panel.is-map-fullscreen .territory-map-wrap {
+  height: 100%;
+  min-height: 0;
+}
+
+.map-panel:fullscreen .territory-list,
+.map-panel.is-map-fullscreen .territory-list {
+  display: none;
 }
 
 .map-marker {
@@ -2766,7 +2850,67 @@ dialog.is-closing > :not(.cursor-aura),
 
 .territory-list {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 0.75rem;
+}
+
+.culture-intro {
+  max-width: 820px;
+  margin: 0.8rem 0 0;
+}
+
+.culture-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1rem;
+}
+
+.culture-entry {
+  display: grid;
+  grid-template-columns: minmax(110px, 0.34fr) minmax(0, 1fr);
+  min-height: 190px;
+  overflow: hidden;
+  border: 1px solid rgba(185, 148, 85, 0.26);
+  background: rgba(3, 6, 10, 0.62);
+}
+
+.culture-entry:not(:has(figure)) {
+  grid-template-columns: 1fr;
+}
+
+.culture-entry figure {
+  min-height: 100%;
+  margin: 0;
+  border-right: 1px solid rgba(185, 148, 85, 0.22);
+}
+
+.culture-entry img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.culture-entry-copy {
+  padding: clamp(1rem, 2vw, 1.35rem);
+}
+
+.culture-entry-copy span {
+  color: var(--moon-blue);
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.culture-entry-copy h3 {
+  margin: 0.35rem 0 0.65rem;
+  color: var(--bright-gold);
+  font-family: var(--font-display);
+  font-size: 1.18rem;
+}
+
+.culture-entry-copy p {
+  margin: 0;
+  white-space: pre-line;
 }
 
 .territory-list article,
@@ -4000,17 +4144,18 @@ dialog.is-closing > :not(.cursor-aura),
 .admin-shell > #symbols { order: 10; }
 .admin-shell > #mapa-interativo { order: 11; }
 .admin-shell > #territories { order: 12; }
-.admin-shell > #timeline { order: 13; }
-.admin-shell > #eras-admin { order: 14; }
-.admin-shell > #archives { order: 15; }
-.admin-shell > #newspapers { order: 16; }
-.admin-shell > #gallery { order: 17; }
-.admin-shell > #leaders-admin { order: 18; }
-.admin-shell > #fortifications-admin { order: 19; }
-.admin-shell > #conflicts-admin { order: 20; }
-.admin-shell > #aristocrats-admin { order: 21; }
-.admin-shell > #allies-admin { order: 22; }
-.admin-shell > #vassals-admin { order: 23; }
+.admin-shell > #culture { order: 13; }
+.admin-shell > #timeline { order: 14; }
+.admin-shell > #eras-admin { order: 15; }
+.admin-shell > #archives { order: 16; }
+.admin-shell > #newspapers { order: 17; }
+.admin-shell > #gallery { order: 18; }
+.admin-shell > #leaders-admin { order: 19; }
+.admin-shell > #fortifications-admin { order: 20; }
+.admin-shell > #conflicts-admin { order: 21; }
+.admin-shell > #aristocrats-admin { order: 22; }
+.admin-shell > #allies-admin { order: 23; }
+.admin-shell > #vassals-admin { order: 24; }
 
 .login-shell {
   min-height: 100svh;
@@ -5237,6 +5382,7 @@ dialog.is-closing > :not(.cursor-aura),
   .members-panel,
   .tree-panel,
   .territories-panel,
+  .culture-panel,
   .eras-panel,
   .timeline-panel,
   .archives-panel,
@@ -5294,7 +5440,19 @@ dialog.is-closing > :not(.cursor-aura),
   }
 
   .territory-map-wrap {
-    min-height: 280px;
+    height: min(70svh, 680px);
+    min-height: 420px;
+  }
+
+  .culture-grid,
+  .culture-entry {
+    grid-template-columns: 1fr;
+  }
+
+  .culture-entry figure {
+    min-height: 220px;
+    border-right: 0;
+    border-bottom: 1px solid rgba(185, 148, 85, 0.22);
   }
 
   .genealogy {

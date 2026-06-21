@@ -14,7 +14,6 @@
       document.querySelectorAll("[data-territory-card]").forEach((card) => {
         const active = card.dataset.territoryCard === target;
         card.classList.toggle("is-active", active);
-        if (active) card.scrollIntoView({ block: "nearest", behavior: "smooth" });
       });
       if (!modal) return;
       modal.querySelector("[data-map-modal-title]").textContent = marker.dataset.title || "";
@@ -54,6 +53,144 @@
     if (event.target === modal) closeModal();
   });
   modal?.addEventListener("close", () => document.body.classList.remove("modal-open"));
+
+  const mapViewport = document.querySelector("[data-map-viewport]");
+  const mapStage = document.querySelector("[data-map-stage]");
+  const mapImage = document.querySelector("[data-map-image]");
+  const mapPanel = mapViewport?.closest(".map-panel");
+  const mapFullscreenTarget = mapPanel || mapViewport;
+  let mapSize = { width: 1, height: 1 };
+  let mapView = { x: 0, y: 0, scale: 1 };
+  let mapFitScale = 1;
+  let mapUserMoved = false;
+
+  const clampMap = (value, min, max) => Math.min(max, Math.max(min, value));
+
+  const applyMapTransform = () => {
+    if (!mapViewport || !mapStage) return;
+    const viewport = mapViewport.getBoundingClientRect();
+    const scaledWidth = mapSize.width * mapView.scale;
+    const scaledHeight = mapSize.height * mapView.scale;
+    const slack = Math.min(180, viewport.width * 0.18);
+    mapView.x = scaledWidth <= viewport.width
+      ? (viewport.width - scaledWidth) / 2
+      : clampMap(mapView.x, viewport.width - scaledWidth - slack, slack);
+    mapView.y = scaledHeight <= viewport.height
+      ? (viewport.height - scaledHeight) / 2
+      : clampMap(mapView.y, viewport.height - scaledHeight - slack, slack);
+    mapStage.style.width = `${mapSize.width}px`;
+    mapStage.style.height = `${mapSize.height}px`;
+    mapStage.style.transform = `translate(${mapView.x}px, ${mapView.y}px) scale(${mapView.scale})`;
+    const label = document.querySelector("[data-map-zoom-reset]");
+    if (label) label.textContent = `${Math.round((mapView.scale / mapFitScale) * 100)}%`;
+  };
+
+  const fitMap = () => {
+    if (!mapViewport || !mapImage) return;
+    const viewport = mapViewport.getBoundingClientRect();
+    mapSize = {
+      width: Math.max(1, mapImage.naturalWidth || 1600),
+      height: Math.max(1, mapImage.naturalHeight || 900),
+    };
+    const padding = viewport.width < 720 ? 20 : 44;
+    mapFitScale = (viewport.width - padding) / mapSize.width;
+    mapView.scale = Math.max(0.01, mapFitScale);
+    mapView.x = (viewport.width - mapSize.width * mapView.scale) / 2;
+    mapView.y = (viewport.height - mapSize.height * mapView.scale) / 2;
+    mapUserMoved = false;
+    applyMapTransform();
+  };
+
+  const centerMap = () => {
+    if (!mapViewport) return;
+    const viewport = mapViewport.getBoundingClientRect();
+    mapView.x = (viewport.width - mapSize.width * mapView.scale) / 2;
+    mapView.y = (viewport.height - mapSize.height * mapView.scale) / 2;
+    applyMapTransform();
+  };
+
+  const zoomMap = (ratio, originX, originY) => {
+    if (!mapViewport) return;
+    const viewport = mapViewport.getBoundingClientRect();
+    const oldScale = mapView.scale;
+    const containScale = Math.min(
+      (viewport.width - 20) / mapSize.width,
+      (viewport.height - 20) / mapSize.height
+    );
+    const minScale = Math.min(mapFitScale * 0.62, containScale);
+    const maxScale = Math.max(mapFitScale * 7, 1.4);
+    const nextScale = clampMap(oldScale * ratio, minScale, maxScale);
+    const ox = originX ?? viewport.width / 2;
+    const oy = originY ?? viewport.height / 2;
+    const worldX = (ox - mapView.x) / oldScale;
+    const worldY = (oy - mapView.y) / oldScale;
+    mapView.scale = nextScale;
+    mapView.x = ox - worldX * nextScale;
+    mapView.y = oy - worldY * nextScale;
+    mapUserMoved = true;
+    applyMapTransform();
+  };
+
+  document.querySelector("[data-map-zoom-out]")?.addEventListener("click", () => zoomMap(0.82));
+  document.querySelector("[data-map-zoom-in]")?.addEventListener("click", () => zoomMap(1.22));
+  document.querySelector("[data-map-zoom-reset]")?.addEventListener("click", fitMap);
+  document.querySelector("[data-map-center]")?.addEventListener("click", centerMap);
+  document.querySelector("[data-map-fullscreen]")?.addEventListener("click", async () => {
+    if (!mapFullscreenTarget) return;
+    if (document.fullscreenElement === mapFullscreenTarget) await document.exitFullscreen?.();
+    else await mapFullscreenTarget.requestFullscreen?.();
+  });
+
+  if (mapViewport) {
+    let isPanning = false;
+    let startX = 0;
+    let startY = 0;
+    let startViewX = 0;
+    let startViewY = 0;
+    mapViewport.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0 || event.target.closest("button, a")) return;
+      isPanning = true;
+      mapUserMoved = true;
+      startX = event.clientX;
+      startY = event.clientY;
+      startViewX = mapView.x;
+      startViewY = mapView.y;
+      mapViewport.classList.add("is-panning");
+      mapViewport.setPointerCapture?.(event.pointerId);
+    });
+    mapViewport.addEventListener("pointermove", (event) => {
+      if (!isPanning) return;
+      event.preventDefault();
+      mapView.x = startViewX + event.clientX - startX;
+      mapView.y = startViewY + event.clientY - startY;
+      applyMapTransform();
+    });
+    const stopPanning = (event) => {
+      if (!isPanning) return;
+      isPanning = false;
+      mapViewport.classList.remove("is-panning");
+      mapViewport.releasePointerCapture?.(event.pointerId);
+    };
+    mapViewport.addEventListener("pointerup", stopPanning);
+    mapViewport.addEventListener("pointercancel", stopPanning);
+    mapViewport.addEventListener("wheel", (event) => {
+      event.preventDefault();
+      const rect = mapViewport.getBoundingClientRect();
+      zoomMap(event.deltaY > 0 ? 0.88 : 1.14, event.clientX - rect.left, event.clientY - rect.top);
+    }, { passive: false });
+  }
+
+  const initializeMap = () => requestAnimationFrame(fitMap);
+  if (mapImage?.complete) initializeMap();
+  else mapImage?.addEventListener("load", initializeMap, { once: true });
+  document.addEventListener("fullscreenchange", () => {
+    mapPanel?.classList.toggle("is-map-fullscreen", document.fullscreenElement === mapFullscreenTarget);
+    requestAnimationFrame(() => mapUserMoved ? applyMapTransform() : fitMap());
+  });
+  window.addEventListener("resize", () => {
+    if (!mapUserMoved) fitMap();
+    else applyMapTransform();
+  });
 
   const adminPreview = document.querySelector("[data-map-admin-preview]");
   const markerForms = [...document.querySelectorAll("[data-map-marker-form]")];

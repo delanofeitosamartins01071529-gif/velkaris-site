@@ -362,35 +362,45 @@
       {% endif %}
     </section>
 
-    <section class="panel territories-panel reveal" id="territorios" data-reveal>
+    <section class="panel territories-panel map-panel reveal" id="mapa" data-reveal>
       <div class="panel-heading row-heading">
         <div>
-          <p class="section-kicker">Territórios</p>
-          <h2>{{ house.territories_heading }}</h2>
+          <p class="section-kicker">Cartografia da Casa</p>
+          <h2>Mapa</h2>
+        </div>
+        <div class="map-controls" aria-label="Controles do mapa">
+          <button type="button" data-map-zoom-out aria-label="Afastar mapa">-</button>
+          <button type="button" data-map-zoom-reset aria-label="Restaurar zoom">100%</button>
+          <button type="button" data-map-zoom-in aria-label="Aproximar mapa">+</button>
+          <button type="button" data-map-center>Centralizar</button>
+          <button type="button" data-map-fullscreen>Expandir</button>
         </div>
       </div>
       <div class="territory-layout" data-interactive-map>
-        <div class="territory-map-wrap" data-map-view>
-          <img src="{{ media_url(house.territory_map) }}" alt="Mapa fictício dos territórios {{ house.name }}">
-          {% for territory in house.territories %}
-            <button
-              class="map-marker map-marker-{{ territory.icon or 'crown' }}"
-              type="button"
-              style="--x: {{ territory.coord_x or 50 }}%; --y: {{ territory.coord_y or 50 }}%; --marker-color: {{ territory.color or '#d7b46a' }};"
-              data-territory-target="{{ territory.id }}"
-              data-map-marker
-              data-title="{{ territory.name }}"
-              data-type="{{ territory.type }}"
-              data-description="{{ territory.description }}"
-              data-lore="{{ territory.lore }}"
-              data-status="{{ territory.status }}"
-              data-images='{{ territory.images | tojson }}'
-              aria-label="{{ territory.name }}"
-            >
-              <span aria-hidden="true"></span>
-              <small>{{ territory.name }}</small>
-            </button>
-          {% endfor %}
+        <div class="territory-map-wrap map-viewport" data-map-view data-map-viewport>
+          <div class="map-stage" data-map-stage>
+            <img src="{{ media_url(house.territory_map) }}" alt="Mapa da Casa {{ house.name }}" data-map-image>
+            {% for territory in house.territories %}
+              <button
+                class="map-marker map-marker-{{ territory.icon or 'crown' }}"
+                type="button"
+                style="--x: {{ territory.coord_x or 50 }}%; --y: {{ territory.coord_y or 50 }}%; --marker-color: {{ territory.color or '#d7b46a' }};"
+                data-territory-target="{{ territory.id }}"
+                data-map-marker
+                data-title="{{ territory.name }}"
+                data-type="{{ territory.type }}"
+                data-description="{{ territory.description }}"
+                data-lore="{{ territory.lore }}"
+                data-status="{{ territory.status }}"
+                data-images='{{ territory.images | tojson }}'
+                aria-label="{{ territory.name }}"
+              >
+                <span aria-hidden="true"></span>
+                <small>{{ territory.name }}</small>
+              </button>
+            {% endfor %}
+          </div>
+          <p class="map-viewport-hint">Arraste para navegar. Use a roda do mouse ou os controles para aproximar e afastar.</p>
         </div>
         <div class="territory-list">
           {% for territory in house.territories %}
@@ -416,6 +426,30 @@
           <div class="map-marker-modal-gallery" data-map-modal-gallery></div>
         </div>
       </dialog>
+    </section>
+
+    <section class="panel culture-panel reveal" id="cultura" data-reveal>
+      <div class="panel-heading">
+        <p class="section-kicker">Identidade Velkaris</p>
+        <h2>{{ house.culture_heading }}</h2>
+        {% if house.culture_intro %}<p class="culture-intro">{{ house.culture_intro }}</p>{% endif %}
+      </div>
+      <div class="culture-grid">
+        {% for item in house.culture|sort(attribute='sort_order') %}
+          <article class="culture-entry">
+            {% if item.image %}
+              <figure><img src="{{ media_url(item.image) }}" alt="{{ item.title }}"></figure>
+            {% endif %}
+            <div class="culture-entry-copy">
+              {% if item.category %}<span>{{ item.category }}</span>{% endif %}
+              <h3>{{ item.title }}</h3>
+              <p>{{ item.content }}</p>
+            </div>
+          </article>
+        {% else %}
+          <p class="empty-state">Os registros culturais da Casa ainda estão sendo preparados.</p>
+        {% endfor %}
+      </div>
     </section>
 
     <section class="panel eras-panel reveal" id="eras" data-reveal>

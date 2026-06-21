@@ -154,7 +154,8 @@
       <a href="#cards">Cards</a>
       <a href="#symbols">Símbolos</a>
       <a href="#mapa-interativo">Mapa</a>
-      <a href="#territories">Territórios</a>
+      <a href="#territories">Pontos do mapa</a>
+      <a href="#culture">Cultura</a>
       <a href="#timeline">Crônicas</a>
       <a href="#eras-admin">Eras</a>
       <a href="#archives">Arquivos</a>
@@ -200,8 +201,16 @@
           <input type="text" name="tree_heading" value="{{ house.tree_heading }}">
         </label>
         <label>
-          Título dos territórios
+          Título do mapa
           <input type="text" name="territories_heading" value="{{ house.territories_heading }}">
+        </label>
+        <label>
+          Título da cultura
+          <input type="text" name="culture_heading" value="{{ house.culture_heading }}">
+        </label>
+        <label class="span-2">
+          Introdução da cultura
+          <textarea name="culture_intro" rows="3">{{ house.culture_intro }}</textarea>
         </label>
         <label>
           Título dos arquivos
@@ -791,7 +800,7 @@
       </div>
     </section>
 
-    <section class="admin-card reveal is-visible" id="territories" data-bulk-section data-bulk-label="territórios" data-bulk-button="Salvar todos os territórios" data-bulk-anchor="territories">
+    <section class="admin-card reveal is-visible" id="territories" data-bulk-section data-bulk-label="pontos do mapa" data-bulk-button="Salvar todos os pontos" data-bulk-anchor="territories">
       <div class="admin-section-title">
         <p class="section-kicker">Marcadores salvos</p>
         <h2>Editar pontos de interesse</h2>
@@ -842,7 +851,7 @@
                 </div>
               {% endif %}
               <label>Adicionar fotos <input type="file" name="images" accept="image/*" multiple></label>
-              <button class="primary-cta" type="submit">Salvar território</button>
+              <button class="primary-cta" type="submit">Salvar ponto</button>
             </form>
             <form method="post" action="{{ url_for('delete_collection_item', collection='territories', entry_id=territory.id) }}" class="delete-form inline-delete">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -851,6 +860,46 @@
           </article>
         {% endfor %}
       </div>
+    </section>
+
+    <section class="admin-card reveal is-visible" id="culture" data-bulk-section data-bulk-label="registros culturais" data-bulk-button="Salvar toda a cultura" data-bulk-anchor="culture">
+      <div class="admin-section-title">
+        <p class="section-kicker">Cultura da Casa</p>
+        <h2>Roupas, costumes, religião e símbolos corporais</h2>
+        <p class="admin-help">Crie quantos blocos quiser. Use a categoria para organizar temas como vestes, religião, etiqueta, culinária, ritos ou tatuagens.</p>
+      </div>
+      <div class="admin-list two-col">
+        {% for item in house.culture|sort(attribute='sort_order') %}
+          <article class="admin-list-card">
+            {% if item.image %}
+              <div class="admin-wide-preview"><img src="{{ media_url(item.image) }}" alt="{{ item.title }}" data-preview-target></div>
+            {% endif %}
+            <form class="admin-form" method="post" action="{{ url_for('update_collection_item', collection='culture', entry_id=item.id) }}" enctype="multipart/form-data">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <label>Título <input type="text" name="title" value="{{ item.title }}" required></label>
+              <label>Categoria <input type="text" name="category" value="{{ item.category }}" placeholder="Vestes, religião, tatuagens..."></label>
+              <label>Ordem <input type="number" name="sort_order" value="{{ item.sort_order }}" min="0" step="1"></label>
+              <label>Conteúdo <textarea name="content" rows="10">{{ item.content }}</textarea></label>
+              <label>Nova imagem <input type="file" name="image" accept=".png,.jpg,.jpeg,.webp" data-preview-input></label>
+              {% if item.image %}<label class="check-label"><input type="checkbox" name="remove_image" value="1"> Remover imagem atual</label>{% endif %}
+              <button class="primary-cta" type="submit">Salvar registro cultural</button>
+            </form>
+            <form method="post" action="{{ url_for('delete_collection_item', collection='culture', entry_id=item.id) }}" class="delete-form inline-delete">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit">Excluir</button>
+            </form>
+          </article>
+        {% endfor %}
+      </div>
+      <form class="admin-form admin-form-grid admin-add-form" method="post" action="{{ url_for('create_collection_item', collection='culture') }}" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>Título <input type="text" name="title" required placeholder="Ex: A tatuagem ancestral"></label>
+        <label>Categoria <input type="text" name="category" placeholder="Vestes, religião, tatuagens..."></label>
+        <label>Ordem <input type="number" name="sort_order" min="0" step="1" value="1"></label>
+        <label>Imagem <input type="file" name="image" accept=".png,.jpg,.jpeg,.webp" data-preview-input></label>
+        <label class="span-2">Conteúdo <textarea name="content" rows="10"></textarea></label>
+        <button class="primary-cta" type="submit">Adicionar registro cultural</button>
+      </form>
     </section>
 
     <section class="admin-card reveal is-visible" id="timeline">

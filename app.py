@@ -84,6 +84,8 @@ HOUSE_DEFAULTS = {
     "members_heading": "Retratos da linhagem",
     "tree_heading": "Linhagem Velkaris",
     "territories_heading": "Domínios",
+    "culture_heading": "Cultura da Casa",
+    "culture_intro": "Ritos, vestes, crenças e costumes preservados pela linhagem Velkaris.",
     "archives_heading": "Registros recentes",
     "timeline_heading": "Crônicas do sangue antigo",
     "eras_heading": "Eras da Casa",
@@ -100,6 +102,7 @@ HOUSE_DEFAULTS = {
     "allies": [],
     "vassals": [],
     "newspapers": [],
+    "culture": [],
 }
 
 MAP_MARKER_TYPES = [
@@ -129,6 +132,7 @@ COLLECTION_FIELDS = {
     "about": ("text",),
     "symbols": ("name", "meaning"),
     "territories": ("name", "type", "description", "lore", "coord_x", "coord_y", "status", "color", "icon"),
+    "culture": ("title", "category", "content", "sort_order"),
     "archives": ("date", "title", "summary"),
     "timeline": ("date", "era", "title", "details"),
     "eras": ("name", "period", "description"),
@@ -474,6 +478,9 @@ def ensure_collection_item(collection: str, item: Any, index: int) -> dict[str, 
         normalized["images"] = (
             [str(image) for image in images if image] if isinstance(images, list) else []
         )
+    if collection == "culture":
+        normalized["image"] = str(item.get("image") or "")
+        normalized["sort_order"] = as_int(normalized.get("sort_order"), index + 1)
     if collection == "aristocrats":
         normalized["name"] = item.get("name", "")
         normalized["title"] = item.get("title", "")
@@ -1280,6 +1287,8 @@ def update_house_identity():
         "members_heading",
         "tree_heading",
         "territories_heading",
+        "culture_heading",
+        "culture_intro",
         "archives_heading",
         "timeline_heading",
         "eras_heading",
@@ -1337,6 +1346,9 @@ def create_collection_item(collection: str):
             for upload in request.files.getlist("images")
             if (saved := save_upload(upload, "territory"))
         ]
+    if collection == "culture":
+        item["sort_order"] = as_int(item.get("sort_order"), len(house[collection]) + 1)
+        item["image"] = save_upload(request.files.get("image"), "culture") or ""
     if collection == "gallery":
         item["image"] = save_upload(request.files.get("image"), "gallery") or "assets/gallery-castle.png"
     if collection == "symbols":
@@ -1386,6 +1398,13 @@ def update_collection_item(collection: str, entry_id: str):
             for upload in request.files.getlist("images")
             if (saved := save_upload(upload, "territory"))
         )
+    if collection == "culture":
+        item["sort_order"] = as_int(item.get("sort_order"), 0)
+        if request.form.get("remove_image") == "1":
+            item["image"] = ""
+        uploaded = save_upload(request.files.get("image"), "culture")
+        if uploaded:
+            item["image"] = uploaded
     if collection == "gallery":
         uploaded = save_upload(request.files.get("image"), "gallery")
         if uploaded:
