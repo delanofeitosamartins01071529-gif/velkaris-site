@@ -1989,6 +1989,7 @@ dialog.is-closing .modal-effects span {
 }
 
 .map-marker-modal[open],
+.culture-modal[open],
 .newspaper-modal[open],
 .gallery-modal[open],
 .timeline-modal[open],
@@ -1998,6 +1999,7 @@ dialog.is-closing .modal-effects span {
 }
 
 .map-marker-modal[open]::backdrop,
+.culture-modal[open]::backdrop,
 .newspaper-modal[open]::backdrop,
 .gallery-modal[open]::backdrop,
 .timeline-modal[open]::backdrop,
@@ -2007,6 +2009,7 @@ dialog.is-closing .modal-effects span {
 }
 
 .map-marker-modal[open] > :not(.cursor-aura),
+.culture-modal[open] > :not(.cursor-aura),
 .newspaper-modal[open] > :not(.cursor-aura),
 .gallery-modal[open] > :not(.cursor-aura),
 .timeline-modal[open] > :not(.cursor-aura),
@@ -2021,6 +2024,7 @@ dialog.is-closing {
 
 .member-modal.is-closing,
 .map-marker-modal.is-closing,
+.culture-modal.is-closing,
 .newspaper-modal.is-closing,
 .gallery-modal.is-closing,
 .timeline-modal.is-closing,
@@ -2861,17 +2865,28 @@ dialog.is-closing > :not(.cursor-aura),
 
 .culture-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 0.8rem;
 }
 
 .culture-entry {
+  position: relative;
   display: grid;
-  grid-template-columns: minmax(110px, 0.34fr) minmax(0, 1fr);
-  min-height: 190px;
+  grid-template-columns: 96px minmax(0, 1fr);
+  height: 260px;
+  min-height: 0;
   overflow: hidden;
   border: 1px solid rgba(185, 148, 85, 0.26);
   background: rgba(3, 6, 10, 0.62);
+  cursor: pointer;
+  transition: border-color 0.22s ease, box-shadow 0.22s ease, transform 0.22s ease;
+}
+
+.culture-entry:hover,
+.culture-entry:focus-visible {
+  border-color: rgba(240, 208, 139, 0.66);
+  box-shadow: 0 0 28px rgba(185, 148, 85, 0.15);
+  transform: translateY(-2px);
 }
 
 .culture-entry:not(:has(figure)) {
@@ -2879,19 +2894,27 @@ dialog.is-closing > :not(.cursor-aura),
 }
 
 .culture-entry figure {
-  min-height: 100%;
+  height: 100%;
+  min-height: 0;
   margin: 0;
   border-right: 1px solid rgba(185, 148, 85, 0.22);
+  background: #020509;
 }
 
 .culture-entry img {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  image-rendering: auto;
 }
 
 .culture-entry-copy {
-  padding: clamp(1rem, 2vw, 1.35rem);
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 1rem;
 }
 
 .culture-entry-copy span {
@@ -2903,14 +2926,111 @@ dialog.is-closing > :not(.cursor-aura),
 
 .culture-entry-copy h3 {
   margin: 0.35rem 0 0.65rem;
+  max-width: 100%;
   color: var(--bright-gold);
   font-family: var(--font-display);
   font-size: 1.18rem;
+  overflow-wrap: anywhere;
 }
 
 .culture-entry-copy p {
   margin: 0;
+  display: -webkit-box;
+  overflow: hidden;
+  line-height: 1.45;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 6;
+}
+
+.culture-entry-more {
+  margin-top: auto;
+  padding-top: 0.7rem;
+  color: var(--old-gold);
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.culture-modal {
+  width: min(1120px, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid rgba(185, 148, 85, 0.4);
+  background: rgba(3, 7, 12, 0.98);
+  color: var(--bone);
+  box-shadow: 0 30px 120px rgba(0, 0, 0, 0.62);
+}
+
+.culture-modal::backdrop {
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(8px);
+}
+
+.culture-modal-shell {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(280px, 0.82fr) minmax(0, 1.18fr);
+  max-height: calc(100vh - 2rem);
+  overflow: hidden;
+}
+
+.culture-modal-shell:not(:has(.culture-modal-image)) {
+  grid-template-columns: 1fr;
+}
+
+.culture-modal-image {
+  display: grid;
+  min-height: 520px;
+  max-height: calc(100vh - 2rem);
+  place-items: center;
+  margin: 0;
+  overflow: hidden;
+  border-right: 1px solid rgba(185, 148, 85, 0.28);
+  background: #010307;
+}
+
+.culture-modal-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-height: calc(100vh - 2rem);
+  object-fit: contain;
+  image-rendering: auto;
+}
+
+.culture-modal-content {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: clamp(1.4rem, 4vw, 3rem);
+}
+
+.culture-modal-content h3 {
+  margin: 0.3rem 0 1.2rem;
+  max-width: 100%;
+  color: var(--bright-gold);
+  font-family: var(--font-display);
+  font-size: clamp(1.65rem, 4vw, 2.7rem);
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.culture-modal-content > p:last-child {
+  max-width: 100%;
+  margin: 0;
+  color: rgba(235, 229, 217, 0.88);
+  font-family: var(--font-serif);
+  font-size: 1.12rem;
+  line-height: 1.72;
   white-space: pre-line;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .territory-list article,
@@ -5444,15 +5564,34 @@ dialog.is-closing > :not(.cursor-aura),
     min-height: 420px;
   }
 
-  .culture-grid,
-  .culture-entry {
+  .culture-grid {
     grid-template-columns: 1fr;
   }
 
+  .culture-entry {
+    grid-template-columns: 88px minmax(0, 1fr);
+  }
+
   .culture-entry figure {
-    min-height: 220px;
+    min-height: 0;
+    border-right: 1px solid rgba(185, 148, 85, 0.22);
+    border-bottom: 0;
+  }
+
+  .culture-modal-shell {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+  }
+
+  .culture-modal-image {
+    min-height: 300px;
+    height: 42svh;
     border-right: 0;
-    border-bottom: 1px solid rgba(185, 148, 85, 0.22);
+    border-bottom: 1px solid rgba(185, 148, 85, 0.28);
+  }
+
+  .culture-modal-image img {
+    max-height: 42svh;
   }
 
   .genealogy {

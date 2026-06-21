@@ -6,6 +6,8 @@
   "members_heading": "Retratos da linhagem",
   "tree_heading": "Linhagem Velkaris",
   "territories_heading": "Domínios",
+  "culture_heading": "Cultura da Casa",
+  "culture_intro": "Ritos, vestes, crenças e costumes preservados pela linhagem Velkaris.",
   "archives_heading": "Registros recentes",
   "timeline_heading": "Crônicas do sangue antigo",
   "eras_heading": "Eras da Casa",
@@ -236,10 +238,13 @@
       "id": "aristocrats-5f68ad02b2",
       "role": "Chefe do armazém",
       "description": "",
+      "name": "",
+      "title": "",
       "person_ids": [
         "member:member-2ddaf268bb"
       ],
-      "person_id": "member:member-2ddaf268bb"
+      "person_id": "member:member-2ddaf268bb",
+      "image": ""
     }
   ],
   "allies": [],
@@ -285,6 +290,32 @@
       "date": "07/06",
       "description": "",
       "image": "uploads/newspaper-771ed6050626.png"
+    }
+  ],
+  "culture": [
+    {
+      "id": "culture-ac0f9a0744",
+      "title": "A Bandeira Velkaris",
+      "category": "Bandeira",
+      "content": "BLABLALALBLABLALBALBLABLALBLABLALBLABAB",
+      "sort_order": 1,
+      "image": "uploads/culture-30ae8664fb6b.png"
+    },
+    {
+      "id": "culture-10890f8755",
+      "title": "O Rito de Passagem",
+      "category": "Ritual",
+      "content": "alblalbalblalbalbaalblalbalblalbalbaalblalbalblalbalbaalblalbalblalbalbaalblalbalblalbalbaalblalbalblalbalbaalblalbalblalbalbaalblalbalblalbalbaalblalbalblalbalbaalblalbalblalbalbaalblalbalblalbalbaalblalbalblalbalbaalblalbalblalbalbaalblalbalblalbalbaalblalbalblalbalbaalblalbalblalbalba",
+      "sort_order": 2,
+      "image": "uploads/culture-06b366359f98.png"
+    },
+    {
+      "id": "culture-e0dbc1edf1",
+      "title": "Vestimentas e Costumes",
+      "category": "Vestes",
+      "content": "balbakbaklblakbklabkalkblbalbakbaklblakbklabkalkblbalbakbaklblakbklabkalkblbalbakbaklblakbklabkalkblbalbakbaklblakbklabkalkblbalbakbaklblakbklabkalkblbalbakbaklblakbklabkalkblbalbakbaklblakbklabkalkblbalbakbaklblakbklabkalkbl",
+      "sort_order": 3,
+      "image": "uploads/culture-658ffdfc5346.jpg"
     }
   ],
   "about": [

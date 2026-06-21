@@ -662,6 +662,29 @@ strategicEntryModal?.addEventListener("close", () => {
   document.body.classList.toggle("modal-open", Boolean(strategicModal?.open));
 });
 
+document.querySelectorAll("[data-culture-open]").forEach((entry) => {
+  const openCultureEntry = () => {
+    const modal = document.querySelector(`[data-culture-modal="${entry.dataset.cultureOpen}"]`);
+    if (!modal) return;
+    openDialogWithMotion(modal);
+    window.VelkarisAudio?.playPanelOpen?.();
+  };
+  entry.addEventListener("click", openCultureEntry);
+  entry.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    openCultureEntry();
+  });
+});
+
+document.querySelectorAll("[data-culture-modal]").forEach((modal) => {
+  modal.querySelector("[data-culture-close]")?.addEventListener("click", () => closeDialogWithMotion(modal));
+  modal.addEventListener("click", (event) => {
+    if (event.target === modal) closeDialogWithMotion(modal);
+  });
+  modal.addEventListener("close", () => document.body.classList.remove("modal-open"));
+});
+
 document.querySelectorAll(".member-card, .mini-card").forEach((card) => {
   card.addEventListener("pointermove", (event) => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;

@@ -32,7 +32,7 @@
   const compressionProfile = (input) => {
     const profile = input?.dataset?.qualityProfile;
     const action = input?.form?.action || "";
-    if (profile === "map" || input?.name === "interactive_map") {
+    if (profile === "map" || profile === "culture" || input?.name === "interactive_map") {
       return { maxEdge: HIGH_QUALITY_UPLOAD_EDGE, maxBytes: HIGH_QUALITY_UPLOAD_BYTES, initialQuality: 0.92, minQuality: 0.68 };
     }
     if (profile === "newspaper" || action.includes("/newspapers")) {

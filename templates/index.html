@@ -436,7 +436,7 @@
       </div>
       <div class="culture-grid">
         {% for item in house.culture|sort(attribute='sort_order') %}
-          <article class="culture-entry">
+          <article class="culture-entry" role="button" tabindex="0" data-culture-open="{{ item.id }}" aria-label="Abrir registro completo: {{ item.title }}">
             {% if item.image %}
               <figure><img src="{{ media_url(item.image) }}" alt="{{ item.title }}"></figure>
             {% endif %}
@@ -444,12 +444,31 @@
               {% if item.category %}<span>{{ item.category }}</span>{% endif %}
               <h3>{{ item.title }}</h3>
               <p>{{ item.content }}</p>
+              <b class="culture-entry-more">Ver registro completo</b>
             </div>
           </article>
         {% else %}
           <p class="empty-state">Os registros culturais da Casa ainda estão sendo preparados.</p>
         {% endfor %}
       </div>
+      {% for item in house.culture|sort(attribute='sort_order') %}
+        <dialog class="culture-modal" data-culture-modal="{{ item.id }}">
+          <div class="culture-modal-shell">
+            <div class="modal-effects" aria-hidden="true"><span></span><span></span><span></span></div>
+            <button class="modal-close" type="button" data-culture-close aria-label="Fechar registro">×</button>
+            {% if item.image %}
+              <figure class="culture-modal-image">
+                <img src="{{ media_url(item.image) }}" alt="{{ item.title }}">
+              </figure>
+            {% endif %}
+            <div class="culture-modal-content">
+              {% if item.category %}<p class="section-kicker">{{ item.category }}</p>{% endif %}
+              <h3>{{ item.title }}</h3>
+              <p>{{ item.content }}</p>
+            </div>
+          </div>
+        </dialog>
+      {% endfor %}
     </section>
 
     <section class="panel eras-panel reveal" id="eras" data-reveal>
