@@ -2945,6 +2945,19 @@ dialog.is-closing > :not(.cursor-aura),
   -webkit-line-clamp: 6;
 }
 
+.culture-modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.culture-modal-content::-webkit-scrollbar-track {
+  background: rgba(3, 6, 10, 0.45);
+}
+
+.culture-modal-content::-webkit-scrollbar-thumb {
+  border: 1px solid rgba(3, 6, 10, 0.5);
+  background: rgba(221, 182, 104, 0.72);
+}
+
 .culture-entry-more {
   margin-top: auto;
   padding-top: 0.7rem;
@@ -2957,6 +2970,7 @@ dialog.is-closing > :not(.cursor-aura),
 
 .culture-modal {
   width: min(1120px, calc(100vw - 2rem));
+  height: min(610px, calc(100dvh - 2rem));
   max-height: calc(100vh - 2rem);
   overflow: hidden;
   padding: 0;
@@ -2975,6 +2989,7 @@ dialog.is-closing > :not(.cursor-aura),
   position: relative;
   display: grid;
   grid-template-columns: minmax(280px, 0.82fr) minmax(0, 1.18fr);
+  height: 100%;
   max-height: calc(100vh - 2rem);
   overflow: hidden;
 }
@@ -3005,10 +3020,15 @@ dialog.is-closing > :not(.cursor-aura),
 
 .culture-modal-content {
   min-width: 0;
+  min-height: 0;
   max-width: 100%;
+  max-height: 100%;
   overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: clamp(1.4rem, 4vw, 3rem);
+  scrollbar-color: rgba(221, 182, 104, 0.72) rgba(3, 6, 10, 0.45);
+  scrollbar-width: thin;
 }
 
 .culture-modal-content h3 {
@@ -4586,7 +4606,9 @@ dialog.is-closing > :not(.cursor-aura),
 .map-admin-preview {
   position: relative;
   overflow: hidden;
-  min-height: 360px;
+  width: 100%;
+  min-height: 0;
+  line-height: 0;
   border: 1px solid rgba(185, 148, 85, 0.26);
   background: rgba(3, 6, 10, 0.58);
 }
@@ -4595,13 +4617,6 @@ dialog.is-closing > :not(.cursor-aura),
   border-color: rgba(240, 208, 139, 0.72);
   box-shadow: 0 0 32px rgba(185, 148, 85, 0.18);
   cursor: crosshair;
-}
-
-.map-admin-preview img {
-  width: 100%;
-  height: 100%;
-  min-height: 360px;
-  object-fit: cover;
 }
 
 .map-admin-preview::after {
@@ -4660,6 +4675,16 @@ dialog.is-closing > :not(.cursor-aura),
   overflow: hidden;
   margin-bottom: 0.8rem;
   border: 1px solid rgba(185, 148, 85, 0.24);
+}
+
+.admin-wide-preview.map-admin-preview img {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  min-height: 0;
+  object-fit: contain;
+  object-position: center;
 }
 
 .inline-delete {
