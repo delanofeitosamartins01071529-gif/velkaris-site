@@ -24,7 +24,8 @@
                 {% endif %}
               </label>
             {% endfor %}
-            <label>Imagem <input type="file" name="image" accept=".png,.jpg,.jpeg,.webp" data-preview-input></label>
+            <label>Imagem pequena / icone <input type="file" name="image" accept=".png,.jpg,.jpeg,.webp" data-preview-input></label>
+            <label>Imagem completa para detalhes <input type="file" name="full_image" accept=".png,.jpg,.jpeg,.webp" data-skip-crop="true" data-quality-profile="member-full"></label>
             <button class="primary-cta" type="submit">Salvar registro</button>
           </form>
           <form method="post" action="{{ url_for('delete_collection_item', collection=collection, entry_id=item.id) }}" class="delete-form inline-delete">
@@ -46,7 +47,8 @@
           {% endif %}
         </label>
       {% endfor %}
-      <label>Imagem <input type="file" name="image" accept=".png,.jpg,.jpeg,.webp" data-preview-input></label>
+      <label>Imagem pequena / icone <input type="file" name="image" accept=".png,.jpg,.jpeg,.webp" data-preview-input></label>
+      <label>Imagem completa para detalhes <input type="file" name="full_image" accept=".png,.jpg,.jpeg,.webp" data-skip-crop="true" data-quality-profile="member-full"></label>
       <button class="primary-cta" type="submit">Adicionar registro</button>
     </form>
   </section>
@@ -382,6 +384,10 @@
           Retrato com corte automático
           <input type="file" name="portrait" accept=".png,.jpg,.jpeg,.webp" data-preview-input>
         </label>
+        <label>
+          Imagem completa para a aba de informações
+          <input type="file" name="full_portrait" accept=".png,.jpg,.jpeg,.webp" data-skip-crop="true" data-quality-profile="member-full">
+        </label>
         <div class="admin-checks">
           <label><input type="checkbox" name="in_tree" checked> Mostrar na árvore</label>
         </div>
@@ -664,6 +670,10 @@
             <label>
               Novo retrato com corte automático
               <input type="file" name="portrait" accept=".png,.jpg,.jpeg,.webp" data-preview-input>
+            </label>
+            <label>
+              Imagem completa para a aba de informações
+              <input type="file" name="full_portrait" accept=".png,.jpg,.jpeg,.webp" data-skip-crop="true" data-quality-profile="member-full">
             </label>
             <div class="admin-checks">
               <label><input type="checkbox" name="in_tree" {% if member.in_tree %}checked{% endif %}> Árvore</label>

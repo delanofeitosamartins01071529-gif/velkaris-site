@@ -5,11 +5,11 @@
 {% block og_title %}{{ member.name }} | Casa {{ house.name }}{% endblock %}
 {% block og_description %}{{ member.description }}{% endblock %}
 {% block og_type %}profile{% endblock %}
-{% block og_image %}{{ media_url(member.image) }}{% endblock %}
+{% block og_image %}{{ media_url(member.full_image or member.image) }}{% endblock %}
 
 {% block content %}
   <section class="member-page-hero">
-    <img src="{{ media_url(member.image) }}" alt="Retrato de {{ member.name }}">
+    <img src="{{ media_url(member.full_image or member.image) }}" alt="Retrato de {{ member.name }}">
     <div class="member-page-vignette"></div>
     <div class="member-page-copy">
       <p class="section-kicker">{{ member.generation }} · {{ member.status }}</p>

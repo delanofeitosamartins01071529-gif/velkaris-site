@@ -411,6 +411,7 @@ def normalize_member(member: dict[str, Any], index: int) -> dict[str, Any]:
     normalized.setdefault("generation", GENERATION_OPTIONS[min(index // 2, len(GENERATION_OPTIONS) - 1)])
     normalized.setdefault("description", "Registro aguardando confirmação dos arquivos da Casa.")
     normalized.setdefault("image", PLACEHOLDERS[index % len(PLACEHOLDERS)])
+    normalized.setdefault("full_image", normalized.get("image", ""))
     normalized["status"] = normalize_status(normalized.get("status"))
     normalized.setdefault("death_cause", "")
     normalized.setdefault("branch", "Ramo principal")
@@ -493,6 +494,7 @@ def ensure_collection_item(collection: str, item: Any, index: int) -> dict[str, 
         normalized["person_id"] = normalized["person_ids"][0] if normalized["person_ids"] else ""
     if collection in STRATEGIC_COLLECTIONS:
         normalized["image"] = item.get("image", "")
+        normalized["full_image"] = item.get("full_image") or normalized["image"]
     return normalized
 
 
@@ -1048,6 +1050,7 @@ def strategic_people_options(members: list[dict[str, Any]], house: dict[str, Any
             "kind": "Familiar",
             "subtitle": member.get("title") or member.get("generation") or "Membro da família",
             "image": member.get("image", ""),
+            "full_image": member.get("full_image") or member.get("image", ""),
         }
         for member in members
         if member.get("id")
@@ -1059,6 +1062,7 @@ def strategic_people_options(members: list[dict[str, Any]], house: dict[str, Any
             "kind": "Vassalo",
             "subtitle": vassal.get("service") or vassal.get("group") or "Vassalo da Casa",
             "image": vassal.get("image", ""),
+            "full_image": vassal.get("full_image") or vassal.get("image", ""),
         }
         for vassal in house.get("vassals", [])
         if vassal.get("id")
@@ -1102,6 +1106,7 @@ def aristocrat_role_groups(members: list[dict[str, Any]], house: dict[str, Any])
                 "kind": "Registro",
                 "subtitle": item.get("title", ""),
                 "image": item.get("image", ""),
+                "full_image": item.get("full_image") or item.get("image", ""),
             }]
         for person in people:
             entry = {
@@ -1111,6 +1116,7 @@ def aristocrat_role_groups(members: list[dict[str, Any]], house: dict[str, Any])
                 "kind": person.get("kind", ""),
                 "subtitle": person.get("subtitle", ""),
                 "image": person.get("image", ""),
+                "full_image": person.get("full_image") or person.get("image", ""),
             }
             groups.setdefault(role, {"role": role, "entries": []})["entries"].append(entry)
     return sorted(groups.values(), key=lambda group: group["role"].casefold())
@@ -1366,6 +1372,7 @@ def create_collection_item(collection: str):
         ]
     if collection in STRATEGIC_COLLECTIONS and collection != "aristocrats":
         item["image"] = save_upload(request.files.get("image"), collection) or ""
+        item["full_image"] = save_upload(request.files.get("full_image"), f"{collection}-full") or item["image"]
     house[collection].append(item)
     write_json(HOUSE_FILE, house)
     flash("Novo item adicionado ao site.", "success")
@@ -1431,6 +1438,11 @@ def update_collection_item(collection: str, entry_id: str):
         uploaded = save_upload(request.files.get("image"), collection)
         if uploaded:
             item["image"] = uploaded
+        full_uploaded = save_upload(request.files.get("full_image"), f"{collection}-full")
+        if full_uploaded:
+            item["full_image"] = full_uploaded
+        else:
+            item.setdefault("full_image", item.get("image", ""))
     write_json(HOUSE_FILE, house)
     flash("Item atualizado.", "success")
     return redirect(url_for("admin", _anchor=collection))
@@ -1480,6 +1492,11 @@ def member_from_form(existing: dict[str, Any] | None, index: int) -> dict[str, A
         member["image"] = image_path
     else:
         member.setdefault("image", PLACEHOLDERS[index % len(PLACEHOLDERS)])
+    full_image_path = save_upload(request.files.get("full_portrait"), "member-full")
+    if full_image_path:
+        member["full_image"] = full_image_path
+    else:
+        member.setdefault("full_image", member.get("image", ""))
     return member
 
 
@@ -1514,6 +1531,11 @@ def update_member_fields_from_sources(member: dict[str, Any], index: int, form, 
     image_path = save_upload(files.get(f"{prefix}portrait"), "member")
     if image_path:
         updated["image"] = image_path
+    full_image_path = save_upload(files.get(f"{prefix}full_portrait"), "member-full")
+    if full_image_path:
+        updated["full_image"] = full_image_path
+    else:
+        updated.setdefault("full_image", updated.get("image", ""))
     return updated
 
 

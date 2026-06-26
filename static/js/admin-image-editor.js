@@ -32,7 +32,7 @@
   const compressionProfile = (input) => {
     const profile = input?.dataset?.qualityProfile;
     const action = input?.form?.action || "";
-    if (profile === "map" || profile === "culture" || input?.name === "interactive_map") {
+    if (profile === "map" || profile === "culture" || profile === "member-full" || input?.name === "interactive_map") {
       return { maxEdge: HIGH_QUALITY_UPLOAD_EDGE, maxBytes: HIGH_QUALITY_UPLOAD_BYTES, initialQuality: 0.92, minQuality: 0.68 };
     }
     if (profile === "newspaper" || action.includes("/newspapers")) {
@@ -200,6 +200,20 @@
     );
   };
 
+  const visibleSourceRect = () => {
+    const baseScale = Math.max(canvas.width / image.naturalWidth, canvas.height / image.naturalHeight);
+    const scale = baseScale * zoom;
+    const drawWidth = image.naturalWidth * scale;
+    const drawHeight = image.naturalHeight * scale;
+    const drawX = (canvas.width - drawWidth) / 2 + offsetX;
+    const drawY = (canvas.height - drawHeight) / 2 + offsetY;
+    const sx = Math.max(0, -drawX / scale);
+    const sy = Math.max(0, -drawY / scale);
+    const sw = Math.min(image.naturalWidth - sx, canvas.width / scale);
+    const sh = Math.min(image.naturalHeight - sy, canvas.height / scale);
+    return { sx, sy, sw, sh };
+  };
+
   const resetView = () => {
     zoom = 1;
     offsetX = 0;
@@ -343,7 +357,10 @@
     output.width = Math.min(maxWidth, image.naturalWidth);
     output.height = Math.round(output.width / aspectRatio);
     const outputContext = output.getContext("2d");
-    outputContext.drawImage(canvas, 0, 0, canvas.width, canvas.height, 0, 0, output.width, output.height);
+    const { sx, sy, sw, sh } = visibleSourceRect();
+    outputContext.imageSmoothingEnabled = true;
+    outputContext.imageSmoothingQuality = "high";
+    outputContext.drawImage(image, sx, sy, sw, sh, 0, 0, output.width, output.height);
     output.toBlob(async (blob) => {
       if (!blob || !activeInput) return;
       const extension = sourceFile.type === "image/png" ? "png" : "jpg";

@@ -64,7 +64,7 @@
           <section data-strategic-panel="leaders">
             <div class="strategic-entry-grid">
               {% for item in house.leaders %}
-                <article class="strategic-entry" role="button" tabindex="0" data-strategic-entry-open data-kicker="{{ item.period }}" data-name="{{ item.name }}" data-highlight="{{ item.title }}" data-description="{{ item.description }}" data-image="{% if item.image %}{{ media_url(item.image) }}{% endif %}">
+                <article class="strategic-entry" role="button" tabindex="0" data-strategic-entry-open data-kicker="{{ item.period }}" data-name="{{ item.name }}" data-highlight="{{ item.title }}" data-description="{{ item.description }}" data-image="{% if item.full_image or item.image %}{{ media_url(item.full_image or item.image) }}{% endif %}">
                   {% if item.image %}<img src="{{ media_url(item.image) }}" alt="Imagem de {{ item.name }}">{% endif %}
                   <span>{{ item.period }}</span>
                   <h3>{{ item.name }}</h3>
@@ -79,7 +79,7 @@
           <section data-strategic-panel="fortifications" hidden>
             <div class="strategic-entry-grid">
               {% for item in house.fortifications %}
-                <article class="strategic-entry" role="button" tabindex="0" data-strategic-entry-open data-kicker="{{ item.type }}" data-name="{{ item.name }}" data-highlight="Responsável: {{ item.responsible }}" data-description="{{ item.description }}" data-image="{% if item.image %}{{ media_url(item.image) }}{% endif %}">
+                <article class="strategic-entry" role="button" tabindex="0" data-strategic-entry-open data-kicker="{{ item.type }}" data-name="{{ item.name }}" data-highlight="Responsável: {{ item.responsible }}" data-description="{{ item.description }}" data-image="{% if item.full_image or item.image %}{{ media_url(item.full_image or item.image) }}{% endif %}">
                   {% if item.image %}<img src="{{ media_url(item.image) }}" alt="Imagem de {{ item.name }}">{% endif %}
                   <span>{{ item.type }}</span>
                   <h3>{{ item.name }}</h3>
@@ -94,7 +94,7 @@
           <section data-strategic-panel="conflicts" hidden>
             <div class="strategic-entry-grid">
               {% for item in house.conflicts %}
-                <article class="strategic-entry" role="button" tabindex="0" data-strategic-entry-open data-kicker="{{ item.period }}" data-name="{{ item.name }}" data-highlight="{{ item.outcome }}" data-description="{{ item.description }}" data-image="{% if item.image %}{{ media_url(item.image) }}{% endif %}">
+                <article class="strategic-entry" role="button" tabindex="0" data-strategic-entry-open data-kicker="{{ item.period }}" data-name="{{ item.name }}" data-highlight="{{ item.outcome }}" data-description="{{ item.description }}" data-image="{% if item.full_image or item.image %}{{ media_url(item.full_image or item.image) }}{% endif %}">
                   {% if item.image %}<img src="{{ media_url(item.image) }}" alt="Imagem de {{ item.name }}">{% endif %}
                   <span>{{ item.period }}</span>
                   <h3>{{ item.name }}</h3>
@@ -121,7 +121,7 @@
                   </summary>
                   <div class="function-entry-grid">
                     {% for item in group.entries %}
-                      <article class="strategic-entry function-entry" role="button" tabindex="0" data-strategic-entry-open data-kicker="{{ group.role }}" data-name="{{ item.name }}" data-highlight="{{ item.subtitle or item.kind }}" data-description="{{ item.description }}" data-image="{% if item.image %}{{ media_url(item.image) }}{% endif %}">
+                      <article class="strategic-entry function-entry" role="button" tabindex="0" data-strategic-entry-open data-kicker="{{ group.role }}" data-name="{{ item.name }}" data-highlight="{{ item.subtitle or item.kind }}" data-description="{{ item.description }}" data-image="{% if item.full_image or item.image %}{{ media_url(item.full_image or item.image) }}{% endif %}">
                         {% if item.image %}<img src="{{ media_url(item.image) }}" alt="Imagem de {{ item.name }}">{% endif %}
                         <div>
                           <span>{{ item.kind }}</span>
@@ -141,7 +141,7 @@
           <section data-strategic-panel="allies" hidden>
             <div class="strategic-entry-grid">
               {% for item in house.allies %}
-                <article class="strategic-entry" role="button" tabindex="0" data-strategic-entry-open data-kicker="{{ item.group }}" data-name="{{ item.name }}" data-highlight="{{ item.role }}" data-description="{{ item.description }}" data-image="{% if item.image %}{{ media_url(item.image) }}{% endif %}">
+                <article class="strategic-entry" role="button" tabindex="0" data-strategic-entry-open data-kicker="{{ item.group }}" data-name="{{ item.name }}" data-highlight="{{ item.role }}" data-description="{{ item.description }}" data-image="{% if item.full_image or item.image %}{{ media_url(item.full_image or item.image) }}{% endif %}">
                   {% if item.image %}<img src="{{ media_url(item.image) }}" alt="Imagem de {{ item.name }}">{% endif %}
                   <span>{{ item.group }}</span>
                   <h3>{{ item.name }}</h3>
@@ -165,7 +165,7 @@
                   data-kicker="{{ item.group }}"
                   data-highlight="{{ item.service }}"
                   data-description="{{ item.description }}"
-                  data-image="{% if item.image %}{{ media_url(item.image) }}{% endif %}"
+                  data-image="{% if item.full_image or item.image %}{{ media_url(item.full_image or item.image) }}{% endif %}"
                 >
                   {% if item.image %}<img src="{{ media_url(item.image) }}" alt="Imagem de {{ item.name }}">{% endif %}
                   <span>{{ item.group }}</span>
@@ -276,7 +276,7 @@
             </div>
             <button class="modal-close" type="button" data-member-close aria-label="Fechar registro">×</button>
             <div class="member-modal-portrait">
-              <img src="{{ media_url(member.image) }}" alt="Retrato de {{ member.name }}">
+              <img src="{{ media_url(member.full_image or member.image) }}" alt="Retrato de {{ member.name }}">
             </div>
             <div class="member-modal-content">
               <p class="section-kicker">{{ member.generation }}</p>
