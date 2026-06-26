@@ -126,7 +126,30 @@ MAP_MARKER_COLORS = [
     "#d08a4c",
 ]
 
-MAP_MARKER_ICONS = ["crown", "castle", "city", "village", "ruin", "port", "forest", "ally", "enemy", "mystery"]
+MAP_MARKER_ICONS = [
+    "crown",
+    "castle",
+    "city",
+    "village",
+    "ruin",
+    "port",
+    "forest",
+    "ally",
+    "enemy",
+    "mystery",
+    "temple",
+    "tower",
+    "mine",
+    "farm",
+    "bridge",
+    "camp",
+    "fortress",
+    "harbor",
+    "market",
+    "gate",
+    "monument",
+    "warning",
+]
 
 COLLECTION_FIELDS = {
     "about": ("text",),

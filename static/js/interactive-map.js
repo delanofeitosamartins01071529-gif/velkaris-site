@@ -80,6 +80,7 @@
       : clampMap(mapView.y, viewport.height - scaledHeight - slack, slack);
     mapStage.style.width = `${mapSize.width}px`;
     mapStage.style.height = `${mapSize.height}px`;
+    mapStage.style.setProperty("--map-marker-scale", String(clampMap(1 / mapView.scale, 1, 4.6)));
     mapStage.style.transform = `translate(${mapView.x}px, ${mapView.y}px) scale(${mapView.scale})`;
     const label = document.querySelector("[data-map-zoom-reset]");
     if (label) label.textContent = `${Math.round((mapView.scale / mapFitScale) * 100)}%`;

@@ -1888,7 +1888,7 @@ html.custom-cursor-enabled .cursor-aura.is-hidden {
 .member-modal-shell {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(420px, 544px) minmax(540px, 1fr);
+  grid-template-columns: var(--member-portrait-width, 420px) minmax(540px, 1fr);
   height: min(680px, calc(100svh - 2rem));
   min-height: min(540px, calc(100svh - 2rem));
   overflow: hidden;
@@ -2060,6 +2060,7 @@ dialog.is-closing > :not(.cursor-aura),
 .member-modal-portrait {
   position: relative;
   min-height: 0;
+  width: 100%;
   overflow: hidden;
   border-right: 1px solid rgba(185, 148, 85, 0.28);
   background: #05070b;
@@ -2071,6 +2072,7 @@ dialog.is-closing > :not(.cursor-aura),
   width: 100%;
   height: 100%;
   object-fit: contain;
+  object-position: center center;
   display: block;
 }
 
@@ -2746,6 +2748,8 @@ dialog.is-closing > :not(.cursor-aura),
   box-shadow: 0 0 24px rgba(185, 148, 85, 0.24);
   cursor: pointer;
   translate: -50% -50%;
+  transform: scale(var(--map-marker-scale, 1));
+  transform-origin: center;
 }
 
 .map-marker span {
@@ -2799,6 +2803,54 @@ dialog.is-closing > :not(.cursor-aura),
 .map-marker-enemy span,
 .map-marker-ruin span {
   clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+
+.map-marker-temple span {
+  clip-path: polygon(50% 0, 88% 24%, 82% 36%, 75% 36%, 75% 100%, 60% 100%, 60% 36%, 40% 36%, 40% 100%, 25% 100%, 25% 36%, 18% 36%, 12% 24%);
+}
+
+.map-marker-tower span {
+  clip-path: polygon(26% 0, 42% 0, 42% 16%, 58% 16%, 58% 0, 74% 0, 74% 100%, 26% 100%);
+}
+
+.map-marker-mine span {
+  clip-path: polygon(12% 88%, 42% 10%, 56% 10%, 88% 88%, 70% 88%, 62% 66%, 38% 66%, 30% 88%);
+}
+
+.map-marker-farm span {
+  clip-path: polygon(50% 0, 95% 38%, 82% 38%, 82% 100%, 18% 100%, 18% 38%, 5% 38%);
+}
+
+.map-marker-bridge span {
+  clip-path: polygon(0 72%, 16% 36%, 32% 72%, 50% 36%, 68% 72%, 84% 36%, 100% 72%, 100% 100%, 0 100%);
+}
+
+.map-marker-camp span {
+  clip-path: polygon(50% 0, 94% 100%, 68% 100%, 50% 46%, 32% 100%, 6% 100%);
+}
+
+.map-marker-fortress span {
+  clip-path: polygon(8% 18%, 24% 18%, 24% 0, 40% 0, 40% 18%, 60% 18%, 60% 0, 76% 0, 76% 18%, 92% 18%, 92% 100%, 8% 100%);
+}
+
+.map-marker-harbor span {
+  clip-path: polygon(45% 0, 55% 0, 55% 52%, 86% 36%, 72% 72%, 100% 72%, 84% 100%, 16% 100%, 0 72%, 28% 72%, 14% 36%, 45% 52%);
+}
+
+.map-marker-market span {
+  clip-path: polygon(10% 24%, 90% 24%, 82% 54%, 82% 100%, 18% 100%, 18% 54%);
+}
+
+.map-marker-gate span {
+  clip-path: polygon(14% 100%, 14% 28%, 28% 8%, 72% 8%, 86% 28%, 86% 100%, 62% 100%, 62% 45%, 38% 45%, 38% 100%);
+}
+
+.map-marker-monument span {
+  clip-path: polygon(50% 0, 84% 30%, 66% 30%, 66% 78%, 88% 78%, 88% 100%, 12% 100%, 12% 78%, 34% 78%, 34% 30%, 16% 30%);
+}
+
+.map-marker-warning span {
+  clip-path: polygon(50% 0, 100% 92%, 0 92%);
 }
 
 .map-marker-modal {
@@ -4637,6 +4689,59 @@ dialog.is-closing > :not(.cursor-aura),
 
 .map-admin-preview.has-draft-marker::after {
   display: block;
+}
+
+.map-icon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(108px, 1fr));
+  gap: 0.55rem;
+  margin-top: 0.45rem;
+}
+
+.map-icon-choice {
+  position: relative;
+  min-width: 0;
+}
+
+.map-icon-choice input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.map-icon-option {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 48px;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid rgba(185, 148, 85, 0.28);
+  background: rgba(3, 6, 10, 0.54);
+  color: rgba(232, 224, 211, 0.78);
+  cursor: pointer;
+  font-size: 0.72rem;
+  line-height: 1.1;
+  text-transform: uppercase;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, color 0.18s ease;
+}
+
+.map-icon-swatch.map-marker {
+  position: static;
+  left: auto;
+  top: auto;
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  translate: none;
+  transform: none;
+  cursor: inherit;
+}
+
+.map-icon-choice input:checked + .map-icon-option,
+.map-icon-choice:focus-within .map-icon-option {
+  border-color: rgba(240, 208, 139, 0.74);
+  color: var(--bright-gold);
+  box-shadow: 0 0 24px rgba(185, 148, 85, 0.16);
 }
 
 .admin-list-card.is-highlighted {

@@ -208,8 +208,10 @@ const openMemberModal = (memberId) => {
   const modal = document.querySelector(`[data-member-modal="${escapedId}"]`);
   if (!modal) return;
   openDialogWithMotion(modal);
+  fitMemberModalPortrait(modal);
   window.VelkarisAudio?.playPanelOpen?.();
   requestAnimationFrame(() => {
+    fitMemberModalPortrait(modal);
     modal.scrollTop = 0;
     syncCursorLayer?.();
   });
@@ -217,6 +219,31 @@ const openMemberModal = (memberId) => {
 
 const closeMemberModal = (modal) => {
   closeDialogWithMotion(modal);
+};
+
+const fitMemberModalPortrait = (modal) => {
+  const shell = modal?.querySelector(".member-modal-shell");
+  const image = modal?.querySelector(".member-modal-portrait img");
+  if (!shell || !image) return;
+
+  const applyWidth = () => {
+    if (!image.naturalWidth || !image.naturalHeight) return;
+    const shellHeight = shell.getBoundingClientRect().height;
+    if (!shellHeight) return;
+
+    const ratio = image.naturalWidth / image.naturalHeight;
+    const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 1200;
+    const minWidth = Math.min(300, viewportWidth - 32);
+    const maxWidth = Math.min(560, viewportWidth * 0.48);
+    const portraitWidth = Math.max(minWidth, Math.min(maxWidth, Math.round(shellHeight * ratio)));
+    shell.style.setProperty("--member-portrait-width", `${portraitWidth}px`);
+  };
+
+  if (image.complete) {
+    applyWidth();
+  } else {
+    image.addEventListener("load", applyWidth, { once: true });
+  }
 };
 
 document.addEventListener("click", (event) => {
@@ -247,6 +274,10 @@ document.querySelectorAll(".member-modal").forEach((modal) => {
     if (event.target === modal) closeMemberModal(modal);
   });
   modal.addEventListener("close", () => document.body.classList.remove("modal-open"));
+});
+
+window.addEventListener("resize", () => {
+  document.querySelectorAll(".member-modal[open]").forEach(fitMemberModalPortrait);
 });
 
 const galleryModal = document.querySelector("[data-gallery-modal]");

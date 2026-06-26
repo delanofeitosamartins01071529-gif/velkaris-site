@@ -787,11 +787,17 @@
           <label>Status <input type="text" name="status" placeholder="Domínio ativo, fronteira, ameaça..."></label>
           <label>
             Ícone
-            <select name="icon">
+            <div class="map-icon-grid">
               {% for marker_icon in map_marker_icons %}
-                <option value="{{ marker_icon }}">{{ marker_icon|capitalize }}</option>
+                <label class="map-icon-choice">
+                  <input type="radio" name="icon" value="{{ marker_icon }}" {% if loop.first %}checked{% endif %}>
+                  <span class="map-icon-option">
+                    <span class="map-icon-swatch map-marker map-marker-{{ marker_icon }}" aria-hidden="true"><span></span></span>
+                    <span>{{ marker_icon|replace('_', ' ')|replace('-', ' ')|title }}</span>
+                  </span>
+                </label>
               {% endfor %}
-            </select>
+            </div>
           </label>
           <label>
             Cor do marcador
@@ -834,11 +840,17 @@
               <label>Posição Y (%) <input type="number" step="0.01" name="coord_y" value="{{ territory.coord_y }}" min="0" max="100"></label>
               <label>
                 Ícone
-                <select name="icon">
+                <div class="map-icon-grid">
                   {% for marker_icon in map_marker_icons %}
-                    <option value="{{ marker_icon }}" {% if territory.icon == marker_icon %}selected{% endif %}>{{ marker_icon|capitalize }}</option>
+                    <label class="map-icon-choice">
+                      <input type="radio" name="icon" value="{{ marker_icon }}" {% if territory.icon == marker_icon or (not territory.icon and marker_icon == 'crown') %}checked{% endif %}>
+                      <span class="map-icon-option">
+                        <span class="map-icon-swatch map-marker map-marker-{{ marker_icon }}" aria-hidden="true"><span></span></span>
+                        <span>{{ marker_icon|replace('_', ' ')|replace('-', ' ')|title }}</span>
+                      </span>
+                    </label>
                   {% endfor %}
-                </select>
+                </div>
               </label>
               <label>
                 Cor
