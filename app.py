@@ -172,7 +172,7 @@ COLLECTION_FIELDS = {
 STRATEGIC_COLLECTIONS = {"leaders", "fortifications", "conflicts", "aristocrats", "allies", "vassals"}
 
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder=None)
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
 app.secret_key = os.environ.get("SECRET_KEY", "velkaris-dev-secret-change-me")
 app.config.update(
@@ -1204,6 +1204,15 @@ def inject_globals() -> dict[str, Any]:
         "media_url": media_url,
         "asset_version": asset_version,
     }
+
+
+@app.get("/static/<path:filename>", endpoint="static")
+def static_file(filename: str):
+    root = STATIC_DIR.resolve()
+    candidate = (root / filename).resolve()
+    if root not in candidate.parents or not candidate.is_file():
+        abort(404)
+    return send_from_directory(root, filename)
 
 
 @app.get("/uploads/<path:filename>")
