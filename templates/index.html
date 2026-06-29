@@ -65,7 +65,7 @@
             <div class="strategic-entry-grid">
               {% for item in house.leaders %}
                 <article class="strategic-entry" role="button" tabindex="0" data-strategic-entry-open data-kicker="{{ item.period }}" data-name="{{ item.name }}" data-highlight="{{ item.title }}" data-description="{{ item.description }}" data-image="{% if item.full_image or item.image %}{{ media_url(item.full_image or item.image) }}{% endif %}">
-                  {% if item.image %}<img src="{{ media_url(item.image) }}" alt="Imagem de {{ item.name }}">{% endif %}
+            {% if item.image %}<img src="{{ media_url(item.image) }}" alt="Imagem de {{ item.name }}" loading="lazy" decoding="async">{% endif %}
                   <span>{{ item.period }}</span>
                   <h3>{{ item.name }}</h3>
                   <strong>{{ item.title }}</strong>
@@ -80,7 +80,7 @@
             <div class="strategic-entry-grid">
               {% for item in house.fortifications %}
                 <article class="strategic-entry" role="button" tabindex="0" data-strategic-entry-open data-kicker="{{ item.type }}" data-name="{{ item.name }}" data-highlight="Responsável: {{ item.responsible }}" data-description="{{ item.description }}" data-image="{% if item.full_image or item.image %}{{ media_url(item.full_image or item.image) }}{% endif %}">
-                  {% if item.image %}<img src="{{ media_url(item.image) }}" alt="Imagem de {{ item.name }}">{% endif %}
+            {% if item.image %}<img src="{{ media_url(item.image) }}" alt="Imagem de {{ item.name }}" loading="lazy" decoding="async">{% endif %}
                   <span>{{ item.type }}</span>
                   <h3>{{ item.name }}</h3>
                   <strong>Responsável: {{ item.responsible }}</strong>
@@ -95,7 +95,7 @@
             <div class="strategic-entry-grid">
               {% for item in house.conflicts %}
                 <article class="strategic-entry" role="button" tabindex="0" data-strategic-entry-open data-kicker="{{ item.period }}" data-name="{{ item.name }}" data-highlight="{{ item.outcome }}" data-description="{{ item.description }}" data-image="{% if item.full_image or item.image %}{{ media_url(item.full_image or item.image) }}{% endif %}">
-                  {% if item.image %}<img src="{{ media_url(item.image) }}" alt="Imagem de {{ item.name }}">{% endif %}
+            {% if item.image %}<img src="{{ media_url(item.image) }}" alt="Imagem de {{ item.name }}" loading="lazy" decoding="async">{% endif %}
                   <span>{{ item.period }}</span>
                   <h3>{{ item.name }}</h3>
                   <strong>{{ item.outcome }}</strong>
@@ -115,14 +115,14 @@
                     <span class="function-role-count">{{ group.entries|length }} pessoa{{ '' if group.entries|length == 1 else 's' }}</span>
                     <span class="function-role-avatars" aria-hidden="true">
                       {% for item in group.entries[:5] %}
-                        {% if item.image %}<img src="{{ media_url(item.image) }}" alt="">{% endif %}
+              {% if item.image %}<img src="{{ media_url(item.image) }}" alt="" loading="lazy" decoding="async">{% endif %}
                       {% endfor %}
                     </span>
                   </summary>
                   <div class="function-entry-grid">
                     {% for item in group.entries %}
                       <article class="strategic-entry function-entry" role="button" tabindex="0" data-strategic-entry-open data-kicker="{{ group.role }}" data-name="{{ item.name }}" data-highlight="{{ item.subtitle or item.kind }}" data-description="{{ item.description }}" data-image="{% if item.full_image or item.image %}{{ media_url(item.full_image or item.image) }}{% endif %}">
-                        {% if item.image %}<img src="{{ media_url(item.image) }}" alt="Imagem de {{ item.name }}">{% endif %}
+                {% if item.image %}<img src="{{ media_url(item.image) }}" alt="Imagem de {{ item.name }}" loading="lazy" decoding="async">{% endif %}
                         <div>
                           <span>{{ item.kind }}</span>
                           <h3>{{ item.name }}</h3>
@@ -142,7 +142,7 @@
             <div class="strategic-entry-grid">
               {% for item in house.allies %}
                 <article class="strategic-entry" role="button" tabindex="0" data-strategic-entry-open data-kicker="{{ item.group }}" data-name="{{ item.name }}" data-highlight="{{ item.role }}" data-description="{{ item.description }}" data-image="{% if item.full_image or item.image %}{{ media_url(item.full_image or item.image) }}{% endif %}">
-                  {% if item.image %}<img src="{{ media_url(item.image) }}" alt="Imagem de {{ item.name }}">{% endif %}
+            {% if item.image %}<img src="{{ media_url(item.image) }}" alt="Imagem de {{ item.name }}" loading="lazy" decoding="async">{% endif %}
                   <span>{{ item.group }}</span>
                   <h3>{{ item.name }}</h3>
                   <strong>{{ item.role }}</strong>
@@ -167,7 +167,7 @@
                   data-description="{{ item.description }}"
                   data-image="{% if item.full_image or item.image %}{{ media_url(item.full_image or item.image) }}{% endif %}"
                 >
-                  {% if item.image %}<img src="{{ media_url(item.image) }}" alt="Imagem de {{ item.name }}">{% endif %}
+              {% if item.image %}<img src="{{ media_url(item.image) }}" alt="Imagem de {{ item.name }}" loading="lazy" decoding="async">{% endif %}
                   <span>{{ item.group }}</span>
                   <h3>{{ item.name }}</h3>
                   <strong>{{ item.service }}</strong>
@@ -211,7 +211,7 @@
           <article class="symbol-card">
             <div class="symbol-card-mark" aria-hidden="true">
               {% if symbol.image %}
-                <img src="{{ media_url(symbol.image) }}" alt="">
+          <img src="{{ media_url(symbol.image) }}" alt="" loading="lazy" decoding="async">
               {% else %}
                 <span>✥</span>
               {% endif %}
@@ -238,7 +238,7 @@
       <div class="portrait-preview-row" aria-label="Prévia dos retratos da família">
         {% for member in portrait_members %}
           <button class="portrait-preview-avatar" type="button" data-member-open="{{ member.id }}" aria-label="Abrir retrato de {{ member.name }}">
-            <img src="{{ media_url(member.image) }}" alt="">
+            <img src="{{ media_url(member.image) }}" alt="" loading="lazy" decoding="async">
           </button>
         {% endfor %}
       </div>
@@ -253,7 +253,7 @@
         {% for member in portrait_members %}
           <article class="member-card" role="button" tabindex="0" data-member-card data-member-open="{{ member.id }}" data-generation="{{ member.generation }}">
             <div class="portrait-frame">
-              <img src="{{ media_url(member.image) }}" alt="Retrato de {{ member.name }}">
+            <img src="{{ media_url(member.image) }}" alt="Retrato de {{ member.name }}" loading="lazy" decoding="async">
               <span class="generation-badge">{{ member.generation }}</span>
             </div>
             <div class="member-body">
@@ -276,7 +276,7 @@
             </div>
             <button class="modal-close" type="button" data-member-close aria-label="Fechar registro">×</button>
             <div class="member-modal-portrait">
-              <img src="{{ media_url(member.full_image or member.image) }}" alt="Retrato de {{ member.name }}">
+              <img src="" data-lazy-src="{{ media_url(member.full_image or member.image) }}" alt="Retrato de {{ member.name }}">
             </div>
             <div class="member-modal-content">
               <p class="section-kicker">{{ member.generation }}</p>
@@ -438,7 +438,7 @@
         {% for item in house.culture|sort(attribute='sort_order') %}
           <article class="culture-entry" role="button" tabindex="0" data-culture-open="{{ item.id }}" aria-label="Abrir registro completo: {{ item.title }}">
             {% if item.image %}
-              <figure><img src="{{ media_url(item.image) }}" alt="{{ item.title }}"></figure>
+              <figure><img src="{{ media_url(item.image) }}" alt="{{ item.title }}" loading="lazy" decoding="async"></figure>
             {% endif %}
             <div class="culture-entry-copy">
               {% if item.category %}<span>{{ item.category }}</span>{% endif %}
@@ -458,7 +458,7 @@
             <button class="modal-close" type="button" data-culture-close aria-label="Fechar registro">×</button>
             {% if item.image %}
               <figure class="culture-modal-image">
-                <img src="{{ media_url(item.image) }}" alt="{{ item.title }}">
+                <img src="" data-lazy-src="{{ media_url(item.image) }}" alt="{{ item.title }}">
               </figure>
             {% endif %}
             <div class="culture-modal-content">
@@ -575,7 +575,7 @@
               data-description="{{ newspaper.description }}"
             >
               <div class="newspaper-thumbnail">
-                <img src="{{ media_url(newspaper.image) }}" alt="{{ newspaper.title }}">
+              <img src="{{ media_url(newspaper.image) }}" alt="{{ newspaper.title }}" loading="lazy" decoding="async">
               </div>
               <figcaption>
                 <span>{{ newspaper.edition or newspaper.date }}</span>
@@ -624,7 +624,7 @@
       <div class="gallery-grid gallery-records" id="gallery-records" data-gallery-records hidden>
         {% for item in house.gallery %}
           <figure role="button" tabindex="0" data-gallery-open>
-            <img src="{{ media_url(item.image) }}" alt="{{ item.title }}">
+            <img src="{{ media_url(item.image) }}" alt="{{ item.title }}" loading="lazy" decoding="async">
             <figcaption>{{ item.title }}</figcaption>
           </figure>
         {% endfor %}

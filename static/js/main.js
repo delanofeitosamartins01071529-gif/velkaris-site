@@ -125,6 +125,15 @@ const closeDialogWithMotion = (dialog) => {
 };
 
 window.VelkarisModalMotion = { open: openDialogWithMotion, close: closeDialogWithMotion };
+
+const hydrateLazyImages = (rootNode) => {
+  rootNode?.querySelectorAll("img[data-lazy-src]").forEach((image) => {
+    const src = image.dataset.lazySrc;
+    if (!src || image.getAttribute("src") === src) return;
+    image.setAttribute("src", src);
+  });
+};
+
 document.querySelectorAll("dialog").forEach((dialog) => {
   dialog.addEventListener("cancel", (event) => {
     event.preventDefault();
@@ -207,6 +216,7 @@ const openMemberModal = (memberId) => {
   const escapedId = window.CSS?.escape ? CSS.escape(memberId) : memberId.replace(/"/g, '\\"');
   const modal = document.querySelector(`[data-member-modal="${escapedId}"]`);
   if (!modal) return;
+  hydrateLazyImages(modal);
   openDialogWithMotion(modal);
   fitMemberModalPortrait(modal);
   window.VelkarisAudio?.playPanelOpen?.();
@@ -697,6 +707,7 @@ document.querySelectorAll("[data-culture-open]").forEach((entry) => {
   const openCultureEntry = () => {
     const modal = document.querySelector(`[data-culture-modal="${entry.dataset.cultureOpen}"]`);
     if (!modal) return;
+    hydrateLazyImages(modal);
     openDialogWithMotion(modal);
     window.VelkarisAudio?.playPanelOpen?.();
   };

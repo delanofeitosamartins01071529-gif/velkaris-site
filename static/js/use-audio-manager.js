@@ -22,6 +22,7 @@
   if (!Object.prototype.hasOwnProperty.call(savedPreferences, "musicEnabled")) {
     state.musicEnabled = defaults.musicEnabled ?? state.musicEnabled;
   }
+  state.musicEnabled = false;
   state.musicVolume = clamp(state.musicVolume ?? defaults.musicVolume ?? 0.3);
   state.windVolume = clamp(state.windVolume ?? state.effectsVolume ?? 0.18);
 
@@ -86,7 +87,7 @@
     }
     if (musicElementReady) return musicElement;
     musicElement.loop = true;
-    musicElement.preload = "auto";
+    musicElement.preload = "none";
     musicElement.addEventListener("loadedmetadata", restoreMusicPosition, { once: true });
     restoreMusicPosition();
     playbackTimer = window.setInterval(persistMusicPosition, 1000);
@@ -441,7 +442,7 @@
     if (!windPlayers.length) {
       for (let index = 0; index < 3; index += 1) {
         const player = new Audio(config.windSrc);
-        player.preload = "auto";
+        player.preload = "none";
         windPlayers.push(player);
       }
     }
@@ -513,26 +514,10 @@
     playWindWhisper();
   }, true);
 
-  document.addEventListener("pointerdown", () => {
-    if (state.musicEnabled && musicElement?.paused) startMusic({ fadeIn: true }).catch(() => {});
-  }, true);
-  document.addEventListener("visibilitychange", () => {
-    if (!document.hidden && state.musicEnabled && musicElement?.paused) startMusic({ fadeIn: true }).catch(() => {});
-  });
   window.addEventListener("pagehide", persistMusicPosition);
 
   window.VelkarisAudio = { playPanelOpen, playWindWhisper, state };
   updateUi();
   if (!state.musicEnabled) stopMusic();
 
-  if (state.musicEnabled) {
-    startMusic({ fadeIn: true }).catch(() => {});
-    const startOnGesture = async () => {
-      window.removeEventListener("pointerdown", startOnGesture);
-      window.removeEventListener("keydown", startOnGesture);
-      if (state.musicEnabled && !musicNodes.length && musicElement?.paused) await startMusic({ fadeIn: true });
-    };
-    window.addEventListener("pointerdown", startOnGesture, { once: true });
-    window.addEventListener("keydown", startOnGesture, { once: true });
-  }
 })();

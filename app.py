@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hmac
+import copy
 import json
 import logging
 import mimetypes
@@ -197,20 +198,50 @@ RATE_LIMITS: dict[str, list[float]] = {}
 MAX_LOGIN_ATTEMPTS = 6
 LOGIN_WINDOW_SECONDS = 15 * 60
 CSRF_MAX_AGE_SECONDS = int(os.environ.get("CSRF_MAX_AGE_SECONDS", "7200"))
+DATA_CACHE_SECONDS = int(os.environ.get("DATA_CACHE_SECONDS", "45" if SUPABASE_ENABLED else "5"))
+JSON_CACHE: dict[str, tuple[float, float, Any]] = {}
+
+
+def cache_key(path: Path) -> str:
+    return str(path.resolve())
+
+
+def invalidate_json_cache(path: Path | None = None) -> None:
+    if path is None:
+        JSON_CACHE.clear()
+        return
+    JSON_CACHE.pop(cache_key(path), None)
 
 
 def read_json(path: Path, fallback: Any) -> Any:
+    key = cache_key(path)
+    now = time.time()
+    try:
+        mtime = path.stat().st_mtime
+    except OSError:
+        mtime = 0
+    cached = JSON_CACHE.get(key)
+    if cached:
+        expires_at, cached_mtime, payload = cached
+        if now < expires_at and (SUPABASE_ENABLED or cached_mtime == mtime):
+            return copy.deepcopy(payload)
+
     supabase_payload = supabase_read_json(path)
     if supabase_payload is not None:
-        return supabase_payload
+        JSON_CACHE[key] = (now + DATA_CACHE_SECONDS, mtime, supabase_payload)
+        return copy.deepcopy(supabase_payload)
     if not path.exists():
         bundled_path = BUNDLED_DATA_DIR / path.name
         if path.parent != BUNDLED_DATA_DIR and bundled_path.exists():
             with bundled_path.open("r", encoding="utf-8") as handle:
-                return json.load(handle)
-        return fallback
+                payload = json.load(handle)
+                JSON_CACHE[key] = (now + DATA_CACHE_SECONDS, bundled_path.stat().st_mtime, payload)
+                return copy.deepcopy(payload)
+        return copy.deepcopy(fallback)
     with path.open("r", encoding="utf-8") as handle:
-        return json.load(handle)
+        payload = json.load(handle)
+        JSON_CACHE[key] = (now + DATA_CACHE_SECONDS, mtime, payload)
+        return copy.deepcopy(payload)
 
 
 def is_serverless_runtime() -> bool:
@@ -229,6 +260,7 @@ def set_supabase_error(message: str) -> None:
 
 def write_json(path: Path, payload: Any) -> bool:
     if supabase_write_json(path, payload):
+        invalidate_json_cache(path)
         return True
     if is_serverless_runtime():
         app.logger.error("Persistencia bloqueada em ambiente serverless: %s", path.name)
@@ -241,6 +273,7 @@ def write_json(path: Path, payload: Any) -> bool:
             json.dump(payload, handle, ensure_ascii=False, indent=2)
             handle.write("\n")
         temp_path.replace(path)
+        invalidate_json_cache(path)
         return True
     except OSError:
         app.logger.exception("Falha ao salvar dados locais em %s", path)
@@ -592,10 +625,15 @@ def process_upload(file_storage, extension: str, prefix: str) -> tuple[bytes, st
             extension = "webp"
             content_type = "image/webp"
         else:
-            image.thumbnail((4096, 4096), resample)
-            output_format = "PNG" if image.mode in {"RGBA", "LA"} and image_format == "PNG" else image_format
-            extension = {"JPEG": "jpg", "PNG": "png", "WEBP": "webp"}[output_format]
-            content_type = mimetypes.guess_type(f"upload.{extension}")[0] or "application/octet-stream"
+            max_size = 1600
+            if prefix in {"map", "interactive-map"}:
+                max_size = 2400
+            elif prefix.endswith("-full") or prefix == "member-full":
+                max_size = 2200
+            image.thumbnail((max_size, max_size), resample)
+            output_format = "WEBP"
+            extension = "webp"
+            content_type = "image/webp"
 
         if image.mode == "RGBA":
             if output_format in {"JPEG", "WEBP"}:
@@ -607,7 +645,12 @@ def process_upload(file_storage, extension: str, prefix: str) -> tuple[bytes, st
                 image = image.convert("RGB")
 
         output = BytesIO()
-        save_kwargs = {"quality": 96} if output_format in {"JPEG", "WEBP"} else {}
+        quality = 82
+        if prefix in {"map", "interactive-map"}:
+            quality = 86
+        elif prefix == "member" or prefix.endswith("-full") or prefix == "member-full":
+            quality = 84
+        save_kwargs = {"quality": quality} if output_format in {"JPEG", "WEBP"} else {}
         if output_format == "WEBP":
             save_kwargs["method"] = 6
         image.save(output, format=output_format, **save_kwargs)
@@ -700,6 +743,9 @@ def media_url(path: str) -> str:
     if asset_path.startswith(("http://", "https://")):
         return asset_path
     if asset_path.startswith("uploads/"):
+        bundled_upload = STATIC_DIR / asset_path
+        if bundled_upload.exists():
+            return url_for("static", filename=asset_path)
         return url_for("uploaded_file", filename=asset_path.removeprefix("uploads/"))
     return url_for("static", filename=asset_path)
 
@@ -1824,8 +1870,14 @@ def add_security_headers(response):
         "script-src 'self'; "
         "connect-src 'self'",
     )
-    if request.path.startswith("/admin") or request.path.startswith("/velkaris-admin"):
+    if request.path.startswith(("/static/", "/uploads/")):
+        response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    elif request.path.startswith("/admin") or request.path.startswith("/velkaris-admin"):
         response.headers.setdefault("Cache-Control", "no-store")
+    elif request.endpoint in {"index", "member_detail", "members_api"}:
+        response.headers.setdefault("Cache-Control", "public, max-age=60, stale-while-revalidate=300")
+    elif request.endpoint == "healthz":
+        response.headers.setdefault("Cache-Control", "public, max-age=300")
     if request.is_secure or os.environ.get("FORCE_HTTPS") == "1":
         response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
     return response

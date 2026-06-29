@@ -3,7 +3,7 @@ window.VelkarisAudioConfig = {
   musicSrc: "/static/audio/villains-symphony.mp3",
   windSrc: "/static/audio/wind-magic.mp3",
   defaults: {
-    musicEnabled: true,
+    musicEnabled: false,
     effectsEnabled: true,
     musicVolume: 0.3,
     windVolume: 0.18,
