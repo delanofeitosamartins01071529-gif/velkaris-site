@@ -253,6 +253,10 @@ def notify_admin(message: str, category: str = "error") -> None:
         flash(message, category)
 
 
+def wants_json_response() -> bool:
+    return "application/json" in request.headers.get("Accept", "")
+
+
 def set_supabase_error(message: str) -> None:
     global SUPABASE_LAST_ERROR
     SUPABASE_LAST_ERROR = message[:220]
@@ -1521,8 +1525,12 @@ def update_collection_item(collection: str, entry_id: str):
             item["full_image"] = full_uploaded
         else:
             item.setdefault("full_image", item.get("image", ""))
-    write_json(HOUSE_FILE, house)
-    flash("Item atualizado.", "success")
+    saved = write_json(HOUSE_FILE, house)
+    if wants_json_response():
+        if saved:
+            return jsonify({"ok": True, "message": "Item atualizado."})
+        return jsonify({"ok": False, "message": "Nao foi possivel salvar os dados."}), 500
+    flash("Item atualizado." if saved else "Nao foi possivel salvar os dados.", "success" if saved else "error")
     return redirect(url_for("admin", _anchor=collection))
 
 

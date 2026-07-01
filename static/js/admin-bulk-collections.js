@@ -47,9 +47,17 @@
             method: "POST",
             body: new FormData(form),
             credentials: "same-origin",
-            headers: { Accept: "text/html" },
+            headers: { Accept: "application/json" },
           });
-          if (!response.ok) throw new Error("Falha ao salvar");
+          let payload = {};
+          try {
+            payload = await response.json();
+          } catch {
+            payload = {};
+          }
+          if (!response.ok || payload.ok === false) {
+            throw new Error(payload.message || `Falha ao salvar (${response.status})`);
+          }
           saved += 1;
         }
         status.textContent = `${capitalize(label)} salvos.`;
@@ -57,7 +65,8 @@
         window.location.reload();
       } catch (error) {
         button.disabled = false;
-        status.textContent = `Não foi possível concluir. ${saved} de ${forms.length} foram salvos.`;
+        const details = error.message ? ` ${error.message}` : "";
+        status.textContent = `Nao foi possivel concluir. ${saved} de ${forms.length} foram salvos.${details}`;
       }
     });
   });
