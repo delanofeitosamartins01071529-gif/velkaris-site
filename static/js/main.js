@@ -677,6 +677,9 @@ const openStrategicEntryModal = (entry) => {
   const portrait = strategicEntryModal.querySelector("[data-strategic-entry-modal-portrait]");
   const image = strategicEntryModal.querySelector("[data-strategic-entry-modal-image]");
   const imageUrl = entry.dataset.image || "";
+  const entryType = entry.dataset.strategicEntryType || "";
+  strategicEntryModal.dataset.strategicEntryType = entryType;
+  strategicEntryModal.classList.toggle("is-allies", entryType === "allies");
   image.src = imageUrl;
   image.alt = imageUrl ? `Imagem de ${entry.dataset.name || "registro"}` : "";
   portrait.hidden = !imageUrl;

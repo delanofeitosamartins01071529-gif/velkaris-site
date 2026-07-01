@@ -141,7 +141,7 @@
           <section data-strategic-panel="allies" hidden>
             <div class="strategic-entry-grid">
               {% for item in house.allies %}
-                <article class="strategic-entry" role="button" tabindex="0" data-strategic-entry-open data-kicker="{{ item.group }}" data-name="{{ item.name }}" data-highlight="{{ item.role }}" data-description="{{ item.description }}" data-image="{% if item.full_image or item.image %}{{ media_url(item.full_image or item.image) }}{% endif %}">
+                <article class="strategic-entry" role="button" tabindex="0" data-strategic-entry-open data-strategic-entry-type="allies" data-kicker="{{ item.group }}" data-name="{{ item.name }}" data-highlight="{{ item.role }}" data-description="{{ item.description }}" data-image="{% if item.full_image or item.image %}{{ media_url(item.full_image or item.image) }}{% endif %}">
             {% if item.image %}<img src="{{ media_url(item.image) }}" alt="Imagem de {{ item.name }}" loading="lazy" decoding="async">{% endif %}
                   <span>{{ item.group }}</span>
                   <h3>{{ item.name }}</h3>

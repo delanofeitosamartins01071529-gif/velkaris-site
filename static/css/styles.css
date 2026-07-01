@@ -4021,7 +4021,8 @@ dialog.is-closing > :not(.cursor-aura),
 }
 
 .strategic-modal-content [data-strategic-panel="allies"] .strategic-entry img {
-  aspect-ratio: 1 / 1;
+  aspect-ratio: auto;
+  object-fit: contain;
 }
 
 .strategic-entry span,
@@ -4137,6 +4138,25 @@ dialog.is-closing > :not(.cursor-aura),
   height: 100%;
   max-height: calc(100svh - 2rem);
   object-fit: contain;
+}
+
+.strategic-entry-modal.is-allies {
+  width: min(900px, calc(100vw - 2rem));
+}
+
+.strategic-entry-modal.is-allies .strategic-entry-modal-shell {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.strategic-entry-modal.is-allies .strategic-entry-modal-portrait {
+  min-height: 0;
+  aspect-ratio: 1 / 1;
+}
+
+.strategic-entry-modal.is-allies .strategic-entry-modal-portrait img {
+  max-height: none;
+  object-fit: cover;
 }
 
 .strategic-entry-modal-content {
