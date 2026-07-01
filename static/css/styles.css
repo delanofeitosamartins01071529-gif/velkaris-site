@@ -4020,6 +4020,10 @@ dialog.is-closing > :not(.cursor-aura),
   object-fit: cover;
 }
 
+.strategic-modal-content [data-strategic-panel="allies"] .strategic-entry img {
+  aspect-ratio: 1 / 1;
+}
+
 .strategic-entry span,
 .strategic-entry strong {
   display: block;

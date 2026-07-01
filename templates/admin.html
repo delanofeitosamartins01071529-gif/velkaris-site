@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% macro strategic_collection(section_id, kicker, heading, collection, items, fields) %}
+{% macro strategic_collection(section_id, kicker, heading, collection, items, fields, image_aspect="0.8", full_image_aspect="0.75") %}
   <section class="admin-card reveal is-visible" id="{{ section_id }}" data-bulk-section data-bulk-label="{{ heading|lower }}" data-bulk-button="Salvar todos os registros" data-bulk-anchor="{{ section_id }}">
     <div class="admin-section-title">
       <p class="section-kicker">{{ kicker }}</p>
@@ -24,8 +24,8 @@
                 {% endif %}
               </label>
             {% endfor %}
-            <label>Imagem pequena / icone <input type="file" name="image" accept=".png,.jpg,.jpeg,.webp" data-preview-input></label>
-            <label>Imagem completa para detalhes <input type="file" name="full_image" accept=".png,.jpg,.jpeg,.webp" data-skip-crop="true" data-quality-profile="member-full"></label>
+            <label>Imagem pequena / icone <input type="file" name="image" accept=".png,.jpg,.jpeg,.webp" data-preview-input data-crop-aspect="{{ image_aspect }}"></label>
+            <label>Imagem completa para detalhes <input type="file" name="full_image" accept=".png,.jpg,.jpeg,.webp" data-crop-aspect="{{ full_image_aspect }}" data-quality-profile="member-full"></label>
             <button class="primary-cta" type="submit">Salvar registro</button>
           </form>
           <form method="post" action="{{ url_for('delete_collection_item', collection=collection, entry_id=item.id) }}" class="delete-form inline-delete">
@@ -47,8 +47,8 @@
           {% endif %}
         </label>
       {% endfor %}
-      <label>Imagem pequena / icone <input type="file" name="image" accept=".png,.jpg,.jpeg,.webp" data-preview-input></label>
-      <label>Imagem completa para detalhes <input type="file" name="full_image" accept=".png,.jpg,.jpeg,.webp" data-skip-crop="true" data-quality-profile="member-full"></label>
+      <label>Imagem pequena / icone <input type="file" name="image" accept=".png,.jpg,.jpeg,.webp" data-preview-input data-crop-aspect="{{ image_aspect }}"></label>
+      <label>Imagem completa para detalhes <input type="file" name="full_image" accept=".png,.jpg,.jpeg,.webp" data-crop-aspect="{{ full_image_aspect }}" data-quality-profile="member-full"></label>
       <button class="primary-cta" type="submit">Adicionar registro</button>
     </form>
   </section>
@@ -1127,7 +1127,7 @@
     {{ strategic_collection("fortifications-admin", "Defesas juramentadas", "Edificações", "fortifications", house.fortifications, [("name", "Nome"), ("type", "Tipo"), ("responsible", "Responsável"), ("description", "Descrição")]) }}
     {{ strategic_collection("conflicts-admin", "Memória de batalha", "Confrontos enfrentados", "conflicts", house.conflicts, [("name", "Nome"), ("period", "Período"), ("outcome", "Desfecho"), ("description", "Descrição")]) }}
     {{ aristocrat_collection("aristocrats-admin", "Funções dos Membros", "Funções dos membros da família", house.aristocrats, strategic_people) }}
-    {{ strategic_collection("allies-admin", "Pactos e favores", "Aliados da Casa", "allies", house.allies, [("name", "Nome"), ("group", "Grupo social"), ("role", "Apoio prestado"), ("description", "Descrição")]) }}
+    {{ strategic_collection("allies-admin", "Pactos e favores", "Aliados da Casa", "allies", house.allies, [("name", "Nome"), ("group", "Grupo social"), ("role", "Apoio prestado"), ("description", "Descrição")], "1", "1") }}
     {{ strategic_collection("vassals-admin", "Serviços juramentados", "Vassalos da Casa", "vassals", house.vassals, [("name", "Nome"), ("group", "Grupo social"), ("service", "Serviço prestado"), ("description", "Descrição")]) }}
   </section>
 {% endblock %}
