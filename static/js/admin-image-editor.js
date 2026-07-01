@@ -1,8 +1,10 @@
 (() => {
-  const DEFAULT_UPLOAD_IMAGE_BYTES = 3.6 * 1024 * 1024;
-  const HIGH_QUALITY_UPLOAD_BYTES = 4 * 1024 * 1024;
-  const DEFAULT_UPLOAD_IMAGE_EDGE = 3000;
-  const HIGH_QUALITY_UPLOAD_EDGE = 4096;
+  const DEFAULT_UPLOAD_IMAGE_BYTES = 1.6 * 1024 * 1024;
+  const HIGH_QUALITY_UPLOAD_BYTES = 2.2 * 1024 * 1024;
+  const PORTRAIT_UPLOAD_IMAGE_BYTES = 1.15 * 1024 * 1024;
+  const DEFAULT_UPLOAD_IMAGE_EDGE = 2200;
+  const HIGH_QUALITY_UPLOAD_EDGE = 3000;
+  const PORTRAIT_UPLOAD_IMAGE_EDGE = 1800;
 
   const replaceInputFile = (input, file) => {
     const transfer = new DataTransfer();
@@ -32,13 +34,43 @@
   const compressionProfile = (input) => {
     const profile = input?.dataset?.qualityProfile;
     const action = input?.form?.action || "";
-    if (profile === "map" || profile === "culture" || profile === "member-full" || input?.name === "interactive_map") {
-      return { maxEdge: HIGH_QUALITY_UPLOAD_EDGE, maxBytes: HIGH_QUALITY_UPLOAD_BYTES, initialQuality: 0.92, minQuality: 0.68 };
+    const name = input?.name || "";
+    if (profile === "map" || profile === "culture" || input?.name === "interactive_map") {
+      return { maxEdge: HIGH_QUALITY_UPLOAD_EDGE, maxBytes: HIGH_QUALITY_UPLOAD_BYTES, initialQuality: 0.88, minQuality: 0.58 };
+    }
+    if (profile === "member-full" || name === "full_image" || name === "full_portrait") {
+      return { maxEdge: PORTRAIT_UPLOAD_IMAGE_EDGE, maxBytes: PORTRAIT_UPLOAD_IMAGE_BYTES, initialQuality: 0.84, minQuality: 0.5 };
+    }
+    if (name === "image" || name === "portrait") {
+      return { maxEdge: 1200, maxBytes: 850 * 1024, initialQuality: 0.82, minQuality: 0.48 };
     }
     if (profile === "newspaper" || action.includes("/newspapers")) {
-      return { maxEdge: HIGH_QUALITY_UPLOAD_EDGE, maxBytes: HIGH_QUALITY_UPLOAD_BYTES, initialQuality: 0.92, minQuality: 0.66 };
+      return { maxEdge: HIGH_QUALITY_UPLOAD_EDGE, maxBytes: HIGH_QUALITY_UPLOAD_BYTES, initialQuality: 0.88, minQuality: 0.58 };
     }
-    return { maxEdge: DEFAULT_UPLOAD_IMAGE_EDGE, maxBytes: DEFAULT_UPLOAD_IMAGE_BYTES, initialQuality: 0.9, minQuality: 0.62 };
+    return { maxEdge: DEFAULT_UPLOAD_IMAGE_EDGE, maxBytes: DEFAULT_UPLOAD_IMAGE_BYTES, initialQuality: 0.84, minQuality: 0.52 };
+  };
+
+  const renderImageToCanvas = (source, maxEdge) => {
+    const scale = Math.min(1, maxEdge / Math.max(source.naturalWidth, source.naturalHeight));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(source.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(source.naturalHeight * scale));
+    const context = canvas.getContext("2d");
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = "high";
+    context.drawImage(source, 0, 0, canvas.width, canvas.height);
+    return canvas;
+  };
+
+  const shrinkCanvas = (sourceCanvas, factor = 0.82) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(sourceCanvas.width * factor));
+    canvas.height = Math.max(1, Math.round(sourceCanvas.height * factor));
+    const context = canvas.getContext("2d");
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = "high";
+    context.drawImage(sourceCanvas, 0, 0, canvas.width, canvas.height);
+    return canvas;
   };
 
   const compressImageFile = async (
@@ -50,25 +82,31 @@
       minQuality = 0.62,
     } = {}
   ) => {
-    if (!file?.type?.startsWith("image/") || file.size <= maxBytes) return file;
+    if (!file?.type?.startsWith("image/")) return file;
     const source = await imageFromFile(file);
-    const scale = Math.min(1, maxEdge / Math.max(source.naturalWidth, source.naturalHeight));
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.max(1, Math.round(source.naturalWidth * scale));
-    canvas.height = Math.max(1, Math.round(source.naturalHeight * scale));
-    canvas.getContext("2d").drawImage(source, 0, 0, canvas.width, canvas.height);
-
+    let canvas = renderImageToCanvas(source, maxEdge);
     const baseName = file.name.replace(/\.[^.]+$/, "");
-    const extension = file.type === "image/webp" ? "webp" : "jpg";
-    const outputType = extension === "webp" ? "image/webp" : "image/jpeg";
-    let quality = initialQuality;
-    let blob = await canvasToBlob(canvas, outputType, quality);
-    while (blob && blob.size > maxBytes && quality > minQuality) {
-      quality -= 0.06;
-      blob = await canvasToBlob(canvas, outputType, quality);
+    const outputType = "image/jpeg";
+    let bestBlob = null;
+
+    for (let pass = 0; pass < 5; pass += 1) {
+      let quality = initialQuality;
+      while (quality >= minQuality) {
+        const blob = await canvasToBlob(canvas, outputType, quality);
+        if (blob && (!bestBlob || blob.size < bestBlob.size)) bestBlob = blob;
+        if (blob && blob.size <= maxBytes) {
+          return new File([blob], `${baseName}-compacta.jpg`, {
+            type: outputType,
+            lastModified: Date.now(),
+          });
+        }
+        quality -= 0.08;
+      }
+      canvas = shrinkCanvas(canvas);
     }
-    if (!blob || blob.size >= file.size) return file;
-    return new File([blob], `${baseName}-compacta.${extension}`, {
+
+    if (!bestBlob || (file.size <= maxBytes && bestBlob.size >= file.size)) return file;
+    return new File([bestBlob], `${baseName}-compacta.jpg`, {
       type: outputType,
       lastModified: Date.now(),
     });
@@ -140,6 +178,8 @@
   let pointer = null;
   const skipNextEditor = new WeakSet();
   const skipNextCompression = new WeakSet();
+  const pendingCompressions = new WeakMap();
+  const readyForms = new WeakSet();
 
   const inferredAspect = (input) => {
     if (input.dataset.cropAspect) return input.dataset.cropAspect;
@@ -275,35 +315,64 @@
   });
 
   passthroughImageInputs.forEach((input) => {
-    input.addEventListener("change", async () => {
+    input.addEventListener("change", () => {
       if (skipNextCompression.has(input)) {
         skipNextCompression.delete(input);
         return;
       }
       const file = input.files?.[0];
       if (!file?.type.startsWith("image/")) return;
-      const compactFile = await compressImageFile(file, compressionProfile(input));
-      if (compactFile === file) return;
-      skipNextCompression.add(input);
-      replaceInputFile(input, compactFile);
+      const task = (async () => {
+        const compactFile = await compressImageFile(file, compressionProfile(input));
+        if (compactFile === file) return;
+        skipNextCompression.add(input);
+        replaceInputFile(input, compactFile);
+      })().finally(() => pendingCompressions.delete(input));
+      pendingCompressions.set(input, task);
     });
   });
 
   multiImageInputs.forEach((input) => {
-    input.addEventListener("change", async () => {
+    input.addEventListener("change", () => {
       if (skipNextCompression.has(input)) {
         skipNextCompression.delete(input);
         return;
       }
       const files = [...(input.files || [])];
       if (!files.length) return;
-      const transfer = new DataTransfer();
-      for (const file of files) {
-        transfer.items.add(await compressImageFile(file, compressionProfile(input)));
+      const task = (async () => {
+        const transfer = new DataTransfer();
+        for (const file of files) {
+          transfer.items.add(await compressImageFile(file, compressionProfile(input)));
+        }
+        skipNextCompression.add(input);
+        input.files = transfer.files;
+        input.dispatchEvent(new Event("change", { bubbles: true }));
+      })().finally(() => pendingCompressions.delete(input));
+      pendingCompressions.set(input, task);
+    });
+  });
+
+  const uploadForms = new Set(
+    [...imageInputs, ...passthroughImageInputs, ...multiImageInputs]
+      .map((input) => input.form)
+      .filter(Boolean)
+  );
+
+  uploadForms.forEach((form) => {
+    form.addEventListener("submit", async (event) => {
+      if (readyForms.has(form)) {
+        readyForms.delete(form);
+        return;
       }
-      skipNextCompression.add(input);
-      input.files = transfer.files;
-      input.dispatchEvent(new Event("change", { bubbles: true }));
+      const tasks = [...form.querySelectorAll('input[type="file"]')]
+        .map((input) => pendingCompressions.get(input))
+        .filter(Boolean);
+      if (!tasks.length) return;
+      event.preventDefault();
+      await Promise.allSettled(tasks);
+      readyForms.add(form);
+      form.requestSubmit?.() || form.submit();
     });
   });
 
@@ -363,16 +432,15 @@
     outputContext.drawImage(image, sx, sy, sw, sh, 0, 0, output.width, output.height);
     output.toBlob(async (blob) => {
       if (!blob || !activeInput) return;
-      const extension = sourceFile.type === "image/png" ? "png" : "jpg";
       const baseName = sourceFile.name.replace(/\.[^.]+$/, "");
-      const croppedFile = new File([blob], `${baseName}-enquadrada.${extension}`, {
-        type: extension === "png" ? "image/png" : "image/jpeg",
+      const croppedFile = new File([blob], `${baseName}-enquadrada.jpg`, {
+        type: "image/jpeg",
         lastModified: Date.now(),
       });
       const finalFile = await compressImageFile(croppedFile, profile);
       skipNextEditor.add(activeInput);
       replaceInputFile(activeInput, finalFile);
       closeEditor(false);
-    }, sourceFile.type === "image/png" ? "image/png" : "image/jpeg", profile.initialQuality);
+    }, "image/jpeg", profile.initialQuality);
   });
 })();
